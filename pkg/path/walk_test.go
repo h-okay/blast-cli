@@ -1,6 +1,7 @@
 package path
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -10,6 +11,12 @@ const testPipelinePath = "../../testdata/pipelines"
 
 func TestGetPipelinePaths(t *testing.T) {
 	t.Parallel()
+
+	firstPipelineAbsolute, err := filepath.Abs("../../testdata/pipelines/first-pipeline")
+	require.NoError(t, err)
+
+	secondPipelineAbsolute, err := filepath.Abs("../../testdata/pipelines/second-pipeline")
+	require.NoError(t, err)
 
 	tests := []struct {
 		name                   string
@@ -22,10 +29,7 @@ func TestGetPipelinePaths(t *testing.T) {
 			name:                   "pipelines are found",
 			root:                   testPipelinePath,
 			pipelineDefinitionFile: "pipeline.yml",
-			want: []string{
-				"../../testdata/pipelines/first-pipeline",
-				"../../testdata/pipelines/second-pipeline",
-			},
+			want: []string{firstPipelineAbsolute, secondPipelineAbsolute,},
 		},
 		{
 			name:                   "filepath errors are propagated",

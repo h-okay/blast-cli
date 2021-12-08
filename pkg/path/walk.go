@@ -19,7 +19,12 @@ func GetPipelinePaths(root, pipelineDefinitionFile string) ([]string, error) {
 		}
 
 		if strings.HasSuffix(path, pipelineDefinitionFile) {
-			pipelinePaths = append(pipelinePaths, filepath.Dir(path))
+			abs, err := filepath.Abs(path)
+			if err != nil {
+				return fmt.Errorf("failed to get absolute path for %s: %s", path, err)
+			}
+
+			pipelinePaths = append(pipelinePaths, filepath.Dir(abs))
 		}
 
 		return nil
