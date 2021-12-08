@@ -10,7 +10,7 @@ import (
 
 type pipelineFinder func(root, pipelineDefinitionFile string) ([]string, error)
 
-type Rule func(pipelinePaths []string) error
+type Rule func(pipelinePath string) error
 
 type Linter struct {
 	findPipelines pipelineFinder
@@ -28,10 +28,10 @@ func (l *Linter) Lint(rootPath, pipelineDefinitionFileName string) error {
 	pipelinePaths, err := l.findPipelines(rootPath, pipelineDefinitionFileName)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return errors.New("the given pipeline path does not exist, please make sure you gave the right path")
+			return errors.New("the given pipelinePath path does not exist, please make sure you gave the right path")
 		}
 
-		return fmt.Errorf("error getting pipeline paths: %w", err)
+		return fmt.Errorf("error getting pipelinePath paths: %w", err)
 	}
 
 	if len(pipelinePaths) == 0 {
@@ -45,12 +45,15 @@ func (l *Linter) Lint(rootPath, pipelineDefinitionFileName string) error {
 		return err
 	}
 
-	for _, r := range l.rules {
-		err = r(pipelinePaths)
-		if err != nil {
-			return err
+	for _, pipelinePath := range pipelinePaths {
+		for _, r := range l.rules {
+			err = r(pipelinePath)
+			if err != nil {
+				return err
+			}
 		}
 	}
+
 
 	return nil
 }

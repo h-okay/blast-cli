@@ -10,6 +10,9 @@ import (
 func TestLinter_Lint(t *testing.T) {
 	t.Parallel()
 
+	errorRule := func(pipelinePath string) error { return errors.New("first rule failed") }
+	successRule := func(pipelinePath string) error { return nil }
+
 	type fields struct {
 		pipelineFinder func(rootPath string, pipelineDefinitionFileName string) ([]string, error)
 		rules          []Rule
@@ -94,16 +97,7 @@ func TestLinter_Lint(t *testing.T) {
 					require.Equal(t, "some-file-name", fileName)
 					return []string{"path/to/pipeline1", "path/to/pipeline2"}, nil
 				},
-				rules: []Rule{
-					func(pipelinePaths []string) error {
-						require.Equal(t, []string{"path/to/pipeline1", "path/to/pipeline2"}, pipelinePaths)
-						return errors.New("first rule failed")
-					},
-					func(pipelinePaths []string) error {
-						require.Equal(t, []string{"path/to/pipeline1", "path/to/pipeline2"}, pipelinePaths)
-						return nil
-					},
-				},
+				rules: []Rule{errorRule, successRule},
 			},
 			args: args{
 				rootPath:                   "some-root-path",
@@ -119,16 +113,7 @@ func TestLinter_Lint(t *testing.T) {
 					require.Equal(t, "some-file-name", fileName)
 					return []string{"path/to/pipeline1", "path/to/pipeline2"}, nil
 				},
-				rules: []Rule{
-					func(pipelinePaths []string) error {
-						require.Equal(t, []string{"path/to/pipeline1", "path/to/pipeline2"}, pipelinePaths)
-						return nil
-					},
-					func(pipelinePaths []string) error {
-						require.Equal(t, []string{"path/to/pipeline1", "path/to/pipeline2"}, pipelinePaths)
-						return errors.New("second rule failed")
-					},
-				},
+				rules: []Rule{successRule, errorRule},
 			},
 			args: args{
 				rootPath:                   "some-root-path",
@@ -144,16 +129,7 @@ func TestLinter_Lint(t *testing.T) {
 					require.Equal(t, "some-file-name", fileName)
 					return []string{"path/to/pipeline1", "path/to/pipeline2"}, nil
 				},
-				rules: []Rule{
-					func(pipelinePaths []string) error {
-						require.Equal(t, []string{"path/to/pipeline1", "path/to/pipeline2"}, pipelinePaths)
-						return nil
-					},
-					func(pipelinePaths []string) error {
-						require.Equal(t, []string{"path/to/pipeline1", "path/to/pipeline2"}, pipelinePaths)
-						return nil
-					},
-				},
+				rules: []Rule{successRule, successRule},
 			},
 			args: args{
 				rootPath:                   "some-root-path",

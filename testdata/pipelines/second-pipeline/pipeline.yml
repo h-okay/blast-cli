@@ -1,4 +1,4 @@
-id: first-pipeline
+name: first-pipeline
 schedule: ""
 default_args:
     owner: "some.user"
