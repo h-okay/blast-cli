@@ -8,7 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func readYaml(path string, out interface{}) error {
+func ReadYaml(path string, out interface{}) error {
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err

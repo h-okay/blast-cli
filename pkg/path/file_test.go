@@ -90,7 +90,7 @@ func Test_readYamlFileFromPath(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := readYaml(tt.args.path, tt.args.out)
+			err := ReadYaml(tt.args.path, tt.args.out)
 
 			if tt.wantErr {
 				require.Error(t, err)
