@@ -101,3 +101,96 @@ func Test_readYamlFileFromPath(t *testing.T) {
 		})
 	}
 }
+
+func TestExcludeItemsInDirectoryContainingFile(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		filePaths []string
+		file      string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "all sub-items in directory for task.yml are removed",
+			args: args{
+				filePaths: []string{
+					"pipeline/tasks/task1/task.yml",
+					"pipeline/tasks/task1/runfile.sh",
+					"pipeline/tasks/task1/some/nested/dir/code.py",
+					"pipeline/tasks/task1/some/nested/dir/another/task.yml",
+					"pipeline/tasks/task2/task1/code2.py",
+					"pipeline/tasks/task3.py",
+				},
+				file: "task.yml",
+			},
+			want: []string{
+				"pipeline/tasks/task1/task.yml",
+				"pipeline/tasks/task2/task1/code2.py",
+				"pipeline/tasks/task3.py",
+			},
+		},
+		{
+			name: "empty list is handled fine",
+			args: args{
+				filePaths: []string{},
+				file:      "task.yml",
+			},
+			want: []string{},
+		},
+		{
+			name: "only task.yml works fine",
+			args: args{
+				filePaths: []string{"path/to/task.yml"},
+				file:      "task.yml",
+			},
+			want: []string{"path/to/task.yml"},
+		},
+		{
+			name: "no task.yml is also okay",
+			args: args{
+				filePaths: []string{
+					"pipeline/tasks/task1/runfile.sh",
+					"pipeline/tasks/task1/some/nested/dir/code.py",
+					"pipeline/tasks/task2/task1/code2.py",
+					"pipeline/tasks/task3.py",
+				},
+				file: "task.yml",
+			},
+			want: []string{
+				"pipeline/tasks/task1/runfile.sh",
+				"pipeline/tasks/task1/some/nested/dir/code.py",
+				"pipeline/tasks/task2/task1/code2.py",
+				"pipeline/tasks/task3.py",
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := ExcludeSubItemsInDirectoryContainingFile(tt.args.filePaths, tt.args.file)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func BenchmarkExcludeItemsInDirectoryContainingFile(b *testing.B) {
+	filePaths := []string{
+		"pipeline/tasks/task1/task.yml",
+		"pipeline/tasks/task1/runfile.sh",
+		"pipeline/tasks/task1/some/nested/dir/code.py",
+		"pipeline/tasks/task1/some/nested/dir/another/task.yml",
+		"pipeline/tasks/task2/task1/code2.py",
+		"pipeline/tasks/task3.py",
+	}
+	file := "task.yml"
+
+	for i := 0; i < b.N; i++ {
+		ExcludeSubItemsInDirectoryContainingFile(filePaths, file)
+	}
+}
