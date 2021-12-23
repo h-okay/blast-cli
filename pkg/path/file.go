@@ -1,7 +1,7 @@
 package path
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
 	"io/ioutil"
 
 	"github.com/go-playground/validator/v10"
@@ -16,13 +16,13 @@ func ReadYaml(path string, out interface{}) error {
 
 	err = yaml.Unmarshal(buf, out)
 	if err != nil {
-		return fmt.Errorf("cannot read the pipeline definition at '%s': %v", path, err)
+		return errors.Wrapf(err, "cannot read the pipeline definition at '%s'", path)
 	}
 
 	validate := validator.New()
 	err = validate.Struct(out)
 	if err != nil {
-		return fmt.Errorf("cannot validate the YAML file at '%s': %v", path, err)
+		return errors.Wrapf(err, "cannot validate the YAML file at '%s'", path)
 	}
 
 	return nil
