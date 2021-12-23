@@ -44,10 +44,15 @@ func CreateTaskFromFileComments(filePath string) (*Task, error) {
 		return nil, fmt.Errorf("failed to read file %s: %s", filePath, err)
 	}
 
+	absFilePath, err := filepath.Abs(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path for file %s: %s", filePath, err)
+	}
+
 	task := Task{
 		ExecutableFile: ExecutableFile{
 			Name: filepath.Base(filePath),
-			Path: filePath,
+			Path: absFilePath,
 		},
 		Parameters:  make(map[string]string),
 		Connections: make(map[string]string),

@@ -1,6 +1,7 @@
 package pipeline_test
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
@@ -10,6 +11,11 @@ import (
 func Test_createTaskFromFile(t *testing.T) {
 	type args struct {
 		filePath string
+	}
+
+	absPath := func(path string) string {
+		absolutePath, _ := filepath.Abs(path)
+		return absolutePath
 	}
 
 	tests := []struct {
@@ -36,7 +42,7 @@ func Test_createTaskFromFile(t *testing.T) {
 				Type:        "bq.sql",
 				ExecutableFile: pipeline.ExecutableFile{
 					Name: "test.sql",
-					Path: "testdata/comments/test.sql",
+					Path: absPath("testdata/comments/test.sql"),
 				},
 				Parameters: map[string]string{
 					"param1": "first-parameter",
@@ -52,7 +58,7 @@ func Test_createTaskFromFile(t *testing.T) {
 		{
 			name: "Python file parsed",
 			args: args{
-				filePath: "testdata/comments/test.py",
+				filePath: absPath("testdata/comments/test.py"), // giving an absolute path here tests the case of double-absolute paths
 			},
 			want: &pipeline.Task{
 				Name:        "some-python-task",
@@ -60,7 +66,7 @@ func Test_createTaskFromFile(t *testing.T) {
 				Type:        "bq.sql",
 				ExecutableFile: pipeline.ExecutableFile{
 					Name: "test.py",
-					Path: "testdata/comments/test.py",
+					Path: absPath("testdata/comments/test.py"),
 				},
 				Parameters: map[string]string{
 					"param1": "first-parameter",
