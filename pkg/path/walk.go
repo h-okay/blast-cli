@@ -29,7 +29,6 @@ func GetPipelinePaths(root, pipelineDefinitionFile string) ([]string, error) {
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("error walking directory: %w", err)
 	}
@@ -57,7 +56,6 @@ func GetAllFilesRecursive(root string) ([]string, error) {
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("error walking directory: %w", err)
 	}

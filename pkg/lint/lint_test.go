@@ -2,9 +2,10 @@ package lint
 
 import (
 	"errors"
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestLinter_Lint(t *testing.T) {
@@ -151,7 +152,6 @@ func TestLinter_Lint(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-
 		})
 	}
 }

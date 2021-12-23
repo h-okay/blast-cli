@@ -2,9 +2,10 @@ package path
 
 import (
 	"fmt"
+	"io/ioutil"
+
 	"github.com/go-playground/validator/v10"
 	"gopkg.in/yaml.v3"
-	"io/ioutil"
 )
 
 func readYaml(path string, out interface{}) error {

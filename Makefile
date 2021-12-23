@@ -33,10 +33,10 @@ format: tools
 	@go vet ./...
 
 	@echo "$(OK_COLOR)>> [$@] gci: running$(NO_COLOR)"
-	@gci -w cmd pkg
+	@gci -w pkg
 
 	@echo "$(OK_COLOR)>> [$@] gofumpt: running$(NO_COLOR)"
-	@gofumpt -w cmd pkg
+	@gofumpt -w pkg
 
 tools:
 	@if ! command -v gci > /dev/null ; then \

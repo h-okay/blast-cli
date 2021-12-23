@@ -1,8 +1,9 @@
 package path
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 type parents struct {

@@ -54,7 +54,6 @@ func (l *Linter) Lint(rootPath, pipelineDefinitionFileName string) error {
 		}
 	}
 
-
 	return nil
 }
 
