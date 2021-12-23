@@ -42,7 +42,7 @@ func Test_readYamlFileFromPath(t *testing.T) {
 		{
 			name: "read valid yaml file from path",
 			args: args{
-				path: "../../testdata/yamlreader/successful-validation.yml",
+				path: "testdata/yamlreader/successful-validation.yml",
 				out:  &exampleData{},
 			},
 			expectedOutput: &exampleData{
@@ -64,7 +64,7 @@ func Test_readYamlFileFromPath(t *testing.T) {
 		{
 			name: "read yaml file from path",
 			args: args{
-				path: "../../testdata/yamlreader/no-validation.yml",
+				path: "testdata/yamlreader/no-validation.yml",
 				out:  &exampleData{},
 			},
 			wantErr: true,
@@ -72,14 +72,14 @@ func Test_readYamlFileFromPath(t *testing.T) {
 		{
 			name: "file does not exist",
 			args: args{
-				path: "../../testdata/yamlreader/some-file-that-doesnt-exist",
+				path: "testdata/yamlreader/some-file-that-doesnt-exist",
 			},
 			wantErr: true,
 		},
 		{
 			name: "invalid yaml file",
 			args: args{
-				path: "../../testdata/yamlreader/invalid.yml",
+				path: "testdata/yamlreader/invalid.yml",
 			},
 			wantErr: true,
 		},
