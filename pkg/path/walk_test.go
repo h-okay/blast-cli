@@ -29,7 +29,7 @@ func TestGetPipelinePaths(t *testing.T) {
 			name:                   "pipelines are found",
 			root:                   testPipelinePath,
 			pipelineDefinitionFile: "pipeline.yml",
-			want: []string{firstPipelineAbsolute, secondPipelineAbsolute,},
+			want:                   []string{firstPipelineAbsolute, secondPipelineAbsolute},
 		},
 		{
 			name:                   "filepath errors are propagated",
@@ -48,6 +48,64 @@ func TestGetPipelinePaths(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetPipelinePaths() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGetAllFilesRecursive(t *testing.T) {
+	type args struct {
+		root string
+	}
+
+	mp := func(path string) string {
+		abs, err := filepath.Abs(testPipelinePath)
+		if err != nil {
+			t.Fatal()
+		}
+		return filepath.Join(abs, path)
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "all files are found",
+			args: args{
+				root: testPipelinePath,
+			},
+			want: []string{
+				mp("first-pipeline/pipeline.yml"),
+				mp("first-pipeline/tasks/helloworld/hello.sh"),
+				mp("first-pipeline/tasks/helloworld/task.yml"),
+				mp("first-pipeline/tasks/test1/task.yml"),
+				mp("first-pipeline/tasks/test2/task.yml"),
+				mp("second-pipeline/pipeline.yml"),
+				mp("second-pipeline/tasks/test1/task.yml"),
+				mp("second-pipeline/tasks/test2/task.yml"),
+			},
+		},
+		{
+			name: "filepath errors are propagated",
+			args: args{
+				root: "some-random-directory-name-that-does-not-exist",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetAllFilesRecursive(tt.args.root)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			} else {
+				require.NoError(t, err)
 			}
 
 			require.Equal(t, tt.want, got)
