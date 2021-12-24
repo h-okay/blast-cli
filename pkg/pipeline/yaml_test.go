@@ -1,10 +1,11 @@
 package pipeline_test
 
 import (
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
-	"github.com/stretchr/testify/require"
 	"path/filepath"
 	"testing"
+
+	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCreateTaskFromYamlDefinition(t *testing.T) {
@@ -100,6 +101,26 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 					Name: "hello.sh",
 					Path: absPath("testdata/yaml/task-with-toplevel-runfile/hello.sh"),
 				},
+				Parameters: map[string]string{
+					"param1": "value1",
+					"param2": "value2",
+				},
+				Connections: map[string]string{
+					"conn1": "first connection",
+					"conn2": "second connection",
+				},
+				DependsOn: []string{"gcs-to-bq"},
+			},
+		},
+		{
+			name: "the ones with missing runfile are ignored",
+			args: args{
+				filePath: "testdata/yaml/task-with-no-runfile/task.yml",
+			},
+			want: &pipeline.Task{
+				Name:        "hello-world",
+				Description: "This is a hello world task",
+				Type:        "bash",
 				Parameters: map[string]string{
 					"param1": "value1",
 					"param2": "value2",

@@ -1,16 +1,17 @@
 package pipeline
 
 import (
+	"path/filepath"
+
 	"github.com/datablast-analytics/blast-cli/pkg/path"
 	"github.com/pkg/errors"
-	"path/filepath"
 )
 
 type taskDefinition struct {
 	Name        string            `yaml:"name" validate:"required,min=1"`
 	Description string            `yaml:"description"`
 	Type        string            `yaml:"type" validate:"required,min=1"`
-	RunFile     string            `yaml:"run" validate:"min=1"`
+	RunFile     string            `yaml:"run"`
 	Depends     []string          `yaml:"depends"`
 	Parameters  map[string]string `yaml:"parameters"`
 	Connections map[string]string `yaml:"connections"`
@@ -28,10 +29,17 @@ func CreateTaskFromYamlDefinition(filePath string) (*Task, error) {
 		return nil, errors.Wrap(err, "unable to read the task definition file")
 	}
 
-	relativeRunFilePath := filepath.Join(filepath.Dir(filePath), definition.RunFile)
-	absRunFile, err := filepath.Abs(relativeRunFilePath)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to resolve the absolute run file path: %s", definition.RunFile)
+	executableFile := ExecutableFile{}
+	if definition.RunFile != "" {
+
+		relativeRunFilePath := filepath.Join(filepath.Dir(filePath), definition.RunFile)
+		absRunFile, err := filepath.Abs(relativeRunFilePath)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to resolve the absolute run file path: %s", definition.RunFile)
+		}
+
+		executableFile.Name = filepath.Base(definition.RunFile)
+		executableFile.Path = absRunFile
 	}
 
 	task := Task{
@@ -41,10 +49,7 @@ func CreateTaskFromYamlDefinition(filePath string) (*Task, error) {
 		Parameters:  definition.Parameters,
 		Connections: definition.Connections,
 		DependsOn:   definition.Depends,
-		ExecutableFile: ExecutableFile{
-			Name: filepath.Base(definition.RunFile),
-			Path: absRunFile,
-		},
+		ExecutableFile: executableFile,
 	}
 
 	return &task, nil
