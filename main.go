@@ -7,6 +7,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/urfave/cli/v2"
 	"os"
+	"time"
 )
 
 const (
@@ -18,11 +19,14 @@ const (
 
 func main() {
 	app := &cli.App{
+		Name: "blast",
+		Usage: "The CLI used for managing Blast-powered data pipelines",
+		Compiled: time.Now(),
 		Commands: []*cli.Command{
 			{
-				Name:    "lint",
-				Aliases: []string{"l"},
-				Usage:   "lint the blast pipeline configuration",
+				Name:    "validate",
+				Usage:  "validate the blast pipeline configuration for all the pipelines in a given directory",
+				ArgsUsage: "[path to pipelines]",
 				Action: func(c *cli.Context) error {
 					builderConfig := pipeline.BuilderConfig{
 						PipelineFileName:   pipelineDefinitionFile,
