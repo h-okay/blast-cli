@@ -1,8 +1,9 @@
 package lint
 
 import (
-	"errors"
 	"fmt"
+	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/pkg/errors"
 	"os"
 	"sort"
 	"strings"
@@ -10,16 +11,22 @@ import (
 
 type pipelineFinder func(root, pipelineDefinitionFile string) ([]string, error)
 
-type Rule func(pipelinePath string) error
+type pipelineBuilder interface {
+	CreatePipelineFromPath(pathToPipeline string) (*pipeline.Pipeline, error)
+}
+
+type Rule func(pipeline *pipeline.Pipeline) error
 
 type Linter struct {
 	findPipelines pipelineFinder
+	builder       pipelineBuilder
 	rules         []Rule
 }
 
-func NewLinter(findPipelines pipelineFinder, rules []Rule) *Linter {
+func NewLinter(findPipelines pipelineFinder, builder pipelineBuilder, rules []Rule) *Linter {
 	return &Linter{
 		findPipelines: findPipelines,
+		builder:       builder,
 		rules:         rules,
 	}
 }
@@ -28,7 +35,7 @@ func (l *Linter) Lint(rootPath, pipelineDefinitionFileName string) error {
 	pipelinePaths, err := l.findPipelines(rootPath, pipelineDefinitionFileName)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return errors.New("the given pipelinePath path does not exist, please make sure you gave the right path")
+			return errors.New("the given pipeline path does not exist, please make sure you gave the right path")
 		}
 
 		return fmt.Errorf("error getting pipelinePath paths: %w", err)
@@ -45,9 +52,22 @@ func (l *Linter) Lint(rootPath, pipelineDefinitionFileName string) error {
 		return err
 	}
 
+	pipelines := make([]*pipeline.Pipeline, len(pipelinePaths))
 	for _, pipelinePath := range pipelinePaths {
-		for _, r := range l.rules {
-			err = r(pipelinePath)
+		p, err := l.builder.CreatePipelineFromPath(pipelinePath)
+		if err != nil {
+			return errors.Wrapf(err, "error creating pipeline from path '%s'", pipelinePath)
+		}
+		pipelines = append(pipelines, p)
+	}
+
+	return l.lint(pipelines)
+}
+
+func (l *Linter) lint(pipelines []*pipeline.Pipeline) error {
+	for _, p := range pipelines {
+		for _, rule := range l.rules {
+			err := rule(p)
 			if err != nil {
 				return err
 			}

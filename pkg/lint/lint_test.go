@@ -2,21 +2,33 @@ package lint
 
 import (
 	"errors"
+	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+type mockPipelineBuilder struct {
+	mock.Mock
+}
+
+func (p *mockPipelineBuilder) CreatePipelineFromPath(pathToPipeline string) (*pipeline.Pipeline, error) {
+	args := p.Called(pathToPipeline)
+	return args.Get(0).(*pipeline.Pipeline), args.Error(1)
+}
 
 func TestLinter_Lint(t *testing.T) {
 	t.Parallel()
 
-	errorRule := func(pipelinePath string) error { return errors.New("first rule failed") }
-	successRule := func(pipelinePath string) error { return nil }
+	errorRule := func(p *pipeline.Pipeline) error { return errors.New("first rule failed") }
+	successRule := func(p *pipeline.Pipeline) error { return nil }
 
 	type fields struct {
-		pipelineFinder func(rootPath string, pipelineDefinitionFileName string) ([]string, error)
-		rules          []Rule
+		pipelineFinder   func(rootPath string, pipelineDefinitionFileName string) ([]string, error)
+		setupBuilderMock func(m *mockPipelineBuilder)
+		rules            []Rule
 	}
 
 	type args struct {
@@ -98,6 +110,12 @@ func TestLinter_Lint(t *testing.T) {
 					require.Equal(t, "some-file-name", fileName)
 					return []string{"path/to/pipeline1", "path/to/pipeline2"}, nil
 				},
+				setupBuilderMock: func(m *mockPipelineBuilder) {
+					m.On("CreatePipelineFromPath", "path/to/pipeline1").
+						Return(&pipeline.Pipeline{}, nil)
+					m.On("CreatePipelineFromPath", "path/to/pipeline2").
+						Return(&pipeline.Pipeline{}, nil)
+				},
 				rules: []Rule{errorRule, successRule},
 			},
 			args: args{
@@ -113,6 +131,12 @@ func TestLinter_Lint(t *testing.T) {
 					require.Equal(t, "some-root-path", root)
 					require.Equal(t, "some-file-name", fileName)
 					return []string{"path/to/pipeline1", "path/to/pipeline2"}, nil
+				},
+				setupBuilderMock: func(m *mockPipelineBuilder) {
+					m.On("CreatePipelineFromPath", "path/to/pipeline1").
+						Return(&pipeline.Pipeline{}, nil)
+					m.On("CreatePipelineFromPath", "path/to/pipeline2").
+						Return(&pipeline.Pipeline{}, nil)
 				},
 				rules: []Rule{successRule, errorRule},
 			},
@@ -130,6 +154,12 @@ func TestLinter_Lint(t *testing.T) {
 					require.Equal(t, "some-file-name", fileName)
 					return []string{"path/to/pipeline1", "path/to/pipeline2"}, nil
 				},
+				setupBuilderMock: func(m *mockPipelineBuilder) {
+					m.On("CreatePipelineFromPath", "path/to/pipeline1").
+						Return(&pipeline.Pipeline{}, nil)
+					m.On("CreatePipelineFromPath", "path/to/pipeline2").
+						Return(&pipeline.Pipeline{}, nil)
+				},
 				rules: []Rule{successRule, successRule},
 			},
 			args: args{
@@ -144,7 +174,15 @@ func TestLinter_Lint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			l := &Linter{findPipelines: tt.fields.pipelineFinder, rules: tt.fields.rules}
+			m := new(mockPipelineBuilder)
+			if tt.fields.setupBuilderMock != nil {
+				tt.fields.setupBuilderMock(m)
+			}
+
+			l := &Linter{
+				findPipelines: tt.fields.pipelineFinder,
+				builder:       m,
+				rules:         tt.fields.rules}
 
 			err := l.Lint(tt.args.rootPath, tt.args.pipelineDefinitionFileName)
 			if tt.wantErr {
@@ -152,6 +190,8 @@ func TestLinter_Lint(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+
+			m.AssertExpectations(t)
 		})
 	}
 }

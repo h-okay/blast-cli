@@ -3,24 +3,27 @@ package main
 import (
 	"github.com/datablast-analytics/blast-cli/pkg/lint"
 	"github.com/datablast-analytics/blast-cli/pkg/path"
-	"log"
-	"os"
-
+	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/fatih/color"
 	"github.com/urfave/cli/v2"
+	"os"
 )
 
 const (
 	defaultPipelinePath    = "."
 	pipelineDefinitionFile = "pipeline.yml"
+	defaultTasksPath       = "tasks"
 )
 
 func main() {
-	linter := lint.NewLinter(path.GetPipelinePaths, []lint.Rule{})
+	builder := pipeline.NewBuilder(defaultTasksPath, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
+	linter := lint.NewLinter(path.GetPipelinePaths, builder, []lint.Rule{})
+
 	app := &cli.App{
 		Commands: []*cli.Command{
 			{
 				Name:    "lint",
-				Aliases: []string{"a"},
+				Aliases: []string{"l"},
 				Usage:   "lint the blast pipeline configuration",
 				Action: func(c *cli.Context) error {
 					rootPath := c.Args().Get(0)
@@ -28,14 +31,22 @@ func main() {
 						rootPath = defaultPipelinePath
 					}
 
-					return linter.Lint(rootPath, pipelineDefinitionFile)
+					err := linter.Lint(rootPath, pipelineDefinitionFile)
+
+					if err != nil {
+						printer := color.New(color.FgRed, color.Bold)
+						printer.Printf("An error occurred while linting the pipelines: %v\n", err)
+						return cli.Exit("", 1)
+					}
+
+					printer := color.New(color.FgGreen, color.Bold)
+					printer.Println("The pipelines have successfully been linted.")
+
+					return nil
 				},
 			},
 		},
 	}
 
-	err := app.Run(os.Args)
-	if err != nil {
-		log.Fatal(err)
-	}
+	_ = app.Run(os.Args)
 }
