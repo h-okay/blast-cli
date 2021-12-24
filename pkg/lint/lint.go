@@ -2,11 +2,12 @@ package lint
 
 import (
 	"fmt"
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
-	"github.com/pkg/errors"
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/pkg/errors"
 )
 
 type pipelineFinder func(root, pipelineDefinitionFile string) ([]string, error)

@@ -2,10 +2,10 @@ package lint
 
 import (
 	"errors"
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"os"
 	"testing"
 
+	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -182,7 +182,8 @@ func TestLinter_Lint(t *testing.T) {
 			l := &Linter{
 				findPipelines: tt.fields.pipelineFinder,
 				builder:       m,
-				rules:         tt.fields.rules}
+				rules:         tt.fields.rules,
+			}
 
 			err := l.Lint(tt.args.rootPath, tt.args.pipelineDefinitionFileName)
 			if tt.wantErr {
