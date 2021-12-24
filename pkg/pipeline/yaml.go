@@ -43,12 +43,12 @@ func CreateTaskFromYamlDefinition(filePath string) (*Task, error) {
 	}
 
 	task := Task{
-		Name:        definition.Name,
-		Description: definition.Description,
-		Type:        definition.Type,
-		Parameters:  definition.Parameters,
-		Connections: definition.Connections,
-		DependsOn:   definition.Depends,
+		Name:           definition.Name,
+		Description:    definition.Description,
+		Type:           definition.Type,
+		Parameters:     definition.Parameters,
+		Connections:    definition.Connections,
+		DependsOn:      definition.Depends,
 		ExecutableFile: executableFile,
 	}
 
