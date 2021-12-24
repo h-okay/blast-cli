@@ -32,6 +32,13 @@ func Test_createTaskFromFile(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "existing file with no comments is skipped",
+			args: args{
+				filePath: "testdata/comments/nocomments.py",
+			},
+			wantErr: false,
+		},
+		{
 			name: "SQL file parsed",
 			args: args{
 				filePath: "testdata/comments/test.sql",

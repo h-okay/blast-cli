@@ -44,6 +44,10 @@ func CreateTaskFromFileComments(filePath string) (*Task, error) {
 		return nil, fmt.Errorf("failed to read file %s: %s", filePath, err)
 	}
 
+	if len(commentRows) == 0 {
+		return nil, nil
+	}
+
 	absFilePath, err := filepath.Abs(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get absolute path for file %s: %s", filePath, err)
