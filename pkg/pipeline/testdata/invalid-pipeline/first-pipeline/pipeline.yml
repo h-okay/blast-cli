@@ -1,0 +1,8 @@
+name: first-pipeline
+schedule: ""
+defaultConnections:
+  slack: "slack-connection"
+  gcpConnectionId: "gcp-connection-id-here"
+defaultParameters:
+  param1: "value1"
+  param2: "value2"

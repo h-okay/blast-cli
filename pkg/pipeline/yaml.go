@@ -8,9 +8,9 @@ import (
 )
 
 type taskDefinition struct {
-	Name        string            `yaml:"name" validate:"required,min=1"`
+	Name        string            `yaml:"name"`
 	Description string            `yaml:"description"`
-	Type        string            `yaml:"type" validate:"required,min=1"`
+	Type        string            `yaml:"type"`
 	RunFile     string            `yaml:"run"`
 	Depends     []string          `yaml:"depends"`
 	Parameters  map[string]string `yaml:"parameters"`

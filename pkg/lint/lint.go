@@ -2,6 +2,7 @@ package lint
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"os"
 	"sort"
 	"strings"
@@ -16,66 +17,106 @@ type pipelineBuilder interface {
 	CreatePipelineFromPath(pathToPipeline string) (*pipeline.Pipeline, error)
 }
 
-type Rule func(pipeline *pipeline.Pipeline) error
+type Issue struct {
+	Task        *pipeline.Task
+	Description string
+}
+
+type Rule struct {
+	Name        string
+	Description string
+	Checker     func(pipeline *pipeline.Pipeline) ([]*Issue, error)
+}
 
 type Linter struct {
 	findPipelines pipelineFinder
 	builder       pipelineBuilder
-	rules         []Rule
+	rules         []*Rule
+	logger        *zap.SugaredLogger
 }
 
-func NewLinter(findPipelines pipelineFinder, builder pipelineBuilder, rules []Rule) *Linter {
+func NewLinter(findPipelines pipelineFinder, builder pipelineBuilder, rules []*Rule, logger *zap.SugaredLogger) *Linter {
 	return &Linter{
 		findPipelines: findPipelines,
 		builder:       builder,
 		rules:         rules,
+		logger:        logger,
 	}
 }
 
-func (l *Linter) Lint(rootPath, pipelineDefinitionFileName string) error {
+func (l *Linter) Lint(rootPath, pipelineDefinitionFileName string) (*PipelineAnalysisResult, error) {
 	pipelinePaths, err := l.findPipelines(rootPath, pipelineDefinitionFileName)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return errors.New("the given pipeline path does not exist, please make sure you gave the right path")
+			return nil, errors.New("the given pipeline path does not exist, please make sure you gave the right path")
 		}
 
-		return fmt.Errorf("error getting pipelinePath paths: %w", err)
+		return nil, fmt.Errorf("error getting pipelinePath paths: %w", err)
 	}
 
 	if len(pipelinePaths) == 0 {
-		return fmt.Errorf("no pipelines found in path '%s'", rootPath)
+		return nil, fmt.Errorf("no pipelines found in path '%s'", rootPath)
 	}
 
+	l.logger.Debugf("found %d pipelines", len(pipelinePaths))
 	sort.Strings(pipelinePaths)
 
 	err = ensureNoNestedPipelines(pipelinePaths)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	pipelines := make([]*pipeline.Pipeline, len(pipelinePaths))
+	l.logger.Debug("no nested pipelines found, moving forward")
+	pipelines := make([]*pipeline.Pipeline, 0, len(pipelinePaths))
 	for _, pipelinePath := range pipelinePaths {
+		l.logger.Debugf("creating pipeline from path '%s'", pipelinePath)
+
 		p, err := l.builder.CreatePipelineFromPath(pipelinePath)
 		if err != nil {
-			return errors.Wrapf(err, "error creating pipeline from path '%s'", pipelinePath)
+			return nil, errors.Wrapf(err, "error creating pipeline from path '%s'", pipelinePath)
 		}
 		pipelines = append(pipelines, p)
 	}
 
+	l.logger.Debugf("constructed %d pipelines", len(pipelines))
 	return l.lint(pipelines)
 }
 
-func (l *Linter) lint(pipelines []*pipeline.Pipeline) error {
+type PipelineAnalysisResult struct {
+	Issues []*PipelineIssues
+}
+
+type PipelineIssues struct {
+	Pipeline *pipeline.Pipeline
+	Issues   map[*Rule][]*Issue
+}
+
+func (l *Linter) lint(pipelines []*pipeline.Pipeline) (*PipelineAnalysisResult, error) {
+	result := &PipelineAnalysisResult{}
+
 	for _, p := range pipelines {
+		pipelineResult := &PipelineIssues{
+			Pipeline: p,
+			Issues:   make(map[*Rule][]*Issue),
+		}
+
 		for _, rule := range l.rules {
-			err := rule(p)
+			l.logger.Debugf("checking rule '%s' for pipeline '%s'", rule.Name, p.Name)
+
+			issues, err := rule.Checker(p)
 			if err != nil {
-				return err
+				return nil, err
+			}
+
+			if len(issues) > 0 {
+				pipelineResult.Issues[rule] = issues
 			}
 		}
+
+		result.Issues = append(result.Issues, pipelineResult)
 	}
 
-	return nil
+	return result, nil
 }
 
 func ensureNoNestedPipelines(pipelinePaths []string) error {

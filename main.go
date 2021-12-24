@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"github.com/datablast-analytics/blast-cli/pkg/lint"
 	"github.com/datablast-analytics/blast-cli/pkg/path"
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/fatih/color"
 	"github.com/urfave/cli/v2"
+	"go.uber.org/zap"
 	"os"
 	"time"
 )
@@ -17,15 +19,33 @@ const (
 	defaultTaskFileName    = "task.yml"
 )
 
+var (
+	validationRules = []*lint.Rule{
+		{
+			Name:        "name-exists",
+			Description: "",
+			Checker:     lint.EnsureNameExists,
+		},
+	}
+)
+
 func main() {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic(err)
+	}
+
+	defer logger.Sync() // flushes buffer, if any
+	sugaredLogger := logger.Sugar()
+
 	app := &cli.App{
-		Name: "blast",
-		Usage: "The CLI used for managing Blast-powered data pipelines",
+		Name:     "blast",
+		Usage:    "The CLI used for managing Blast-powered data pipelines",
 		Compiled: time.Now(),
 		Commands: []*cli.Command{
 			{
-				Name:    "validate",
-				Usage:  "validate the blast pipeline configuration for all the pipelines in a given directory",
+				Name:      "validate",
+				Usage:     "validate the blast pipeline configuration for all the pipelines in a given directory",
 				ArgsUsage: "[path to pipelines]",
 				Action: func(c *cli.Context) error {
 					builderConfig := pipeline.BuilderConfig{
@@ -34,13 +54,13 @@ func main() {
 						TasksFileName:      defaultTaskFileName,
 					}
 					builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
-					linter := lint.NewLinter(path.GetPipelinePaths, builder, []lint.Rule{})
+					linter := lint.NewLinter(path.GetPipelinePaths, builder, validationRules, sugaredLogger)
 
 					rootPath := c.Args().Get(0)
 					if rootPath == "" {
 						rootPath = defaultPipelinePath
 					}
-					err := linter.Lint(rootPath, pipelineDefinitionFile)
+					result, err := linter.Lint(rootPath, pipelineDefinitionFile)
 
 					if err != nil {
 						printer := color.New(color.FgRed, color.Bold)
@@ -48,8 +68,29 @@ func main() {
 						return cli.Exit("", 1)
 					}
 
-					printer := color.New(color.FgGreen, color.Bold)
-					printer.Println("The pipelines have successfully been linted.")
+					successPrinter := color.New(color.FgGreen, color.Bold)
+
+					for _, pipeline := range result.Issues {
+						fmt.Println()
+						issuePrinter := color.New(color.FgRed, color.Bold)
+
+						color.Yellow("Pipeline: %s", pipeline.Pipeline.Name)
+
+						if len(pipeline.Issues) == 0 {
+							successPrinter.Println("  No issues found")
+							continue
+						}
+
+						for rule, issues := range pipeline.Issues {
+							for _, issue := range issues {
+								issuePrinter.Printf("  %s: %s - %s\n", rule.Name, issue.Task.Name, issue.Description)
+							}
+						}
+
+					}
+
+
+
 
 					return nil
 				},
