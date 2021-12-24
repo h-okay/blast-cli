@@ -13,12 +13,10 @@ const (
 	defaultPipelinePath    = "."
 	pipelineDefinitionFile = "pipeline.yml"
 	defaultTasksPath       = "tasks"
+	defaultTaskFileName    = "task.yml"
 )
 
 func main() {
-	builder := pipeline.NewBuilder(defaultTasksPath, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
-	linter := lint.NewLinter(path.GetPipelinePaths, builder, []lint.Rule{})
-
 	app := &cli.App{
 		Commands: []*cli.Command{
 			{
@@ -26,11 +24,18 @@ func main() {
 				Aliases: []string{"l"},
 				Usage:   "lint the blast pipeline configuration",
 				Action: func(c *cli.Context) error {
+					builderConfig := pipeline.BuilderConfig{
+						PipelineFileName:   pipelineDefinitionFile,
+						TasksDirectoryName: defaultTasksPath,
+						TasksFileName:      defaultTaskFileName,
+					}
+					builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
+					linter := lint.NewLinter(path.GetPipelinePaths, builder, []lint.Rule{})
+
 					rootPath := c.Args().Get(0)
 					if rootPath == "" {
 						rootPath = defaultPipelinePath
 					}
-
 					err := linter.Lint(rootPath, pipelineDefinitionFile)
 
 					if err != nil {

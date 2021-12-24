@@ -146,7 +146,14 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			p := pipeline.NewBuilder(tt.fields.tasksDirectoryName, tt.fields.yamlTaskCreator, tt.fields.commentTaskCreator)
+
+			builderConfig := pipeline.BuilderConfig{
+				PipelineFileName:   "pipeline.yml",
+				TasksDirectoryName: tt.fields.tasksDirectoryName,
+				TasksFileName:      "task.yml",
+			}
+
+			p := pipeline.NewBuilder(builderConfig, tt.fields.yamlTaskCreator, tt.fields.commentTaskCreator)
 
 			got, err := p.CreatePipelineFromPath(tt.args.pathToPipeline)
 			if tt.wantErr {

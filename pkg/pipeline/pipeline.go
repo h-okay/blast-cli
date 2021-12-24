@@ -9,8 +9,7 @@ import (
 )
 
 const (
-	pipelineFileName = "pipeline.yml"
-	taskFileName     = "task.yml"
+	taskFileName = "task.yml"
 )
 
 type schedule string
@@ -40,23 +39,29 @@ type Pipeline struct {
 
 type TaskCreator func(path string) (*Task, error)
 
+type BuilderConfig struct {
+	PipelineFileName   string
+	TasksDirectoryName string
+	TasksFileName      string
+}
+
 type builder struct {
-	tasksDirectoryName string
+	config             BuilderConfig
 	yamlTaskCreator    TaskCreator
 	commentTaskCreator TaskCreator
 }
 
-func NewBuilder(tasksDirectoryName string, yamlTaskCreator TaskCreator, commentTaskCreator TaskCreator) *builder {
+func NewBuilder(config BuilderConfig, yamlTaskCreator TaskCreator, commentTaskCreator TaskCreator) *builder {
 	return &builder{
-		tasksDirectoryName: tasksDirectoryName,
+		config:             config,
 		yamlTaskCreator:    yamlTaskCreator,
 		commentTaskCreator: commentTaskCreator,
 	}
 }
 
 func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, error) {
-	pipelineFilePath := filepath.Join(pathToPipeline, pipelineFileName)
-	tasksPath := filepath.Join(pathToPipeline, p.tasksDirectoryName)
+	pipelineFilePath := filepath.Join(pathToPipeline, p.config.PipelineFileName)
+	tasksPath := filepath.Join(pathToPipeline, p.config.TasksDirectoryName)
 
 	var pipeline Pipeline
 	err := path.ReadYaml(pipelineFilePath, &pipeline)
@@ -69,10 +74,10 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		return nil, errors.Wrapf(err, "error listing Task files at '%s'", tasksPath)
 	}
 
-	taskFiles = path.ExcludeSubItemsInDirectoryContainingFile(taskFiles, taskFileName)
+	taskFiles = path.ExcludeSubItemsInDirectoryContainingFile(taskFiles, p.config.TasksFileName)
 	for _, file := range taskFiles {
 		creator := p.commentTaskCreator
-		if strings.HasSuffix(file, taskFileName) {
+		if strings.HasSuffix(file, p.config.TasksFileName) {
 			creator = p.yamlTaskCreator
 		}
 
