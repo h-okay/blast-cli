@@ -7,15 +7,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testPipelinePath = "../../testdata/pipelines"
+const testPipelinePath = "testdata/walk/pipelines"
 
 func TestGetPipelinePaths(t *testing.T) {
 	t.Parallel()
 
-	firstPipelineAbsolute, err := filepath.Abs("../../testdata/pipelines/first-pipeline")
+	firstPipelineAbsolute, err := filepath.Abs("testdata/walk/pipelines/first-pipeline")
 	require.NoError(t, err)
 
-	secondPipelineAbsolute, err := filepath.Abs("../../testdata/pipelines/second-pipeline")
+	secondPipelineAbsolute, err := filepath.Abs("testdata/walk/pipelines/second-pipeline")
 	require.NoError(t, err)
 
 	tests := []struct {
