@@ -70,18 +70,18 @@ func main() {
 
 					successPrinter := color.New(color.FgGreen, color.Bold)
 
-					for _, pipeline := range result.Issues {
+					for _, pipelineIssues := range result.Issues {
 						fmt.Println()
 						issuePrinter := color.New(color.FgRed, color.Bold)
 
-						color.Yellow("Pipeline: %s", pipeline.Pipeline.Name)
+						color.Yellow("Pipeline: %s", pipelineIssues.Pipeline.Name)
 
-						if len(pipeline.Issues) == 0 {
+						if len(pipelineIssues.Issues) == 0 {
 							successPrinter.Println("  No issues found")
 							continue
 						}
 
-						for rule, issues := range pipeline.Issues {
+						for rule, issues := range pipelineIssues.Issues {
 							for _, issue := range issues {
 								issuePrinter.Printf("  %s: %s - %s\n", rule.Name, issue.Task.Name, issue.Description)
 							}

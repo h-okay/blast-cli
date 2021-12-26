@@ -8,10 +8,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	taskFileName = "task.yml"
-)
-
 type schedule string
 
 type ExecutableFile struct {
