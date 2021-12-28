@@ -32,8 +32,9 @@ type Task struct {
 }
 
 type Pipeline struct {
-	Name               string            `yaml:"name" validate:"required"`
-	Schedule           schedule          `yaml:"schedule"`
+	Name               string   `yaml:"name" validate:"required"`
+	Schedule           schedule `yaml:"schedule"`
+	DefinitionFile     DefinitionFile
 	DefaultParameters  map[string]string `yaml:"defaultParameters"`
 	DefaultConnections map[string]string `yaml:"defaultConnections"`
 	Tasks              []*Task
@@ -69,6 +70,16 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 	err := path.ReadYaml(pipelineFilePath, &pipeline)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading pipeline file at '%s'", pipelineFilePath)
+	}
+
+	absPipelineFilePath, err := filepath.Abs(pipelineFilePath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error getting absolute path for pipeline file at '%s'", pipelineFilePath)
+	}
+
+	pipeline.DefinitionFile = DefinitionFile{
+		Name: filepath.Base(pipelineFilePath),
+		Path: absPipelineFilePath,
 	}
 
 	taskFiles, err := path.GetAllFilesRecursive(tasksPath)

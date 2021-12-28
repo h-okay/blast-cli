@@ -64,6 +64,10 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			want: &pipeline.Pipeline{
 				Name:     "first-pipeline",
 				Schedule: "",
+				DefinitionFile: pipeline.DefinitionFile{
+					Name: "pipeline.yml",
+					Path: absPath("testdata/pipeline/first-pipeline/pipeline.yml"),
+				},
 				DefaultParameters: map[string]string{
 					"param1": "value1",
 					"param2": "value2",
