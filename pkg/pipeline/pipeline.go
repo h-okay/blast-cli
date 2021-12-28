@@ -15,11 +15,17 @@ type ExecutableFile struct {
 	Path string
 }
 
+type DefinitionFile struct {
+	Name string
+	Path string
+}
+
 type Task struct {
 	Name           string
 	Description    string
 	Type           string
 	ExecutableFile ExecutableFile
+	DefinitionFile DefinitionFile
 	Parameters     map[string]string
 	Connections    map[string]string
 	DependsOn      []string
@@ -84,6 +90,11 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 
 		if task == nil {
 			continue
+		}
+
+		task.DefinitionFile = DefinitionFile{
+			Name: filepath.Base(file),
+			Path: file,
 		}
 
 		pipeline.Tasks = append(pipeline.Tasks, task)

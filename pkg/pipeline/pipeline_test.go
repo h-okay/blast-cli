@@ -81,6 +81,10 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 							Name: "hello.sh",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/task1/hello.sh"),
 						},
+						DefinitionFile: pipeline.DefinitionFile{
+							Name: "task.yml",
+							Path: absPath("testdata/pipeline/first-pipeline/tasks/task1/task.yml"),
+						},
 						Parameters: map[string]string{
 							"param1": "value1",
 							"param2": "value2",
@@ -99,12 +103,20 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 							"project_id":         "a-new-project-id",
 							"location":           "europe-west1",
 						},
+						DefinitionFile: pipeline.DefinitionFile{
+							Name: "task.yml",
+							Path: absPath("testdata/pipeline/first-pipeline/tasks/task2/task.yml"),
+						},
 					},
 					{
 						Name:        "some-python-task",
 						Description: "some description goes here",
 						Type:        "python",
 						ExecutableFile: pipeline.ExecutableFile{
+							Name: "test.py",
+							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
+						},
+						DefinitionFile: pipeline.DefinitionFile{
 							Name: "test.py",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
 						},
@@ -124,6 +136,10 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 						Description: "some description goes here",
 						Type:        "bq.sql",
 						ExecutableFile: pipeline.ExecutableFile{
+							Name: "test.sql",
+							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
+						},
+						DefinitionFile: pipeline.DefinitionFile{
 							Name: "test.sql",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
 						},
