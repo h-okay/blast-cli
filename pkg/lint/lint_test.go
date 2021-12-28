@@ -8,6 +8,7 @@ import (
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 type mockPipelineBuilder struct {
@@ -22,13 +23,18 @@ func (p *mockPipelineBuilder) CreatePipelineFromPath(pathToPipeline string) (*pi
 func TestLinter_Lint(t *testing.T) {
 	t.Parallel()
 
-	errorRule := func(p *pipeline.Pipeline) error { return errors.New("first rule failed") }
-	successRule := func(p *pipeline.Pipeline) error { return nil }
+	errorRule := &Rule{
+		Checker: func(p *pipeline.Pipeline) ([]*Issue, error) { return nil, errors.New("first rule failed") },
+	}
+
+	successRule := &Rule{
+		Checker: func(p *pipeline.Pipeline) ([]*Issue, error) { return nil, nil },
+	}
 
 	type fields struct {
 		pipelineFinder   func(rootPath string, pipelineDefinitionFileName string) ([]string, error)
 		setupBuilderMock func(m *mockPipelineBuilder)
-		rules            []Rule
+		rules            []*Rule
 	}
 
 	type args struct {
@@ -116,7 +122,7 @@ func TestLinter_Lint(t *testing.T) {
 					m.On("CreatePipelineFromPath", "path/to/pipeline2").
 						Return(&pipeline.Pipeline{}, nil)
 				},
-				rules: []Rule{errorRule, successRule},
+				rules: []*Rule{errorRule, successRule},
 			},
 			args: args{
 				rootPath:                   "some-root-path",
@@ -138,7 +144,7 @@ func TestLinter_Lint(t *testing.T) {
 					m.On("CreatePipelineFromPath", "path/to/pipeline2").
 						Return(&pipeline.Pipeline{}, nil)
 				},
-				rules: []Rule{successRule, errorRule},
+				rules: []*Rule{successRule, errorRule},
 			},
 			args: args{
 				rootPath:                   "some-root-path",
@@ -160,7 +166,7 @@ func TestLinter_Lint(t *testing.T) {
 					m.On("CreatePipelineFromPath", "path/to/pipeline2").
 						Return(&pipeline.Pipeline{}, nil)
 				},
-				rules: []Rule{successRule, successRule},
+				rules: []*Rule{successRule, successRule},
 			},
 			args: args{
 				rootPath:                   "some-root-path",
@@ -179,13 +185,15 @@ func TestLinter_Lint(t *testing.T) {
 				tt.fields.setupBuilderMock(m)
 			}
 
+			logger := zap.NewNop()
 			l := &Linter{
 				findPipelines: tt.fields.pipelineFinder,
 				builder:       m,
 				rules:         tt.fields.rules,
+				logger:        logger.Sugar(),
 			}
 
-			err := l.Lint(tt.args.rootPath, tt.args.pipelineDefinitionFileName)
+			_, err := l.Lint(tt.args.rootPath, tt.args.pipelineDefinitionFileName)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {

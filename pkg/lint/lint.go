@@ -2,13 +2,13 @@ package lint
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"os"
 	"sort"
 	"strings"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 type pipelineFinder func(root, pipelineDefinitionFile string) ([]string, error)
