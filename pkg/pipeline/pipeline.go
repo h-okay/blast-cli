@@ -8,7 +8,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-type schedule string
+const (
+	CommentTask TaskDefinitionType = "comment"
+	YamlTask    TaskDefinitionType = "yaml"
+)
+
+type (
+	schedule           string
+	TaskDefinitionType string
+)
 
 type ExecutableFile struct {
 	Name string
@@ -18,6 +26,7 @@ type ExecutableFile struct {
 type DefinitionFile struct {
 	Name string
 	Path string
+	Type TaskDefinitionType
 }
 
 type Task struct {
@@ -89,9 +98,11 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 
 	taskFiles = path.ExcludeSubItemsInDirectoryContainingFile(taskFiles, p.config.TasksFileName)
 	for _, file := range taskFiles {
+		isSeparateDefinitionFile := false
 		creator := p.commentTaskCreator
 		if strings.HasSuffix(file, p.config.TasksFileName) {
 			creator = p.yamlTaskCreator
+			isSeparateDefinitionFile = true
 		}
 
 		task, err := creator(file)
@@ -103,9 +114,11 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 			continue
 		}
 
-		task.DefinitionFile = DefinitionFile{
-			Name: filepath.Base(file),
-			Path: file,
+		task.DefinitionFile.Name = filepath.Base(file)
+		task.DefinitionFile.Path = file
+		task.DefinitionFile.Type = CommentTask
+		if isSeparateDefinitionFile {
+			task.DefinitionFile.Type = YamlTask
 		}
 
 		pipeline.Tasks = append(pipeline.Tasks, task)

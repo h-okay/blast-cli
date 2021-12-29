@@ -88,6 +88,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 						DefinitionFile: pipeline.DefinitionFile{
 							Name: "task.yml",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/task1/task.yml"),
+							Type: pipeline.YamlTask,
 						},
 						Parameters: map[string]string{
 							"param1": "value1",
@@ -110,6 +111,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 						DefinitionFile: pipeline.DefinitionFile{
 							Name: "task.yml",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/task2/task.yml"),
+							Type: pipeline.YamlTask,
 						},
 					},
 					{
@@ -123,6 +125,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 						DefinitionFile: pipeline.DefinitionFile{
 							Name: "test.py",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
+							Type: pipeline.CommentTask,
 						},
 						Parameters: map[string]string{
 							"param1": "first-parameter",
@@ -146,6 +149,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 						DefinitionFile: pipeline.DefinitionFile{
 							Name: "test.sql",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
+							Type: pipeline.CommentTask,
 						},
 						Parameters: map[string]string{
 							"param1": "first-parameter",
