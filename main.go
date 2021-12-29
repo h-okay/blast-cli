@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/datablast-analytics/blast-cli/pkg/lint"
 	"github.com/datablast-analytics/blast-cli/pkg/path"
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
@@ -68,29 +67,8 @@ func main() {
 						return cli.Exit("", 1)
 					}
 
-					successPrinter := color.New(color.FgGreen, color.Bold)
-
-					for _, pipelineIssues := range result.Issues {
-						fmt.Println()
-						issuePrinter := color.New(color.FgRed, color.Bold)
-
-						color.Yellow("Pipeline: %s", pipelineIssues.Pipeline.Name)
-
-						if len(pipelineIssues.Issues) == 0 {
-							successPrinter.Println("  No issues found")
-							continue
-						}
-
-						for rule, issues := range pipelineIssues.Issues {
-							for _, issue := range issues {
-								issuePrinter.Printf("  %s: %s - %s\n", rule.Name, issue.Task.Name, issue.Description)
-							}
-						}
-
-					}
-
-
-
+					printer := lint.Printer{}
+					printer.PrintIssues(result)
 
 					return nil
 				},

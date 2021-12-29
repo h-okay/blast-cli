@@ -83,7 +83,7 @@ func (l *Linter) Lint(rootPath, pipelineDefinitionFileName string) (*PipelineAna
 }
 
 type PipelineAnalysisResult struct {
-	Issues []*PipelineIssues
+	Pipelines []*PipelineIssues
 }
 
 type PipelineIssues struct {
@@ -113,7 +113,7 @@ func (l *Linter) lint(pipelines []*pipeline.Pipeline) (*PipelineAnalysisResult, 
 			}
 		}
 
-		result.Issues = append(result.Issues, pipelineResult)
+		result.Pipelines = append(result.Pipelines, pipelineResult)
 	}
 
 	return result, nil
