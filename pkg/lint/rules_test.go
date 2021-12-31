@@ -454,3 +454,75 @@ func TestEnsureDependencyExists(t *testing.T) {
 		})
 	}
 }
+
+func TestEnsurePipelineScheduleIsValidCron(t *testing.T) {
+	t.Parallel()
+
+	noIssues := make([]*Issue, 0)
+
+	type args struct {
+		p *pipeline.Pipeline
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []*Issue
+		wantErr bool
+	}{
+		{
+			name: "empty schedule is skipped",
+			args: args{
+				p: &pipeline.Pipeline{
+					Schedule: "",
+				},
+			},
+			want: noIssues,
+		},
+		{
+			name: "invalid schedule is reported",
+			args: args{
+				p: &pipeline.Pipeline{
+					Schedule: "some random schedule",
+				},
+			},
+			want: []*Issue{
+				{
+					Description: "Invalid cron schedule 'some random schedule'",
+				},
+			},
+		},
+		{
+			name: "valid schedule passes the check",
+			args: args{
+				p: &pipeline.Pipeline{
+					Schedule: "* * * 1 *",
+				},
+			},
+			want: noIssues,
+		},
+		{
+			name: "valid descriptor passes the check",
+			args: args{
+				p: &pipeline.Pipeline{
+					Schedule: "@daily",
+				},
+			},
+			want: noIssues,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := EnsurePipelineScheduleIsValidCron(tt.args.p)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			require.Equal(t, tt.want, got)
+		})
+	}
+}

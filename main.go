@@ -33,6 +33,10 @@ var validationRules = []*lint.Rule{
 		Name:    "valid-executable-file",
 		Checker: lint.EnsureExecutableFileIsValid(afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)),
 	},
+	{
+		Name:    "valid-pipeline-schedule",
+		Checker: lint.EnsurePipelineScheduleIsValidCron,
+	},
 }
 
 func main() {

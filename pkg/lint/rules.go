@@ -6,6 +6,7 @@ import (
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/pkg/errors"
+	"github.com/robfig/cron/v3"
 	"github.com/spf13/afero"
 )
 
@@ -100,6 +101,22 @@ func EnsureDependencyExists(p *pipeline.Pipeline) ([]*Issue, error) {
 				})
 			}
 		}
+	}
+
+	return issues, nil
+}
+
+func EnsurePipelineScheduleIsValidCron(p *pipeline.Pipeline) ([]*Issue, error) {
+	issues := make([]*Issue, 0)
+	if p.Schedule == "" {
+		return issues, nil
+	}
+
+	_, err := cron.ParseStandard(string(p.Schedule))
+	if err != nil {
+		issues = append(issues, &Issue{
+			Description: fmt.Sprintf("Invalid cron schedule '%s'", p.Schedule),
+		})
 	}
 
 	return issues, nil
