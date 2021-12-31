@@ -19,6 +19,16 @@ const (
 	executableFileIsNotExecutable = "Executable file is not executable, give it the '644' or '755' permissions"
 )
 
+var validTaskTypes = map[string]bool{
+	"bq.sql":               true,
+	"bq.sensor.table":      true,
+	"bash":                 true,
+	"gcs.from.s3":          true,
+	"python":               true,
+	"s3.sensor.key_sensor": true,
+	"sf.sql":               true,
+}
+
 func EnsureNameExists(pipeline *pipeline.Pipeline) ([]*Issue, error) {
 	issues := make([]*Issue, 0)
 	for _, task := range pipeline.Tasks {
@@ -117,6 +127,25 @@ func EnsurePipelineScheduleIsValidCron(p *pipeline.Pipeline) ([]*Issue, error) {
 		issues = append(issues, &Issue{
 			Description: fmt.Sprintf("Invalid cron schedule '%s'", p.Schedule),
 		})
+	}
+
+	return issues, nil
+}
+
+func EnsureOnlyAcceptedTaskTypesAreThere(p *pipeline.Pipeline) ([]*Issue, error) {
+	issues := make([]*Issue, 0)
+
+	for _, task := range p.Tasks {
+		if task.Type == "" {
+			continue
+		}
+
+		if _, ok := validTaskTypes[task.Type]; !ok {
+			issues = append(issues, &Issue{
+				Task:        task,
+				Description: fmt.Sprintf("Invalid task type '%s'", task.Type),
+			})
+		}
 	}
 
 	return issues, nil

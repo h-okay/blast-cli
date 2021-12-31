@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var noIssues = make([]*Issue, 0)
+
 func TestEnsureNameExists(t *testing.T) {
 	t.Parallel()
 
@@ -86,8 +88,6 @@ func TestEnsureNameExists(t *testing.T) {
 
 func TestEnsureExecutableFileIsValid(t *testing.T) {
 	t.Parallel()
-
-	noIssues := make([]*Issue, 0)
 
 	type args struct {
 		setupFilesystem func(t *testing.T, fs afero.Fs)
@@ -363,8 +363,6 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 func TestEnsureDependencyExists(t *testing.T) {
 	t.Parallel()
 
-	noIssues := make([]*Issue, 0)
-
 	type args struct {
 		p *pipeline.Pipeline
 	}
@@ -458,8 +456,6 @@ func TestEnsureDependencyExists(t *testing.T) {
 func TestEnsurePipelineScheduleIsValidCron(t *testing.T) {
 	t.Parallel()
 
-	noIssues := make([]*Issue, 0)
-
 	type args struct {
 		p *pipeline.Pipeline
 	}
@@ -516,6 +512,82 @@ func TestEnsurePipelineScheduleIsValidCron(t *testing.T) {
 			t.Parallel()
 
 			got, err := EnsurePipelineScheduleIsValidCron(tt.args.p)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestEnsureOnlyAcceptedTaskTypesAreThere(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		p *pipeline.Pipeline
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []*Issue
+		wantErr bool
+	}{
+		{
+			name: "task with empty type is skipped",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Type: "",
+						},
+					},
+				},
+			},
+			want: noIssues,
+		},
+		{
+			name: "task invalid type is flagged",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Type: "some.random.type",
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Task: &pipeline.Task{
+						Type: "some.random.type",
+					},
+					Description: "Invalid task type 'some.random.type'",
+				},
+			},
+		},
+		{
+			name: "task with valid type is not flagged",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Type: "bq.sql",
+						},
+					},
+				},
+			},
+			want: noIssues,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := EnsureOnlyAcceptedTaskTypesAreThere(tt.args.p)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {

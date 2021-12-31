@@ -37,6 +37,10 @@ var validationRules = []*lint.Rule{
 		Name:    "valid-pipeline-schedule",
 		Checker: lint.EnsurePipelineScheduleIsValidCron,
 	},
+	{
+		Name:    "valid-task-type",
+		Checker: lint.EnsureOnlyAcceptedTaskTypesAreThere,
+	},
 }
 
 func main() {
