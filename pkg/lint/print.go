@@ -1,7 +1,6 @@
 package lint
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"github.com/fatih/color"
@@ -13,7 +12,7 @@ func (l *Printer) PrintIssues(analysis *PipelineAnalysisResult) {
 	successPrinter := color.New(color.FgGreen, color.Bold)
 
 	for _, pipelineIssues := range analysis.Pipelines {
-		fmt.Println()
+		successPrinter.Println()
 		issuePrinter := color.New(color.FgRed, color.Bold)
 
 		pipelineDirectory := filepath.Dir(pipelineIssues.Pipeline.DefinitionFile.Path)

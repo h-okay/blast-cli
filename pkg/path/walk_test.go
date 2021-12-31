@@ -56,6 +56,8 @@ func TestGetPipelinePaths(t *testing.T) {
 }
 
 func TestGetAllFilesRecursive(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		root string
 	}
@@ -99,11 +101,13 @@ func TestGetAllFilesRecursive(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			got, err := GetAllFilesRecursive(tt.args.root)
 			if tt.wantErr {
 				require.Error(t, err)
-				return
 			} else {
 				require.NoError(t, err)
 			}

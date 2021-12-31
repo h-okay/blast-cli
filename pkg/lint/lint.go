@@ -82,6 +82,7 @@ func (l *Linter) Lint(rootPath, pipelineDefinitionFileName string) (*PipelineAna
 	}
 
 	l.logger.Debugf("constructed %d pipelines", len(pipelines))
+
 	return l.lint(pipelines)
 }
 

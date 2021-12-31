@@ -31,7 +31,6 @@ func CreateTaskFromYamlDefinition(filePath string) (*Task, error) {
 
 	executableFile := ExecutableFile{}
 	if definition.RunFile != "" {
-
 		relativeRunFilePath := filepath.Join(filepath.Dir(filePath), definition.RunFile)
 		absRunFile, err := filepath.Abs(relativeRunFilePath)
 		if err != nil {

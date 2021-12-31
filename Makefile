@@ -38,6 +38,9 @@ format: tools
 	@echo "$(OK_COLOR)>> [$@] gofumpt: running$(NO_COLOR)"
 	@gofumpt -w pkg
 
+	@echo "$(OK_COLOR)>> [$@] golangci-lint: running$(NO_COLOR)"
+	@golangci-lint run
+
 tools:
 	@if ! command -v gci > /dev/null ; then \
 		echo ">> [$@]: gci not found: installing"; \
@@ -47,4 +50,9 @@ tools:
 	@if ! command -v gofumpt > /dev/null ; then \
 		echo ">> [$@]: gofumpt not found: installing"; \
 		go install mvdan.cc/gofumpt@latest; \
+	fi
+
+	@if ! command -v golangci-lint > /dev/null ; then \
+		echo ">> [$@]: golangci-lint not found: installing"; \
+		go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest; \
 	fi

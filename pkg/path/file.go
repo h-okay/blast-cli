@@ -13,7 +13,7 @@ import (
 func ReadYaml(path string, out interface{}) error {
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to read file %s", path)
 	}
 
 	err = yaml.Unmarshal(buf, out)
@@ -22,6 +22,7 @@ func ReadYaml(path string, out interface{}) error {
 	}
 
 	validate := validator.New()
+
 	err = validate.Struct(out)
 	if err != nil {
 		return errors.Wrapf(err, "cannot validate the YAML file at '%s'", path)
@@ -34,8 +35,8 @@ func ReadYaml(path string, out interface{}) error {
 // the file. The primary usage of this is to remove the sub-paths for the directory that contains `task.yml`.
 func ExcludeSubItemsInDirectoryContainingFile(filePaths []string, file string) []string {
 	result := make([]string, 0, len(filePaths))
-
 	var targetsToRemove []string
+
 	for _, path := range filePaths {
 		if strings.HasSuffix(path, file) {
 			targetsToRemove = append(targetsToRemove, filepath.Dir(path))

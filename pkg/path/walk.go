@@ -1,10 +1,11 @@
 package path
 
 import (
-	"fmt"
 	"io/fs"
 	"path/filepath"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 func GetPipelinePaths(root, pipelineDefinitionFile string) ([]string, error) {
@@ -21,7 +22,7 @@ func GetPipelinePaths(root, pipelineDefinitionFile string) ([]string, error) {
 		if strings.HasSuffix(path, pipelineDefinitionFile) {
 			abs, err := filepath.Abs(path)
 			if err != nil {
-				return fmt.Errorf("failed to get absolute path for %s: %s", path, err)
+				return errors.Wrapf(err, "failed to get absolute path for %s", path)
 			}
 
 			pipelinePaths = append(pipelinePaths, filepath.Dir(abs))
@@ -30,10 +31,10 @@ func GetPipelinePaths(root, pipelineDefinitionFile string) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error walking directory: %w", err)
+		return nil, errors.Wrapf(err, "error walking directory")
 	}
 
-	return pipelinePaths, err
+	return pipelinePaths, nil
 }
 
 func GetAllFilesRecursive(root string) ([]string, error) {
@@ -49,7 +50,7 @@ func GetAllFilesRecursive(root string) ([]string, error) {
 
 		abs, err := filepath.Abs(path)
 		if err != nil {
-			return fmt.Errorf("failed to get absolute path for %s: %s", path, err)
+			return errors.Wrapf(err, "failed to get absolute path for %s", path)
 		}
 
 		paths = append(paths, abs)
@@ -57,8 +58,8 @@ func GetAllFilesRecursive(root string) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error walking directory: %w", err)
+		return nil, errors.Wrapf(err, "error walking directory")
 	}
 
-	return paths, err
+	return paths, nil
 }

@@ -2,10 +2,11 @@ package pipeline
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 const configMarker = "@blast."
@@ -24,7 +25,7 @@ func CreateTaskFromFileComments(filePath string) (*Task, error) {
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open file %s: %s", filePath, err)
+		return nil, errors.Wrapf(err, "failed to open file %s", filePath)
 	}
 	defer file.Close()
 
@@ -41,7 +42,7 @@ func CreateTaskFromFileComments(filePath string) (*Task, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("failed to read file %s: %s", filePath, err)
+		return nil, errors.Wrapf(err, "failed to read file %s", filePath)
 	}
 
 	if len(commentRows) == 0 {
@@ -50,14 +51,20 @@ func CreateTaskFromFileComments(filePath string) (*Task, error) {
 
 	absFilePath, err := filepath.Abs(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get absolute path for file %s: %s", filePath, err)
+		return nil, errors.Wrapf(err, "failed to get absolute path for file %s", filePath)
 	}
 
+	task := commentRowsToTask(commentRows)
+	task.ExecutableFile = ExecutableFile{
+		Name: filepath.Base(filePath),
+		Path: absFilePath,
+	}
+
+	return task, nil
+}
+
+func commentRowsToTask(commentRows []string) *Task {
 	task := Task{
-		ExecutableFile: ExecutableFile{
-			Name: filepath.Base(filePath),
-			Path: absFilePath,
-		},
 		Parameters:  make(map[string]string),
 		Connections: make(map[string]string),
 		DependsOn:   []string{},
@@ -74,12 +81,15 @@ func CreateTaskFromFileComments(filePath string) (*Task, error) {
 		switch key {
 		case "name":
 			task.Name = value
+
 			continue
 		case "description":
 			task.Description = value
+
 			continue
 		case "type":
 			task.Type = value
+
 			continue
 		case "depends":
 			values := strings.Split(value, ",")
@@ -110,5 +120,5 @@ func CreateTaskFromFileComments(filePath string) (*Task, error) {
 		}
 	}
 
-	return &task, nil
+	return &task
 }

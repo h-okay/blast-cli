@@ -1,6 +1,9 @@
 package main
 
 import (
+	"os"
+	"time"
+
 	"github.com/datablast-analytics/blast-cli/pkg/lint"
 	"github.com/datablast-analytics/blast-cli/pkg/path"
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
@@ -8,8 +11,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/zap"
-	"os"
-	"time"
 )
 
 const (
@@ -19,22 +20,20 @@ const (
 	defaultTaskFileName    = "task.yml"
 )
 
-var (
-	validationRules = []*lint.Rule{
-		{
-			Name:        "name-exists",
-			Checker:     lint.EnsureNameExists,
-		},
-		{
-			Name:        "dependency-exists",
-			Checker:     lint.EnsureDependencyExists,
-		},
-		{
-			Name:        "valid-executable-file",
-			Checker:     lint.EnsureExecutableFileIsValid(afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)),
-		},
-	}
-)
+var validationRules = []*lint.Rule{
+	{
+		Name:    "name-exists",
+		Checker: lint.EnsureNameExists,
+	},
+	{
+		Name:    "dependency-exists",
+		Checker: lint.EnsureDependencyExists,
+	},
+	{
+		Name:    "valid-executable-file",
+		Checker: lint.EnsureExecutableFileIsValid(afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)),
+	},
+}
 
 func main() {
 	logger, err := zap.NewDevelopment()
@@ -42,7 +41,12 @@ func main() {
 		panic(err)
 	}
 
-	defer logger.Sync() // flushes buffer, if any
+	defer func() {
+		err := logger.Sync()
+		if err != nil {
+			panic(err)
+		}
+	}()
 	sugaredLogger := logger.Sugar()
 
 	app := &cli.App{
@@ -68,7 +72,6 @@ func main() {
 						rootPath = defaultPipelinePath
 					}
 					result, err := linter.Lint(rootPath, pipelineDefinitionFile)
-
 					if err != nil {
 						printer := color.New(color.FgRed, color.Bold)
 						printer.Printf("An error occurred while linting the pipelines: %v\n", err)

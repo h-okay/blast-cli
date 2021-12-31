@@ -1,0 +1,39 @@
+linters:
+  #  enable-all: true
+  disable:
+    - scopelint
+    - goerr113
+    - wrapcheck
+    - funlen
+    - maligned
+    - golint
+    - interfacer
+    - gomnd
+    - gochecknoglobals
+    - exhaustivestruct
+    - lll
+    - wsl
+    - thelper
+    - testpackage
+    - nlreturn
+  presets:
+    - bugs
+    - comment
+    - complexity
+    - error
+    - import
+    - metalinter
+    - module
+    - performance
+    - sql
+    - style
+    - test
+    - unused
+linters-settings:
+  cyclop:
+    max-complexity: 15
+    skip-tests: true
+  revive:
+    rules:
+      - name: unexported-return
+        disabled: true

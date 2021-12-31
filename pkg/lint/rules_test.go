@@ -305,6 +305,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 					defer func() { require.NoError(t, file.Close()) }()
 
 					err = fs.Chmod("some-path/some-other-file.sh", 0o755)
+					require.NoError(t, err)
 
 					_, err = file.Write([]byte("some other content"))
 					require.NoError(t, err)
