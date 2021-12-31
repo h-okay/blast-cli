@@ -96,7 +96,6 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		return nil, errors.Wrapf(err, "error listing Task files at '%s'", tasksPath)
 	}
 
-	taskFiles = path.ExcludeSubItemsInDirectoryContainingFile(taskFiles, p.config.TasksFileName)
 	for _, file := range taskFiles {
 		isSeparateDefinitionFile := false
 		creator := p.commentTaskCreator
