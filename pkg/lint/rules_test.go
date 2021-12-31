@@ -358,3 +358,98 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 		})
 	}
 }
+
+func TestEnsureDependencyExists(t *testing.T) {
+	t.Parallel()
+
+	noIssues := make([]*Issue, 0)
+
+	type args struct {
+		p *pipeline.Pipeline
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []*Issue
+		wantErr bool
+	}{
+		{
+			name: "empty pipeline works fine",
+			args: args{
+				p: &pipeline.Pipeline{},
+			},
+			want: noIssues,
+		},
+		{
+			name: "pipeline with no dependency has no issues",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name: "task1",
+						},
+						{
+							Name: "task2",
+						},
+						{
+							Name: "task3",
+						},
+					},
+				},
+			},
+			want: noIssues,
+		},
+		{
+			name: "dependency on a non-existing task is caught",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name:      "task1",
+							DependsOn: []string{},
+						},
+						{
+							Name:      "task2",
+							DependsOn: []string{"task1", "task3", "task5"},
+						},
+						{
+							Name:      "task3",
+							DependsOn: []string{"task1", "task4"},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Task: &pipeline.Task{
+						Name:      "task2",
+						DependsOn: []string{"task1", "task3", "task5"},
+					},
+					Description: "Dependency 'task5' does not exist",
+				},
+				{
+					Task: &pipeline.Task{
+						Name:      "task3",
+						DependsOn: []string{"task1", "task4"},
+					},
+					Description: "Dependency 'task4' does not exist",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := EnsureDependencyExists(tt.args.p)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			require.Equal(t, tt.want, got)
+		})
+	}
+}

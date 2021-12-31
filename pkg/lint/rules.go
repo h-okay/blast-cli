@@ -1,6 +1,7 @@
 package lint
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
@@ -77,4 +78,29 @@ func EnsureExecutableFileIsValid(fs afero.Fs) PipelineValidator {
 
 		return issues, nil
 	}
+}
+
+func EnsureDependencyExists(p *pipeline.Pipeline) ([]*Issue, error) {
+	taskMap := map[string]bool{}
+	for _, task := range p.Tasks {
+		if task.Name == "" {
+			continue
+		}
+
+		taskMap[task.Name] = true
+	}
+
+	issues := make([]*Issue, 0)
+	for _, task := range p.Tasks {
+		for _, dep := range task.DependsOn {
+			if _, ok := taskMap[dep]; !ok {
+				issues = append(issues, &Issue{
+					Task:        task,
+					Description: fmt.Sprintf("Dependency '%s' does not exist", dep),
+				})
+			}
+		}
+	}
+
+	return issues, nil
 }

@@ -23,12 +23,14 @@ var (
 	validationRules = []*lint.Rule{
 		{
 			Name:        "name-exists",
-			Description: "",
 			Checker:     lint.EnsureNameExists,
 		},
 		{
+			Name:        "dependency-exists",
+			Checker:     lint.EnsureDependencyExists,
+		},
+		{
 			Name:        "valid-executable-file",
-			Description: "",
 			Checker:     lint.EnsureExecutableFileIsValid(afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)),
 		},
 	}
