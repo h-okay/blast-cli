@@ -11,7 +11,10 @@ import (
 	"go.uber.org/zap"
 )
 
-type pipelineFinder func(root, pipelineDefinitionFile string) ([]string, error)
+type (
+	pipelineFinder    func(root, pipelineDefinitionFile string) ([]string, error)
+	PipelineValidator func(pipeline *pipeline.Pipeline) ([]*Issue, error)
+)
 
 type pipelineBuilder interface {
 	CreatePipelineFromPath(pathToPipeline string) (*pipeline.Pipeline, error)
@@ -25,7 +28,7 @@ type Issue struct {
 type Rule struct {
 	Name        string
 	Description string
-	Checker     func(pipeline *pipeline.Pipeline) ([]*Issue, error)
+	Checker     PipelineValidator
 }
 
 type Linter struct {

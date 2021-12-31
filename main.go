@@ -5,6 +5,7 @@ import (
 	"github.com/datablast-analytics/blast-cli/pkg/path"
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/fatih/color"
+	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/zap"
 	"os"
@@ -24,6 +25,11 @@ var (
 			Name:        "name-exists",
 			Description: "",
 			Checker:     lint.EnsureNameExists,
+		},
+		{
+			Name:        "valid-executable-file",
+			Description: "",
+			Checker:     lint.EnsureExecutableFileIsValid(afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)),
 		},
 	}
 )
