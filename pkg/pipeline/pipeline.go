@@ -41,7 +41,7 @@ type Task struct {
 }
 
 type Pipeline struct {
-	Name               string   `yaml:"name" validate:"required"`
+	Name               string   `yaml:"name"`
 	Schedule           schedule `yaml:"schedule"`
 	DefinitionFile     DefinitionFile
 	DefaultParameters  map[string]string `yaml:"defaultParameters"`

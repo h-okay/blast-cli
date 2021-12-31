@@ -41,12 +41,7 @@ func main() {
 		panic(err)
 	}
 
-	defer func() {
-		err := logger.Sync()
-		if err != nil {
-			panic(err)
-		}
-	}()
+	defer logger.Sync() //nolint:errcheck
 	sugaredLogger := logger.Sugar()
 
 	app := &cli.App{
