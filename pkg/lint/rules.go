@@ -19,14 +19,14 @@ const (
 	executableFileIsNotExecutable = "Executable file is not executable, give it the '644' or '755' permissions"
 )
 
-var validTaskTypes = map[string]bool{
-	"bq.sql":               true,
-	"bq.sensor.table":      true,
-	"bash":                 true,
-	"gcs.from.s3":          true,
-	"python":               true,
-	"s3.sensor.key_sensor": true,
-	"sf.sql":               true,
+var validTaskTypes = map[string]struct{}{
+	"bq.sql":               {},
+	"bq.sensor.table":      {},
+	"bash":                 {},
+	"gcs.from.s3":          {},
+	"python":               {},
+	"s3.sensor.key_sensor": {},
+	"sf.sql":               {},
 }
 
 func EnsureNameExists(pipeline *pipeline.Pipeline) ([]*Issue, error) {
