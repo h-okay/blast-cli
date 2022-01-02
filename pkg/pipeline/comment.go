@@ -33,11 +33,13 @@ func CreateTaskFromFileComments(filePath string) (*Task, error) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		rowText := scanner.Text()
-		if strings.HasPrefix(rowText, commentMarker) {
-			commentValue := strings.TrimSpace(strings.TrimPrefix(rowText, commentMarker))
-			if strings.HasPrefix(commentValue, configMarker) {
-				commentRows = append(commentRows, strings.TrimPrefix(commentValue, configMarker))
-			}
+		if !strings.HasPrefix(rowText, commentMarker) {
+			continue
+		}
+
+		commentValue := strings.TrimSpace(strings.TrimPrefix(rowText, commentMarker))
+		if strings.HasPrefix(commentValue, configMarker) {
+			commentRows = append(commentRows, strings.TrimPrefix(commentValue, configMarker))
 		}
 	}
 

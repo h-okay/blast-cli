@@ -107,3 +107,14 @@ func Test_createTaskFromFile(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkCreateTaskFromFileComments(b *testing.B) {
+	b.ReportAllocs()
+
+	file := "testdata/comments/test.py"
+
+	for i := 0; i < b.N; i++ {
+		_, err := pipeline.CreateTaskFromFileComments(file)
+		require.NoError(b, err)
+	}
+}
