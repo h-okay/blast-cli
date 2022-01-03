@@ -44,18 +44,20 @@ var validationRules = []*lint.Rule{
 }
 
 func main() {
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		panic(err)
-	}
-
-	defer logger.Sync() //nolint:errcheck
-	sugaredLogger := logger.Sugar()
+	isDebug := false
 
 	app := &cli.App{
 		Name:     "blast",
 		Usage:    "The CLI used for managing Blast-powered data pipelines",
 		Compiled: time.Now(),
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:        "debug",
+				Value:       false,
+				Usage:       "show debug information",
+				Destination: &isDebug,
+			},
+		},
 		Commands: []*cli.Command{
 			{
 				Name:      "validate",
@@ -68,7 +70,7 @@ func main() {
 						TasksFileName:      defaultTaskFileName,
 					}
 					builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
-					linter := lint.NewLinter(path.GetPipelinePaths, builder, validationRules, sugaredLogger)
+					linter := lint.NewLinter(path.GetPipelinePaths, builder, validationRules, makeLogger(isDebug))
 
 					rootPath := c.Args().Get(0)
 					if rootPath == "" {
@@ -92,4 +94,17 @@ func main() {
 	}
 
 	_ = app.Run(os.Args)
+}
+
+func makeLogger(isDebug bool) *zap.SugaredLogger {
+	logger, err := zap.NewProduction()
+	if isDebug {
+		logger, err = zap.NewDevelopment()
+	}
+
+	if err != nil {
+		panic(err)
+	}
+
+	return logger.Sugar()
 }
