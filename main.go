@@ -74,6 +74,7 @@ func main() {
 					if rootPath == "" {
 						rootPath = defaultPipelinePath
 					}
+
 					result, err := linter.Lint(rootPath, pipelineDefinitionFile)
 					if err != nil {
 						printer := color.New(color.FgRed, color.Bold)
