@@ -130,6 +130,32 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			want: noIssues,
 		},
 		{
+			name: "task with no executable is reported for python files",
+			args: args{
+				pipeline: pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Type: taskTypePython,
+							DefinitionFile: pipeline.DefinitionFile{
+								Type: pipeline.YamlTask,
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Task: &pipeline.Task{
+						Type: taskTypePython,
+						DefinitionFile: pipeline.DefinitionFile{
+							Type: pipeline.YamlTask,
+						},
+					},
+					Description: executableFileCannotBeEmpty,
+				},
+			},
+		},
+		{
 			name: "task with no executable is skipped",
 			args: args{
 				pipeline: pipeline.Pipeline{

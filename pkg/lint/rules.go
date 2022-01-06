@@ -13,10 +13,15 @@ import (
 const (
 	nameExistsDescription = `A task must have a name`
 
+	executableFileCannotBeEmpty   = `The 'run' option cannot be empty, make sure you have defined a file to run`
 	executableFileDoesNotExist    = `The executable file does not exist`
 	executableFileIsADirectory    = `The executable file is a directory, must be a file`
 	executableFileIsEmpty         = `The executable file is empty`
 	executableFileIsNotExecutable = "Executable file is not executable, give it the '644' or '755' permissions"
+)
+
+const (
+	taskTypePython = "python"
 )
 
 var validTaskTypes = map[string]struct{}{
@@ -24,7 +29,7 @@ var validTaskTypes = map[string]struct{}{
 	"bq.sensor.table":      {},
 	"bash":                 {},
 	"gcs.from.s3":          {},
-	"python":               {},
+	taskTypePython:         {},
 	"s3.sensor.key_sensor": {},
 	"sf.sql":               {},
 }
@@ -52,6 +57,12 @@ func EnsureExecutableFileIsValid(fs afero.Fs) PipelineValidator {
 			}
 
 			if task.ExecutableFile.Path == "" {
+				if task.Type == taskTypePython {
+					issues = append(issues, &Issue{
+						Task:        task,
+						Description: executableFileCannotBeEmpty,
+					})
+				}
 				continue
 			}
 
