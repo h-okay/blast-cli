@@ -90,6 +90,17 @@ type PipelineAnalysisResult struct {
 	Pipelines []*PipelineIssues
 }
 
+// HasErrors returns true if any of the pipelines has errors.
+func (p *PipelineAnalysisResult) HasErrors() bool {
+	for _, pipelineIssues := range p.Pipelines {
+		if len(pipelineIssues.Issues) > 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
 type PipelineIssues struct {
 	Pipeline *pipeline.Pipeline
 	Issues   map[*Rule][]*Issue

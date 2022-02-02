@@ -87,6 +87,10 @@ func main() {
 					printer := lint.Printer{}
 					printer.PrintIssues(result)
 
+					if result.HasErrors() {
+						return cli.Exit("", 1)
+					}
+
 					return nil
 				},
 			},
