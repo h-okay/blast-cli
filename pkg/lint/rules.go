@@ -90,7 +90,7 @@ func EnsureExecutableFileIsValid(fs afero.Fs) PipelineValidator {
 				})
 			}
 
-			if fileInfo.Mode().Perm() != 0o755 && fileInfo.Mode().Perm() != 0o644 {
+			if isFileExecutable(fileInfo.Mode()) {
 				issues = append(issues, &Issue{
 					Task:        task,
 					Description: executableFileIsNotExecutable,
@@ -100,6 +100,10 @@ func EnsureExecutableFileIsValid(fs afero.Fs) PipelineValidator {
 
 		return issues, nil
 	}
+}
+
+func isFileExecutable(mode os.FileMode) bool {
+	return mode&0o111 != 0
 }
 
 func EnsureDependencyExists(p *pipeline.Pipeline) ([]*Issue, error) {

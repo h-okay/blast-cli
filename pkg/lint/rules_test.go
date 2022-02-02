@@ -1,6 +1,7 @@
 package lint
 
 import (
+	"os"
 	"testing"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
@@ -227,7 +228,10 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			name: "executable is an empty file",
 			args: args{
 				setupFilesystem: func(t *testing.T, fs afero.Fs) {
-					file, err := fs.Create("some-path/some-file.sh")
+					fileName := "some-path/some-file.sh"
+					file, err := fs.Create(fileName)
+					require.NoError(t, err)
+					err = fs.Chmod(fileName, 0o755)
 					require.NoError(t, err)
 					require.NoError(t, file.Close())
 				},
@@ -276,7 +280,10 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			name: "executable file has the wrong permissions",
 			args: args{
 				setupFilesystem: func(t *testing.T, fs afero.Fs) {
-					file, err := fs.Create("some-path/some-file.sh")
+					fileName := "some-path/some-file.sh"
+					file, err := fs.Create(fileName)
+					require.NoError(t, err)
+					err = fs.Chmod(fileName, os.FileMode(0o100))
 					require.NoError(t, err)
 					defer func() { require.NoError(t, file.Close()) }()
 
@@ -330,7 +337,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 					require.NoError(t, err)
 					defer func() { require.NoError(t, file.Close()) }()
 
-					err = fs.Chmod("some-path/some-other-file.sh", 0o755)
+					err = fs.Chmod("some-path/some-other-file.sh", 0o644)
 					require.NoError(t, err)
 
 					_, err = file.Write([]byte("some other content"))
