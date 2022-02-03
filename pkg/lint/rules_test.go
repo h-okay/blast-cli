@@ -631,3 +631,86 @@ func TestEnsureOnlyAcceptedTaskTypesAreThere(t *testing.T) {
 		})
 	}
 }
+
+func TestEnsureNameUnique(t *testing.T) {
+	t.Parallel()
+	type args struct {
+		p *pipeline.Pipeline
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []*Issue
+		wantErr bool
+	}{
+		{
+			name: "empty name is skipped",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name: "",
+						},
+					},
+				},
+			},
+			want:    noIssues,
+			wantErr: false,
+		},
+		{
+			name: "duplicates are reported",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name: "name1",
+							DefinitionFile: pipeline.DefinitionFile{
+								Path: "path1",
+							},
+						},
+						{
+							Name: "name2",
+							DefinitionFile: pipeline.DefinitionFile{
+								Path: "path2",
+							},
+						},
+						{
+							Name: "name1",
+							DefinitionFile: pipeline.DefinitionFile{
+								Path: "path3",
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Task: &pipeline.Task{
+						Name: "name1",
+						DefinitionFile: pipeline.DefinitionFile{
+							Path: "path1",
+						},
+					},
+					Description: "Task name 'name1' is not unique, please make sure all the task names are unique",
+					Context:     []string{"path1", "path3"},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := EnsureNameUnique(tt.args.p)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			require.Equal(t, tt.want, got)
+		})
+	}
+}

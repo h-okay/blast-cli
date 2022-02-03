@@ -48,6 +48,41 @@ func EnsureNameExists(pipeline *pipeline.Pipeline) ([]*Issue, error) {
 	return issues, nil
 }
 
+func EnsureNameUnique(p *pipeline.Pipeline) ([]*Issue, error) {
+	nameFileMapping := make(map[string][]*pipeline.Task)
+	for _, task := range p.Tasks {
+		if task.Name == "" {
+			continue
+		}
+
+		if _, ok := nameFileMapping[task.Name]; !ok {
+			nameFileMapping[task.Name] = make([]*pipeline.Task, 0)
+		}
+
+		nameFileMapping[task.Name] = append(nameFileMapping[task.Name], task)
+	}
+
+	issues := make([]*Issue, 0)
+	for name, files := range nameFileMapping {
+		if len(files) == 1 {
+			continue
+		}
+
+		taskPaths := make([]string, 0)
+		for _, task := range files {
+			taskPaths = append(taskPaths, task.DefinitionFile.Path)
+		}
+
+		issues = append(issues, &Issue{
+			Task:        files[0],
+			Description: fmt.Sprintf("Task name '%s' is not unique, please make sure all the task names are unique", name),
+			Context:     taskPaths,
+		})
+	}
+
+	return issues, nil
+}
+
 func EnsureExecutableFileIsValid(fs afero.Fs) PipelineValidator {
 	return func(p *pipeline.Pipeline) ([]*Issue, error) {
 		issues := make([]*Issue, 0)

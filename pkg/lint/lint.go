@@ -23,6 +23,7 @@ type pipelineBuilder interface {
 type Issue struct {
 	Task        *pipeline.Task
 	Description string
+	Context     []string
 }
 
 type Rule struct {
