@@ -26,6 +26,10 @@ var validationRules = []*lint.Rule{
 		Checker: lint.EnsureNameExists,
 	},
 	{
+		Name:    "name-unique",
+		Checker: lint.EnsureNameUnique,
+	},
+	{
 		Name:    "dependency-exists",
 		Checker: lint.EnsureDependencyExists,
 	},
