@@ -3,6 +3,7 @@ package lint
 import (
 	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/pkg/errors"
@@ -18,6 +19,9 @@ const (
 	executableFileIsADirectory    = `The executable file is a directory, must be a file`
 	executableFileIsEmpty         = `The executable file is empty`
 	executableFileIsNotExecutable = "Executable file is not executable, give it the '644' or '755' permissions"
+
+	pipelineNameCannotBeEmpty      = "The pipeline name must be made of alphanumeric characters, dashes, dots and underscores"
+	pipelineNameMustBeAlphanumeric = "The pipeline name must be made of alphanumeric characters, dashes, dots and underscores"
 )
 
 const (
@@ -135,6 +139,25 @@ func EnsureExecutableFileIsValid(fs afero.Fs) PipelineValidator {
 
 		return issues, nil
 	}
+}
+
+func EnsurePipelineNameIsValid(pipeline *pipeline.Pipeline) ([]*Issue, error) {
+	issues := make([]*Issue, 0)
+	if pipeline.Name == "" {
+		issues = append(issues, &Issue{
+			Description: pipelineNameCannotBeEmpty,
+		})
+
+		return issues, nil
+	}
+
+	if match, _ := regexp.MatchString("^[\\w.-]+$", pipeline.Name); !match {
+		issues = append(issues, &Issue{
+			Description: pipelineNameMustBeAlphanumeric,
+		})
+	}
+
+	return issues, nil
 }
 
 func isFileExecutable(mode os.FileMode) bool {

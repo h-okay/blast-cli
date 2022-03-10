@@ -42,6 +42,10 @@ var validationRules = []*lint.Rule{
 		Checker: lint.EnsurePipelineScheduleIsValidCron,
 	},
 	{
+		Name:    "valid-pipeline-name",
+		Checker: lint.EnsurePipelineNameIsValid,
+	},
+	{
 		Name:    "valid-task-type",
 		Checker: lint.EnsureOnlyAcceptedTaskTypesAreThere,
 	},

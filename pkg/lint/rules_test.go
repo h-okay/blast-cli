@@ -714,3 +714,76 @@ func TestEnsureTaskNameIsUnique(t *testing.T) {
 		})
 	}
 }
+
+func TestEnsurePipelineNameIsValid(t *testing.T) {
+	t.Parallel()
+	type args struct {
+		p *pipeline.Pipeline
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []*Issue
+		wantErr bool
+	}{
+		{
+			name: "empty pipeline name is reported",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name: "",
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Description: pipelineNameCannotBeEmpty,
+					Context:     nil,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "spaces are not accepted",
+			args: args{
+				p: &pipeline.Pipeline{
+					Name: "some test pipeline",
+				},
+			},
+			want: []*Issue{
+				{
+					Description: pipelineNameMustBeAlphanumeric,
+					Context:     nil,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid pipeline name passes",
+			args: args{
+				p: &pipeline.Pipeline{
+					Name: "test",
+				},
+			},
+			want:    []*Issue{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := EnsurePipelineNameIsValid(tt.args.p)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
