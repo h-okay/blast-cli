@@ -34,7 +34,7 @@ var validTaskTypes = map[string]struct{}{
 	"sf.sql":               {},
 }
 
-func EnsureNameExists(pipeline *pipeline.Pipeline) ([]*Issue, error) {
+func EnsureTaskNameIsNotEmpty(pipeline *pipeline.Pipeline) ([]*Issue, error) {
 	issues := make([]*Issue, 0)
 	for _, task := range pipeline.Tasks {
 		if task.Name == "" {
@@ -48,7 +48,7 @@ func EnsureNameExists(pipeline *pipeline.Pipeline) ([]*Issue, error) {
 	return issues, nil
 }
 
-func EnsureNameUnique(p *pipeline.Pipeline) ([]*Issue, error) {
+func EnsureTaskNameIsUnique(p *pipeline.Pipeline) ([]*Issue, error) {
 	nameFileMapping := make(map[string][]*pipeline.Task)
 	for _, task := range p.Tasks {
 		if task.Name == "" {

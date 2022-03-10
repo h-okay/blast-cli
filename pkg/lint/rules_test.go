@@ -11,7 +11,7 @@ import (
 
 var noIssues = make([]*Issue, 0)
 
-func TestEnsureNameExists(t *testing.T) {
+func TestEnsureTaskNameIsNotEmpty(t *testing.T) {
 	t.Parallel()
 
 	taskWithEmptyName := pipeline.Task{
@@ -75,7 +75,7 @@ func TestEnsureNameExists(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := EnsureNameExists(tt.args.pipeline)
+			got, err := EnsureTaskNameIsNotEmpty(tt.args.pipeline)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
@@ -632,7 +632,7 @@ func TestEnsureOnlyAcceptedTaskTypesAreThere(t *testing.T) {
 	}
 }
 
-func TestEnsureNameUnique(t *testing.T) {
+func TestEnsureTaskNameIsUnique(t *testing.T) {
 	t.Parallel()
 	type args struct {
 		p *pipeline.Pipeline
@@ -703,7 +703,7 @@ func TestEnsureNameUnique(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := EnsureNameUnique(tt.args.p)
+			got, err := EnsureTaskNameIsUnique(tt.args.p)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {

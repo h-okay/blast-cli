@@ -22,12 +22,12 @@ const (
 
 var validationRules = []*lint.Rule{
 	{
-		Name:    "name-exists",
-		Checker: lint.EnsureNameExists,
+		Name:    "task-name-exists",
+		Checker: lint.EnsureTaskNameIsNotEmpty,
 	},
 	{
-		Name:    "name-unique",
-		Checker: lint.EnsureNameUnique,
+		Name:    "task-name-unique",
+		Checker: lint.EnsureTaskNameIsUnique,
 	},
 	{
 		Name:    "dependency-exists",
