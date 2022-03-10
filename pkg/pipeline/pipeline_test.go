@@ -63,6 +63,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			},
 			want: &pipeline.Pipeline{
 				Name:     "first-pipeline",
+				LegacyID: "first-pipeline",
 				Schedule: "",
 				DefinitionFile: pipeline.DefinitionFile{
 					Name: "pipeline.yml",

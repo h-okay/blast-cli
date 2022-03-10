@@ -41,6 +41,7 @@ type Task struct {
 }
 
 type Pipeline struct {
+	LegacyID           string   `yaml:"id"`
 	Name               string   `yaml:"name"`
 	Schedule           schedule `yaml:"schedule"`
 	DefinitionFile     DefinitionFile
@@ -79,6 +80,11 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 	err := path.ReadYaml(pipelineFilePath, &pipeline)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading pipeline file at '%s'", pipelineFilePath)
+	}
+
+	// this is needed until we migrate all the pipelines to use the new naming convention
+	if pipeline.Name == "" {
+		pipeline.Name = pipeline.LegacyID
 	}
 
 	absPipelineFilePath, err := filepath.Abs(pipelineFilePath)

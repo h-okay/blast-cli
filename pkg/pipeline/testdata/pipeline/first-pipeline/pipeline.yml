@@ -1,4 +1,4 @@
-name: first-pipeline
+id: first-pipeline
 schedule: ""
 defaultConnections:
   slack: "slack-connection"
