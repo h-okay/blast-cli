@@ -138,7 +138,7 @@ func (l *Linter) lint(pipelines []*pipeline.Pipeline) (*PipelineAnalysisResult, 
 func ensureNoNestedPipelines(pipelinePaths []string) error {
 	var previousPath string
 	for i, path := range pipelinePaths {
-		if i != 0 && strings.HasPrefix(path, previousPath) {
+		if i != 0 && strings.HasPrefix(path, fmt.Sprintf("%s/", previousPath)) {
 			return fmt.Errorf("nested pipelines are not allowed: seems like '%s' is already a parent pipeline for '%s'", previousPath, path)
 		}
 

@@ -114,12 +114,14 @@ func TestLinter_Lint(t *testing.T) {
 				pipelineFinder: func(root, fileName string) ([]string, error) {
 					require.Equal(t, "some-root-path", root)
 					require.Equal(t, "some-file-name", fileName)
-					return []string{"path/to/pipeline1", "path/to/pipeline2"}, nil
+					return []string{"path/to/pipeline1", "path/to/pipeline2", "path/to/pipeline2_some_other_name"}, nil
 				},
 				setupBuilderMock: func(m *mockPipelineBuilder) {
 					m.On("CreatePipelineFromPath", "path/to/pipeline1").
 						Return(&pipeline.Pipeline{}, nil)
 					m.On("CreatePipelineFromPath", "path/to/pipeline2").
+						Return(&pipeline.Pipeline{}, nil)
+					m.On("CreatePipelineFromPath", "path/to/pipeline2_some_other_name").
 						Return(&pipeline.Pipeline{}, nil)
 				},
 				rules: []*Rule{errorRule, successRule},
