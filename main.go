@@ -49,6 +49,10 @@ var validationRules = []*lint.Rule{
 		Name:    "valid-task-type",
 		Checker: lint.EnsureOnlyAcceptedTaskTypesAreThere,
 	},
+	{
+		Name:    "acyclic-pipeline",
+		Checker: lint.EnsurePipelineHasNoCycles,
+	},
 }
 
 func main() {
