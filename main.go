@@ -22,8 +22,8 @@ const (
 
 var validationRules = []*lint.Rule{
 	{
-		Name:    "task-name-exists",
-		Checker: lint.EnsureTaskNameIsNotEmpty,
+		Name:    "task-name-valid",
+		Checker: lint.EnsureTaskNameIsValid,
 	},
 	{
 		Name:    "task-name-unique",

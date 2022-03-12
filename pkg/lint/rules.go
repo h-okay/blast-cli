@@ -13,7 +13,10 @@ import (
 )
 
 const (
-	nameExistsDescription = `A task must have a name`
+	validIDRegex = `^[\w.-]+$`
+
+	taskNameMustExist          = `A task must have a name`
+	taskNameMustBeAlphanumeric = `A task name must be made of alphanumeric characters, dashes, dots and underscores`
 
 	executableFileCannotBeEmpty   = `The 'run' option cannot be empty, make sure you have defined a file to run`
 	executableFileDoesNotExist    = `The executable file does not exist`
@@ -21,7 +24,7 @@ const (
 	executableFileIsEmpty         = `The executable file is empty`
 	executableFileIsNotExecutable = "Executable file is not executable, give it the '644' or '755' permissions"
 
-	pipelineNameCannotBeEmpty      = "The pipeline name must be made of alphanumeric characters, dashes, dots and underscores"
+	pipelineNameCannotBeEmpty      = "The pipeline name cannot be empty, it must be a valid name made of alphanumeric characters, dashes, dots and underscores"
 	pipelineNameMustBeAlphanumeric = "The pipeline name must be made of alphanumeric characters, dashes, dots and underscores"
 
 	pipelineContainsCycle = "The pipeline has a cycle with dependencies, make sure there are no cyclic dependencies"
@@ -41,13 +44,27 @@ var validTaskTypes = map[string]struct{}{
 	"sf.sql":               {},
 }
 
-func EnsureTaskNameIsNotEmpty(pipeline *pipeline.Pipeline) ([]*Issue, error) {
+func EnsureTaskNameIsValid(pipeline *pipeline.Pipeline) ([]*Issue, error) {
 	issues := make([]*Issue, 0)
+	reg, err := regexp.Compile(validIDRegex)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to compile regex")
+	}
+
 	for _, task := range pipeline.Tasks {
 		if task.Name == "" {
 			issues = append(issues, &Issue{
 				Task:        task,
-				Description: nameExistsDescription,
+				Description: taskNameMustExist,
+			})
+
+			continue
+		}
+
+		if match := reg.MatchString(task.Name); !match {
+			issues = append(issues, &Issue{
+				Task:        task,
+				Description: taskNameMustBeAlphanumeric,
 			})
 		}
 	}
@@ -154,7 +171,7 @@ func EnsurePipelineNameIsValid(pipeline *pipeline.Pipeline) ([]*Issue, error) {
 		return issues, nil
 	}
 
-	if match, _ := regexp.MatchString("^[\\w.-]+$", pipeline.Name); !match {
+	if match, _ := regexp.MatchString(validIDRegex, pipeline.Name); !match {
 		issues = append(issues, &Issue{
 			Description: pipelineNameMustBeAlphanumeric,
 		})

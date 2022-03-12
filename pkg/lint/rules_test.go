@@ -58,13 +58,22 @@ func TestEnsureTaskNameIsNotEmpty(t *testing.T) {
 						{
 							Name: "some-other-task",
 						},
+						{
+							Name: "task name with spaces",
+						},
 					},
 				},
 			},
 			want: []*Issue{
 				{
 					Task:        &taskWithEmptyName,
-					Description: nameExistsDescription,
+					Description: taskNameMustExist,
+				},
+				{
+					Task: &pipeline.Task{
+						Name: "task name with spaces",
+					},
+					Description: taskNameMustBeAlphanumeric,
 				},
 			},
 			wantErr: false,
@@ -75,7 +84,7 @@ func TestEnsureTaskNameIsNotEmpty(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := EnsureTaskNameIsNotEmpty(tt.args.pipeline)
+			got, err := EnsureTaskNameIsValid(tt.args.pipeline)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
