@@ -44,12 +44,10 @@ var validTaskTypes = map[string]struct{}{
 	"sf.sql":               {},
 }
 
+var validIDRegexCompiled = regexp.MustCompile(validIDRegex)
+
 func EnsureTaskNameIsValid(pipeline *pipeline.Pipeline) ([]*Issue, error) {
 	issues := make([]*Issue, 0)
-	reg, err := regexp.Compile(validIDRegex)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to compile regex")
-	}
 
 	for _, task := range pipeline.Tasks {
 		if task.Name == "" {
@@ -61,7 +59,7 @@ func EnsureTaskNameIsValid(pipeline *pipeline.Pipeline) ([]*Issue, error) {
 			continue
 		}
 
-		if match := reg.MatchString(task.Name); !match {
+		if match := validIDRegexCompiled.MatchString(task.Name); !match {
 			issues = append(issues, &Issue{
 				Task:        task,
 				Description: taskNameMustBeAlphanumeric,
@@ -171,7 +169,7 @@ func EnsurePipelineNameIsValid(pipeline *pipeline.Pipeline) ([]*Issue, error) {
 		return issues, nil
 	}
 
-	if match, _ := regexp.MatchString(validIDRegex, pipeline.Name); !match {
+	if match := validIDRegexCompiled.MatchString(pipeline.Name); !match {
 		issues = append(issues, &Issue{
 			Description: pipelineNameMustBeAlphanumeric,
 		})
