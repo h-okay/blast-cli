@@ -787,3 +787,84 @@ func TestEnsurePipelineNameIsValid(t *testing.T) {
 		})
 	}
 }
+
+func TestEnsurePipelineHasNoCycles(t *testing.T) {
+	t.Parallel()
+	type args struct {
+		p *pipeline.Pipeline
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []*Issue
+		wantErr bool
+	}{
+		{
+			name: "cycles are detected",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name: "task0",
+						},
+						{
+							Name:      "task1",
+							DependsOn: []string{"task2", "task0"},
+						},
+						{
+							Name:      "task2",
+							DependsOn: []string{"task3"},
+						},
+						{
+							Name:      "task3",
+							DependsOn: []string{"task1"},
+						},
+						{
+							Name: "task4",
+						},
+						{
+							Name:      "task5",
+							DependsOn: []string{"task4", "task1"},
+						},
+						{
+							Name:      "task6",
+							DependsOn: []string{"task4", "task6"},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Description: pipelineContainsCycle,
+					Context: []string{
+						"Task `task6` depends on itself",
+					},
+				},
+				{
+					Description: pipelineContainsCycle,
+					Context: []string{
+						"task3 ➜ task1",
+						"task2 ➜ task3",
+						"task1 ➜ task2",
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := EnsurePipelineHasNoCycles(tt.args.p)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			require.Equal(t, tt.want, got)
+		})
+	}
+}

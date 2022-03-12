@@ -10,6 +10,7 @@ require (
 	github.com/spf13/afero v1.7.1
 	github.com/stretchr/testify v1.7.0
 	github.com/urfave/cli/v2 v2.3.0
+	github.com/yourbasic/graph v0.0.0-20210606180040-8ecfec1c2869
 	go.uber.org/zap v1.19.1
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )

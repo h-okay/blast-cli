@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
 	"github.com/spf13/afero"
+	"github.com/yourbasic/graph"
 )
 
 const (
@@ -22,6 +23,8 @@ const (
 
 	pipelineNameCannotBeEmpty      = "The pipeline name must be made of alphanumeric characters, dashes, dots and underscores"
 	pipelineNameMustBeAlphanumeric = "The pipeline name must be made of alphanumeric characters, dashes, dots and underscores"
+
+	pipelineContainsCycle = "The pipeline has a cycle with dependencies, make sure there are no cyclic dependencies"
 )
 
 const (
@@ -219,6 +222,69 @@ func EnsureOnlyAcceptedTaskTypesAreThere(p *pipeline.Pipeline) ([]*Issue, error)
 				Description: fmt.Sprintf("Invalid task type '%s'", task.Type),
 			})
 		}
+	}
+
+	return issues, nil
+}
+
+// EnsurePipelineHasNoCycles ensures that the pipeline is a DAG, and contains no cycles.
+// Since the pipelines are directed graphs, strongly connected components mean cycles, therefore
+// they would be considered invalid for our pipelines.
+// Strong connectivity wouldn't work for tasks that depend on themselves, therefore there's a specific check for that.
+func EnsurePipelineHasNoCycles(p *pipeline.Pipeline) ([]*Issue, error) {
+	issues := make([]*Issue, 0)
+
+	for _, task := range p.Tasks {
+		for _, dep := range task.DependsOn {
+			if task.Name == dep {
+				issues = append(issues, &Issue{
+					Description: pipelineContainsCycle,
+					Context:     []string{fmt.Sprintf("Task `%s` depends on itself", task.Name)},
+				})
+			}
+		}
+	}
+
+	taskNameToIndex := make(map[string]int, len(p.Tasks))
+	for i, task := range p.Tasks {
+		taskNameToIndex[task.Name] = i
+	}
+
+	g := graph.New(len(p.Tasks))
+	for _, task := range p.Tasks {
+		for _, dep := range task.DependsOn {
+			g.Add(taskNameToIndex[task.Name], taskNameToIndex[dep])
+		}
+	}
+
+	cycles := graph.StrongComponents(g)
+	for _, cycle := range cycles {
+		cycleLength := len(cycle)
+		if cycleLength == 1 {
+			continue
+		}
+
+		tasksInCycle := make(map[string]bool, cycleLength)
+		for _, taskIndex := range cycle {
+			tasksInCycle[p.Tasks[taskIndex].Name] = true
+		}
+
+		context := make([]string, 0, cycleLength)
+		for _, taskIndex := range cycle {
+			task := p.Tasks[taskIndex]
+			for _, dep := range task.DependsOn {
+				if _, ok := tasksInCycle[dep]; !ok {
+					continue
+				}
+
+				context = append(context, fmt.Sprintf("%s ➜ %s", task.Name, dep))
+			}
+		}
+
+		issues = append(issues, &Issue{
+			Description: pipelineContainsCycle,
+			Context:     context,
+		})
 	}
 
 	return issues, nil
