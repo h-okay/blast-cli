@@ -34,7 +34,7 @@ func printPipelineSummary(pipelineIssues *PipelineIssues) {
 	successPrinter.Println()
 
 	pipelineDirectory := filepath.Dir(pipelineIssues.Pipeline.DefinitionFile.Path)
-	pipelinePrinter.Printf("Pipeline: %s (%s)\n", pipelineIssues.Pipeline.Name, pipelineDirectory)
+	pipelinePrinter.Printf("Pipeline: %s %s\n", pipelineIssues.Pipeline.Name, faint(fmt.Sprintf("(%s)", pipelineDirectory)))
 
 	if len(pipelineIssues.Issues) == 0 {
 		successPrinter.Println("  No issues found")

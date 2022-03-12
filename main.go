@@ -53,6 +53,7 @@ var validationRules = []*lint.Rule{
 
 func main() {
 	isDebug := false
+	color.NoColor = false
 
 	app := &cli.App{
 		Name:     "blast",
