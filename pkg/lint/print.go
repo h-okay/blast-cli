@@ -11,7 +11,7 @@ import (
 type Printer struct{}
 
 type taskSummary struct {
-	rule   *Rule
+	rule   Rule
 	issues []*Issue
 }
 
@@ -92,7 +92,7 @@ func printPipelineSummary(pipelineIssues *PipelineIssues) {
 	}
 }
 
-func printIssues(rule *Rule, issues []*Issue) {
+func printIssues(rule Rule, issues []*Issue) {
 	issueCount := len(issues)
 	for index, issue := range issues {
 		connector := "├──"
@@ -100,7 +100,7 @@ func printIssues(rule *Rule, issues []*Issue) {
 			connector = "└──"
 		}
 
-		issuePrinter.Printf("    %s %s %s\n", connector, issue.Description, faint(fmt.Sprintf("(%s)", rule.Name)))
+		issuePrinter.Printf("    %s %s %s\n", connector, issue.Description, faint(fmt.Sprintf("(%s)", rule.Name())))
 		printIssueContext(issue.Context, index == issueCount-1)
 	}
 }

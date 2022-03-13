@@ -26,20 +26,32 @@ type Issue struct {
 	Context     []string
 }
 
-type Rule struct {
-	Name        string
-	Description string
-	Checker     PipelineValidator
+type Rule interface {
+	Name() string
+	Validate(pipeline *pipeline.Pipeline) ([]*Issue, error)
+}
+
+type SimpleRule struct {
+	Identifier string
+	Validator  PipelineValidator
+}
+
+func (g *SimpleRule) Validate(pipeline *pipeline.Pipeline) ([]*Issue, error) {
+	return g.Validator(pipeline)
+}
+
+func (g *SimpleRule) Name() string {
+	return g.Identifier
 }
 
 type Linter struct {
 	findPipelines pipelineFinder
 	builder       pipelineBuilder
-	rules         []*Rule
+	rules         []Rule
 	logger        *zap.SugaredLogger
 }
 
-func NewLinter(findPipelines pipelineFinder, builder pipelineBuilder, rules []*Rule, logger *zap.SugaredLogger) *Linter {
+func NewLinter(findPipelines pipelineFinder, builder pipelineBuilder, rules []Rule, logger *zap.SugaredLogger) *Linter {
 	return &Linter{
 		findPipelines: findPipelines,
 		builder:       builder,
@@ -104,7 +116,7 @@ func (p *PipelineAnalysisResult) HasErrors() bool {
 
 type PipelineIssues struct {
 	Pipeline *pipeline.Pipeline
-	Issues   map[*Rule][]*Issue
+	Issues   map[Rule][]*Issue
 }
 
 func (l *Linter) lint(pipelines []*pipeline.Pipeline) (*PipelineAnalysisResult, error) {
@@ -113,13 +125,13 @@ func (l *Linter) lint(pipelines []*pipeline.Pipeline) (*PipelineAnalysisResult, 
 	for _, p := range pipelines {
 		pipelineResult := &PipelineIssues{
 			Pipeline: p,
-			Issues:   make(map[*Rule][]*Issue),
+			Issues:   make(map[Rule][]*Issue),
 		}
 
 		for _, rule := range l.rules {
 			l.logger.Debugf("checking rule '%s' for pipeline '%s'", rule.Name, p.Name)
 
-			issues, err := rule.Checker(p)
+			issues, err := rule.Validate(p)
 			if err != nil {
 				return nil, err
 			}

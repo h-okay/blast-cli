@@ -20,38 +20,42 @@ const (
 	defaultTaskFileName    = "task.yml"
 )
 
-var validationRules = []*lint.Rule{
-	{
-		Name:    "task-name-valid",
-		Checker: lint.EnsureTaskNameIsValid,
+var validationRules = []lint.Rule{
+	&lint.SimpleRule{
+		Identifier: "task-name-valid",
+		Validator:  lint.EnsureTaskNameIsValid,
 	},
-	{
-		Name:    "task-name-unique",
-		Checker: lint.EnsureTaskNameIsUnique,
+	&lint.SimpleRule{
+		Identifier: "task-name-valid",
+		Validator:  lint.EnsureTaskNameIsValid,
 	},
-	{
-		Name:    "dependency-exists",
-		Checker: lint.EnsureDependencyExists,
+	&lint.SimpleRule{
+		Identifier: "task-name-unique",
+		Validator:  lint.EnsureTaskNameIsUnique,
 	},
-	{
-		Name:    "valid-executable-file",
-		Checker: lint.EnsureExecutableFileIsValid(afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)),
+	&lint.SimpleRule{
+		Identifier: "dependency-exists",
+		Validator:  lint.EnsureDependencyExists,
 	},
-	{
-		Name:    "valid-pipeline-schedule",
-		Checker: lint.EnsurePipelineScheduleIsValidCron,
+	&lint.SimpleRule{
+		Identifier: "valid-executable-file",
+		Validator:  lint.EnsureExecutableFileIsValid(afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)),
 	},
-	{
-		Name:    "valid-pipeline-name",
-		Checker: lint.EnsurePipelineNameIsValid,
+	&lint.SimpleRule{
+		Identifier: "valid-pipeline-schedule",
+		Validator:  lint.EnsurePipelineScheduleIsValidCron,
 	},
-	{
-		Name:    "valid-task-type",
-		Checker: lint.EnsureOnlyAcceptedTaskTypesAreThere,
+	&lint.SimpleRule{
+		Identifier: "valid-pipeline-name",
+		Validator:  lint.EnsurePipelineNameIsValid,
 	},
-	{
-		Name:    "acyclic-pipeline",
-		Checker: lint.EnsurePipelineHasNoCycles,
+	&lint.SimpleRule{
+		Identifier: "valid-task-type",
+		Validator:  lint.EnsureOnlyAcceptedTaskTypesAreThere,
+	},
+	&lint.SimpleRule{
+		Identifier: "acyclic-pipeline",
+		Validator:  lint.EnsurePipelineHasNoCycles,
 	},
 }
 

@@ -23,18 +23,20 @@ func (p *mockPipelineBuilder) CreatePipelineFromPath(pathToPipeline string) (*pi
 func TestLinter_Lint(t *testing.T) {
 	t.Parallel()
 
-	errorRule := &Rule{
-		Checker: func(p *pipeline.Pipeline) ([]*Issue, error) { return nil, errors.New("first rule failed") },
+	errorRule := &SimpleRule{
+		Identifier: "errorRule",
+		Validator:  func(p *pipeline.Pipeline) ([]*Issue, error) { return nil, errors.New("first rule failed") },
 	}
 
-	successRule := &Rule{
-		Checker: func(p *pipeline.Pipeline) ([]*Issue, error) { return nil, nil },
+	successRule := &SimpleRule{
+		Identifier: "successRule",
+		Validator:  func(p *pipeline.Pipeline) ([]*Issue, error) { return nil, nil },
 	}
 
 	type fields struct {
 		pipelineFinder   func(rootPath string, pipelineDefinitionFileName string) ([]string, error)
 		setupBuilderMock func(m *mockPipelineBuilder)
-		rules            []*Rule
+		rules            []Rule
 	}
 
 	type args struct {
@@ -124,7 +126,7 @@ func TestLinter_Lint(t *testing.T) {
 					m.On("CreatePipelineFromPath", "path/to/pipeline2_some_other_name").
 						Return(&pipeline.Pipeline{}, nil)
 				},
-				rules: []*Rule{errorRule, successRule},
+				rules: []Rule{errorRule, successRule},
 			},
 			args: args{
 				rootPath:                   "some-root-path",
@@ -146,7 +148,7 @@ func TestLinter_Lint(t *testing.T) {
 					m.On("CreatePipelineFromPath", "path/to/pipeline2").
 						Return(&pipeline.Pipeline{}, nil)
 				},
-				rules: []*Rule{successRule, errorRule},
+				rules: []Rule{successRule, errorRule},
 			},
 			args: args{
 				rootPath:                   "some-root-path",
@@ -168,7 +170,7 @@ func TestLinter_Lint(t *testing.T) {
 					m.On("CreatePipelineFromPath", "path/to/pipeline2").
 						Return(&pipeline.Pipeline{}, nil)
 				},
-				rules: []*Rule{successRule, successRule},
+				rules: []Rule{successRule, successRule},
 			},
 			args: args{
 				rootPath:                   "some-root-path",
