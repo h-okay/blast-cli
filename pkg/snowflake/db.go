@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	invalidQueryErrorPrefix = "001003 (42000): SQL compilation error"
+	invalidQueryError = "SQL compilation error"
 )
 
 type DB struct {
@@ -41,7 +41,7 @@ func (db DB) IsValid(ctx context.Context, query string) (bool, error) {
 	rows, err := db.conn.QueryContext(ctx, fmt.Sprintf("EXPLAIN %s", query))
 	if err != nil {
 		errorMessage := err.Error()
-		if strings.HasPrefix(errorMessage, invalidQueryErrorPrefix) {
+		if strings.Contains(errorMessage, invalidQueryError) {
 			errorSegments := strings.Split(errorMessage, "\n")
 			if len(errorSegments) > 1 {
 				err = errors.New(errorSegments[1])

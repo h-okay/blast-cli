@@ -36,7 +36,7 @@ func TestDB_IsValid(t *testing.T) {
 			mockConnection: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(`EXPLAIN some broken query`).
 					WillReturnRows(sqlmock.NewRows([]string{"rows", "filtered"})).
-					WillReturnError(fmt.Errorf("%s\nsome actual error", invalidQueryErrorPrefix))
+					WillReturnError(fmt.Errorf("%s\nsome actual error", invalidQueryError))
 			},
 			query:        `some broken query`,
 			want:         false,
