@@ -21,8 +21,8 @@ type DB struct {
 	logger *zap.SugaredLogger
 }
 
-func NewDB(c *gosnowflake.Config, logger *zap.SugaredLogger) (*DB, error) {
-	dsn, err := gosnowflake.DSN(c)
+func NewDB(c *Config, logger *zap.SugaredLogger) (*DB, error) {
+	dsn, err := c.DSN()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create DSN")
 	}
