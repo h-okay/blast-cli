@@ -129,7 +129,7 @@ func (l *Linter) lint(pipelines []*pipeline.Pipeline) (*PipelineAnalysisResult, 
 		}
 
 		for _, rule := range l.rules {
-			l.logger.Debugf("checking rule '%s' for pipeline '%s'", rule.Name, p.Name)
+			l.logger.Debugf("checking rule '%s' for pipeline '%s'", rule.Name(), p.Name)
 
 			issues, err := rule.Validate(p)
 			if err != nil {

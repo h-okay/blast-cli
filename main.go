@@ -8,7 +8,6 @@ import (
 	"github.com/datablast-analytics/blast-cli/pkg/path"
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/fatih/color"
-	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/zap"
 )
@@ -19,45 +18,6 @@ const (
 	defaultTasksPath       = "tasks"
 	defaultTaskFileName    = "task.yml"
 )
-
-var validationRules = []lint.Rule{
-	&lint.SimpleRule{
-		Identifier: "task-name-valid",
-		Validator:  lint.EnsureTaskNameIsValid,
-	},
-	&lint.SimpleRule{
-		Identifier: "task-name-valid",
-		Validator:  lint.EnsureTaskNameIsValid,
-	},
-	&lint.SimpleRule{
-		Identifier: "task-name-unique",
-		Validator:  lint.EnsureTaskNameIsUnique,
-	},
-	&lint.SimpleRule{
-		Identifier: "dependency-exists",
-		Validator:  lint.EnsureDependencyExists,
-	},
-	&lint.SimpleRule{
-		Identifier: "valid-executable-file",
-		Validator:  lint.EnsureExecutableFileIsValid(afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)),
-	},
-	&lint.SimpleRule{
-		Identifier: "valid-pipeline-schedule",
-		Validator:  lint.EnsurePipelineScheduleIsValidCron,
-	},
-	&lint.SimpleRule{
-		Identifier: "valid-pipeline-name",
-		Validator:  lint.EnsurePipelineNameIsValid,
-	},
-	&lint.SimpleRule{
-		Identifier: "valid-task-type",
-		Validator:  lint.EnsureOnlyAcceptedTaskTypesAreThere,
-	},
-	&lint.SimpleRule{
-		Identifier: "acyclic-pipeline",
-		Validator:  lint.EnsurePipelineHasNoCycles,
-	},
-}
 
 func main() {
 	isDebug := false
@@ -87,7 +47,8 @@ func main() {
 						TasksFileName:      defaultTaskFileName,
 					}
 					builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
-					linter := lint.NewLinter(path.GetPipelinePaths, builder, validationRules, makeLogger(isDebug))
+					rules := lint.GetRules()
+					linter := lint.NewLinter(path.GetPipelinePaths, builder, rules, makeLogger(isDebug))
 
 					rootPath := c.Args().Get(0)
 					if rootPath == "" {
