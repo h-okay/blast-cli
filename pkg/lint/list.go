@@ -56,6 +56,13 @@ func GetRules(logger *zap.SugaredLogger) ([]Rule, error) {
 	}
 
 	if sfConfig.IsValid() {
+		logger.Debug("snowflake config is valid, pinging the database to check if we can connect")
+		sf, err := snowflake.NewDB(sfConfig, logger)
+		if err != nil {
+			return nil, err
+		}
+		logger.Debug("snowflake ping is successful, adding the validator to the list of rules")
+
 		renderer := &query.Renderer{
 			Args: map[string]string{
 				"ds":                   time.Now().Format("2006-01-02"),
@@ -63,10 +70,9 @@ func GetRules(logger *zap.SugaredLogger) ([]Rule, error) {
 				"macros.ds_add(ds, 1)": time.Now().Add(24 * time.Hour).Format("2006-01-02"),
 			},
 		}
-		queryExtractor := query.FileExtractor{Fs: fs, Renderer: renderer}
-		sf, err := snowflake.NewDB(sfConfig, logger)
-		if err != nil {
-			return nil, err
+		queryExtractor := query.FileExtractor{
+			Fs:       fs,
+			Renderer: renderer,
 		}
 
 		snowflakeValidator := &QueryValidatorRule{
