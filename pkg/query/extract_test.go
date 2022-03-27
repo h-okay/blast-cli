@@ -1,6 +1,7 @@
 package query
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -14,13 +15,13 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 		name            string
 		setupFilesystem func(t *testing.T, fs afero.Fs)
 		path            string
-		want            []string
+		want            []*ExplainableQuery
 		wantErr         bool
 	}{
 		{
 			name:    "file doesnt exist, fail",
 			path:    "somefile.txt",
-			want:    make([]string, 0),
+			want:    nil,
 			wantErr: true,
 		},
 		{
@@ -30,52 +31,116 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 				err := afero.WriteFile(fs, "somefile.txt", []byte("select * from users;"), 0o644)
 				require.NoError(t, err)
 			},
-			want: []string{"select * from users"},
+			want: []*ExplainableQuery{
+				{
+					Query: "select * from users",
+				},
+			},
 		},
 		{
 			name: "multiple queries, multiline",
 			path: "somefile.txt",
 			setupFilesystem: func(t *testing.T, fs afero.Fs) {
 				query := `select * from users;
-;;
-							select name from countries;;
-							`
+		;;
+									select name from countries;;
+									`
 				err := afero.WriteFile(fs, "somefile.txt", []byte(query), 0o644)
 				require.NoError(t, err)
 			},
-			want: []string{"select * from users", "select name from countries"},
+			want: []*ExplainableQuery{
+				{
+					Query: "select * from users",
+				},
+				{
+					Query: "select name from countries",
+				},
+			},
 		},
 		{
 			name: "multiple queries, multiline, starts with a comment",
 			path: "somefile.txt",
 			setupFilesystem: func(t *testing.T, fs afero.Fs) {
 				query := `
--- here's some comment
-select * from users;
-;;
-							select name from countries;;
-							`
+		-- here's some comment
+		select * from users;
+		;;
+									select name from countries;;
+									`
 				err := afero.WriteFile(fs, "somefile.txt", []byte(query), 0o644)
 				require.NoError(t, err)
 			},
-			want: []string{"select * from users", "select name from countries"},
+			want: []*ExplainableQuery{
+				{
+					Query: "select * from users",
+				},
+				{
+					Query: "select name from countries",
+				},
+			},
 		},
 		{
 			name: "multiple queries, multiline, comments in the middle",
 			path: "somefile.txt",
 			setupFilesystem: func(t *testing.T, fs afero.Fs) {
 				query := `
--- here's some comment
-select * from users;
-;;
--- here's some other comment
-	-- and a nested one event
-select name from countries;;
-							`
+		-- here's some comment
+		select * from users;
+		;;
+		-- here's some other comment
+			-- and a nested one event
+/*
+some random query between comments;
+*/
+		select name from countries;;
+									`
 				err := afero.WriteFile(fs, "somefile.txt", []byte(query), 0o644)
 				require.NoError(t, err)
 			},
-			want: []string{"select * from users", "select name from countries"},
+			want: []*ExplainableQuery{
+				{
+					Query: "select * from users",
+				},
+				{
+					Query: "select name from countries",
+				},
+			},
+		},
+		{
+			name: "multiple queries, multiline, variable definitions are collected",
+			path: "somefile.txt",
+			setupFilesystem: func(t *testing.T, fs afero.Fs) {
+				query := `
+		-- here's some comment
+set analysis_period_days = 21;
+		select * from users;
+		;;
+set analysis_start_date = dateadd(days, -($analysis_period_days - 1), $analysis_end_date);
+set min_level_req = 22;
+		-- here's some other comment
+			-- and a nested one event
+		
+		select name from countries;;
+									`
+				err := afero.WriteFile(fs, "somefile.txt", []byte(query), 0o644)
+				require.NoError(t, err)
+			},
+			want: []*ExplainableQuery{
+				{
+					VariableDefinitions: []string{
+						"set analysis_period_days = 21",
+					},
+					Query: "select * from users",
+				},
+				{
+					VariableDefinitions: []string{
+						"set analysis_period_days = 21",
+						"set analysis_start_date = dateadd(days, -($analysis_period_days - 1), $analysis_end_date)",
+						"set min_level_req = 22",
+					},
+					Query: "select name from countries",
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -94,12 +159,56 @@ select name from countries;;
 
 			got, err := f.ExtractQueriesFromFile(tt.path)
 			if tt.wantErr {
-				require.Error(t, err)
+				assert.Error(t, err)
 			} else {
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 
-			require.Equal(t, tt.want, got)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestExplainableQuery_ToExplainQuery(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		VariableDefinitions []string
+		Query               string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "no variables, simple query",
+			fields: fields{
+				Query: "select * from users",
+			},
+			want: "EXPLAIN select * from users;",
+		},
+		{
+			name: "multiple variables, simple query",
+			fields: fields{
+				VariableDefinitions: []string{"set var1 = '1'", "set var2 = 2"},
+				Query:               "select * from users",
+			},
+			want: `set var1 = '1';
+set var2 = 2;
+EXPLAIN select * from users;`,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			e := ExplainableQuery{
+				VariableDefinitions: tt.fields.VariableDefinitions,
+				Query:               tt.fields.Query,
+			}
+			assert.Equal(t, tt.want, e.ToExplainQuery())
 		})
 	}
 }
