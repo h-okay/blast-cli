@@ -23,7 +23,7 @@ func (e ExplainableQuery) ToExplainQuery() string {
 	return eq
 }
 
-var queryCommentRegex = regexp.MustCompile(`(?s)\/\*.*?\*\/|--.*?\n`)
+var queryCommentRegex = regexp.MustCompile(`(?m)(?s)\/\*.*?\*\/|(^|\s)--.*?\n`)
 
 type renderer interface {
 	Render(string) string
