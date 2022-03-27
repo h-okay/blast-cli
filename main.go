@@ -41,14 +41,23 @@ func main() {
 				Usage:     "validate the blast pipeline configuration for all the pipelines in a given directory",
 				ArgsUsage: "[path to pipelines]",
 				Action: func(c *cli.Context) error {
+					errorPrinter := color.New(color.FgRed, color.Bold)
+					logger := makeLogger(isDebug)
+
 					builderConfig := pipeline.BuilderConfig{
 						PipelineFileName:   pipelineDefinitionFile,
 						TasksDirectoryName: defaultTasksPath,
 						TasksFileName:      defaultTaskFileName,
 					}
 					builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
-					rules := lint.GetRules()
-					linter := lint.NewLinter(path.GetPipelinePaths, builder, rules, makeLogger(isDebug))
+
+					rules, err := lint.GetRules(logger)
+					if err != nil {
+						errorPrinter.Printf("An error occurred while linting the pipelines: %v\n", err)
+						return cli.Exit("", 1)
+					}
+
+					linter := lint.NewLinter(path.GetPipelinePaths, builder, rules, logger)
 
 					rootPath := c.Args().Get(0)
 					if rootPath == "" {
@@ -57,8 +66,7 @@ func main() {
 
 					result, err := linter.Lint(rootPath, pipelineDefinitionFile)
 					if err != nil {
-						printer := color.New(color.FgRed, color.Bold)
-						printer.Printf("An error occurred while linting the pipelines: %v\n", err)
+						errorPrinter.Printf("An error occurred while linting the pipelines: %v\n", err)
 						return cli.Exit("", 1)
 					}
 
