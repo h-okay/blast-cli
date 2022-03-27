@@ -8,7 +8,6 @@ import (
 	"github.com/datablast-analytics/blast-cli/pkg/path"
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/fatih/color"
-	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/zap"
 )
@@ -19,45 +18,6 @@ const (
 	defaultTasksPath       = "tasks"
 	defaultTaskFileName    = "task.yml"
 )
-
-var validationRules = []lint.Rule{
-	&lint.SimpleRule{
-		Identifier: "task-name-valid",
-		Validator:  lint.EnsureTaskNameIsValid,
-	},
-	&lint.SimpleRule{
-		Identifier: "task-name-valid",
-		Validator:  lint.EnsureTaskNameIsValid,
-	},
-	&lint.SimpleRule{
-		Identifier: "task-name-unique",
-		Validator:  lint.EnsureTaskNameIsUnique,
-	},
-	&lint.SimpleRule{
-		Identifier: "dependency-exists",
-		Validator:  lint.EnsureDependencyExists,
-	},
-	&lint.SimpleRule{
-		Identifier: "valid-executable-file",
-		Validator:  lint.EnsureExecutableFileIsValid(afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)),
-	},
-	&lint.SimpleRule{
-		Identifier: "valid-pipeline-schedule",
-		Validator:  lint.EnsurePipelineScheduleIsValidCron,
-	},
-	&lint.SimpleRule{
-		Identifier: "valid-pipeline-name",
-		Validator:  lint.EnsurePipelineNameIsValid,
-	},
-	&lint.SimpleRule{
-		Identifier: "valid-task-type",
-		Validator:  lint.EnsureOnlyAcceptedTaskTypesAreThere,
-	},
-	&lint.SimpleRule{
-		Identifier: "acyclic-pipeline",
-		Validator:  lint.EnsurePipelineHasNoCycles,
-	},
-}
 
 func main() {
 	isDebug := false
@@ -81,13 +41,23 @@ func main() {
 				Usage:     "validate the blast pipeline configuration for all the pipelines in a given directory",
 				ArgsUsage: "[path to pipelines]",
 				Action: func(c *cli.Context) error {
+					errorPrinter := color.New(color.FgRed, color.Bold)
+					logger := makeLogger(isDebug)
+
 					builderConfig := pipeline.BuilderConfig{
 						PipelineFileName:   pipelineDefinitionFile,
 						TasksDirectoryName: defaultTasksPath,
 						TasksFileName:      defaultTaskFileName,
 					}
 					builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
-					linter := lint.NewLinter(path.GetPipelinePaths, builder, validationRules, makeLogger(isDebug))
+
+					rules, err := lint.GetRules(logger)
+					if err != nil {
+						errorPrinter.Printf("An error occurred while linting the pipelines: %v\n", err)
+						return cli.Exit("", 1)
+					}
+
+					linter := lint.NewLinter(path.GetPipelinePaths, builder, rules, logger)
 
 					rootPath := c.Args().Get(0)
 					if rootPath == "" {
@@ -96,8 +66,7 @@ func main() {
 
 					result, err := linter.Lint(rootPath, pipelineDefinitionFile)
 					if err != nil {
-						printer := color.New(color.FgRed, color.Bold)
-						printer.Printf("An error occurred while linting the pipelines: %v\n", err)
+						errorPrinter.Printf("An error occurred while linting the pipelines: %v\n", err)
 						return cli.Exit("", 1)
 					}
 
@@ -118,11 +87,15 @@ func main() {
 }
 
 func makeLogger(isDebug bool) *zap.SugaredLogger {
-	logger, err := zap.NewProduction()
+	config := zap.NewProductionConfig()
 	if isDebug {
-		logger, err = zap.NewDevelopment()
+		config = zap.NewDevelopmentConfig()
 	}
 
+	config.Sampling = nil
+	config.Encoding = "console"
+
+	logger, err := config.Build()
 	if err != nil {
 		panic(err)
 	}

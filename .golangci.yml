@@ -1,5 +1,4 @@
 linters:
-  #  enable-all: true
   disable:
     - scopelint
     - goerr113
@@ -15,7 +14,11 @@ linters:
     - wsl
     - thelper
     - testpackage
+    - typecheck
     - nlreturn
+    - nilnil
+    - varnamelen
+    - forcetypeassert
   presets:
     - bugs
     - comment
@@ -37,3 +40,5 @@ linters-settings:
     rules:
       - name: unexported-return
         disabled: true
+  maintidx:
+    under: 10

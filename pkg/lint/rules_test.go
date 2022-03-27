@@ -6,6 +6,7 @@ import (
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -392,12 +393,12 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 
 			got, err := checker(&tt.args.pipeline)
 			if tt.wantErr {
-				require.Error(t, err)
+				assert.Error(t, err)
 			} else {
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 
-			require.Equal(t, tt.want, got)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
