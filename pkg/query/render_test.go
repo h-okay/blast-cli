@@ -1,8 +1,9 @@
 package query
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestRenderer_RenderQuery(t *testing.T) {
@@ -38,14 +39,10 @@ func TestRenderer_RenderQuery(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			receiver := Renderer{}
-			got, err := receiver.RenderQuery(tt.query, tt.args)
-
-			if tt.wantErr {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
+			receiver := Renderer{
+				Args: tt.args,
 			}
+			got := receiver.Render(tt.query)
 
 			require.Equal(t, tt.want, got)
 		})

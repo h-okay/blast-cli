@@ -1,11 +1,11 @@
 package query
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"testing"
 
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -51,6 +51,7 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 				require.NoError(t, err)
 			},
 			setupRenderer: noOpRenderer,
+			want:          make([]*ExplainableQuery, 0),
 		},
 		{
 			name: "single query",

@@ -28,6 +28,7 @@ var queryCommentRegex = regexp.MustCompile(`(?s)\/\*.*?\*\/|--.*?\n`)
 type renderer interface {
 	Render(string) string
 }
+
 type FileExtractor struct {
 	Fs       afero.Fs
 	Renderer renderer
@@ -46,7 +47,7 @@ func (f FileExtractor) ExtractQueriesFromFile(filepath string) ([]*ExplainableQu
 }
 
 func splitQueries(fileContent string) []*ExplainableQuery {
-	var queries []*ExplainableQuery
+	queries := make([]*ExplainableQuery, 0)
 	var sqlVariablesSeenSoFar []string
 
 	for _, query := range strings.Split(fileContent, ";") {
