@@ -70,7 +70,9 @@ func main() {
 						return cli.Exit("", 1)
 					}
 
-					printer := lint.Printer{}
+					printer := lint.Printer{
+						RootCheckPath: rootPath,
+					}
 					printer.PrintIssues(result)
 
 					if result.HasErrors() {

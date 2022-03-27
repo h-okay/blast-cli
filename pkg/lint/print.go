@@ -8,7 +8,9 @@ import (
 	"github.com/fatih/color"
 )
 
-type Printer struct{}
+type Printer struct {
+	RootCheckPath string
+}
 
 type taskSummary struct {
 	rule   Rule
@@ -26,14 +28,14 @@ var (
 
 func (l *Printer) PrintIssues(analysis *PipelineAnalysisResult) {
 	for _, pipelineIssues := range analysis.Pipelines {
-		printPipelineSummary(pipelineIssues)
+		l.printPipelineSummary(pipelineIssues)
 	}
 }
 
-func printPipelineSummary(pipelineIssues *PipelineIssues) {
+func (l *Printer) printPipelineSummary(pipelineIssues *PipelineIssues) {
 	successPrinter.Println()
 
-	pipelineDirectory := filepath.Dir(pipelineIssues.Pipeline.DefinitionFile.Path)
+	pipelineDirectory := l.relativePipelinePath(pipelineIssues.Pipeline)
 	pipelinePrinter.Printf("Pipeline: %s %s\n", pipelineIssues.Pipeline.Name, faint(fmt.Sprintf("(%s)", pipelineDirectory)))
 
 	if len(pipelineIssues.Issues) == 0 {
@@ -90,6 +92,23 @@ func printPipelineSummary(pipelineIssues *PipelineIssues) {
 
 		issuePrinter.Println()
 	}
+}
+
+func (l Printer) relativePipelinePath(p *pipeline.Pipeline) string {
+	absolutePipelineRoot := filepath.Dir(p.DefinitionFile.Path)
+
+	absRootPath, err := filepath.Abs(l.RootCheckPath)
+	if err != nil {
+		return absolutePipelineRoot
+	}
+
+	pipelineDirectory, err := filepath.Rel(absRootPath, absolutePipelineRoot)
+	if err != nil {
+		return absolutePipelineRoot
+	}
+
+	return pipelineDirectory
+
 }
 
 func printIssues(rule Rule, issues []*Issue) {
