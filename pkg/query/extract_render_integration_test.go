@@ -31,7 +31,8 @@ set variable4 = dateadd(days, -($variable2 - 1), $variable1);
 CREATE OR REPLACE TABLE my-awesome-table as
 with dummy_dates as (
         SELECT
-            dateadd(days, -(ROW_NUMBER() OVER (ORDER BY seq4()) - 1), $variable1) as event_date
+            dateadd(days, -(ROW_NUMBER() OVER (ORDER BY seq4()) - 1), $variable1) as event_date,
+            concat(value1, '--', value2) as commentSyntaxAsString,
         FROM TABLE(GENERATOR(ROWCOUNT => $variable2 + 1))
     ),
     joinedTable as (
@@ -82,7 +83,8 @@ with dummy_dates as (
 			Query: `CREATE OR REPLACE TABLE my-awesome-table as
 with dummy_dates as (
         SELECT
-            dateadd(days, -(ROW_NUMBER() OVER (ORDER BY seq4()) - 1), $variable1) as event_date
+            dateadd(days, -(ROW_NUMBER() OVER (ORDER BY seq4()) - 1), $variable1) as event_date,
+            concat(value1, '--', value2) as commentSyntaxAsString,
         FROM TABLE(GENERATOR(ROWCOUNT => $variable2 + 1))
     ),
     joinedTable as (
