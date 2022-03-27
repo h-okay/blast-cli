@@ -31,7 +31,8 @@ const (
 )
 
 const (
-	taskTypePython = "python"
+	taskTypePython         = "python"
+	taskTypeSnowflakeQuery = "sf.sql"
 )
 
 var validTaskTypes = map[string]struct{}{
@@ -41,7 +42,7 @@ var validTaskTypes = map[string]struct{}{
 	"gcs.from.s3":          {},
 	taskTypePython:         {},
 	"s3.sensor.key_sensor": {},
-	"sf.sql":               {},
+	taskTypeSnowflakeQuery: {},
 }
 
 var validIDRegexCompiled = regexp.MustCompile(validIDRegex)
