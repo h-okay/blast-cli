@@ -35,11 +35,7 @@ func (l *Printer) PrintIssues(analysis *PipelineAnalysisResult) {
 func (l *Printer) printPipelineSummary(pipelineIssues *PipelineIssues) {
 	successPrinter.Println()
 
-	pipelineDir := filepath.Dir(pipelineIssues.Pipeline.DefinitionFile.Path)
-	pipelineDirectory, err := filepath.Rel(l.RootCheckPath, pipelineDir)
-	if err != nil {
-		issuePrinter.Printf("Cannot construct pipeline dir: %v\n", err)
-	}
+	pipelineDirectory := l.relativePipelinePath(pipelineIssues.Pipeline)
 	pipelinePrinter.Printf("Pipeline: %s %s\n", pipelineIssues.Pipeline.Name, faint(fmt.Sprintf("(%s)", pipelineDirectory)))
 
 	if len(pipelineIssues.Issues) == 0 {
@@ -96,6 +92,23 @@ func (l *Printer) printPipelineSummary(pipelineIssues *PipelineIssues) {
 
 		issuePrinter.Println()
 	}
+}
+
+func (l Printer) relativePipelinePath(p *pipeline.Pipeline) string {
+	absolutePipelineRoot := filepath.Dir(p.DefinitionFile.Path)
+
+	absRootPath, err := filepath.Abs(l.RootCheckPath)
+	if err != nil {
+		return absolutePipelineRoot
+	}
+
+	pipelineDirectory, err := filepath.Rel(absRootPath, absolutePipelineRoot)
+	if err != nil {
+		return absolutePipelineRoot
+	}
+
+	return pipelineDirectory
+
 }
 
 func printIssues(rule Rule, issues []*Issue) {
