@@ -108,7 +108,6 @@ func (l Printer) relativePipelinePath(p *pipeline.Pipeline) string {
 	}
 
 	return pipelineDirectory
-
 }
 
 func printIssues(rule Rule, issues []*Issue) {

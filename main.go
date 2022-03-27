@@ -10,6 +10,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -89,13 +90,33 @@ func main() {
 }
 
 func makeLogger(isDebug bool) *zap.SugaredLogger {
-	config := zap.NewProductionConfig()
-	if isDebug {
-		config = zap.NewDevelopmentConfig()
+	config := zap.Config{
+		Level:       zap.NewAtomicLevelAt(zap.InfoLevel),
+		Development: false,
+		Sampling:    nil,
+		Encoding:    "console",
+		EncoderConfig: zapcore.EncoderConfig{
+			TimeKey:        "ts",
+			LevelKey:       "level",
+			NameKey:        "logger",
+			FunctionKey:    zapcore.OmitKey,
+			MessageKey:     "msg",
+			StacktraceKey:  "stacktrace",
+			LineEnding:     zapcore.DefaultLineEnding,
+			EncodeLevel:    zapcore.CapitalLevelEncoder,
+			EncodeTime:     zapcore.ISO8601TimeEncoder,
+			EncodeDuration: zapcore.StringDurationEncoder,
+			EncodeCaller:   zapcore.ShortCallerEncoder,
+		},
+		OutputPaths:      []string{"stderr"},
+		ErrorOutputPaths: []string{"stderr"},
 	}
 
-	config.Sampling = nil
-	config.Encoding = "console"
+	if isDebug {
+		config.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+		config.Development = true
+		config.EncoderConfig.CallerKey = "caller"
+	}
 
 	logger, err := config.Build()
 	if err != nil {
