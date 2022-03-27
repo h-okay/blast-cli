@@ -2,18 +2,37 @@ package query
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"testing"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
 
+type mockNoOpRenderer struct {
+	mock.Mock
+}
+
+func (m *mockNoOpRenderer) Render(template string) string {
+	args := m.Called(template)
+	if args.Get(0) == "default" {
+		return template
+	}
+
+	return args.String(0)
+}
+
 func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 	t.Parallel()
+
+	noOpRenderer := func(mr renderer) {
+		mr.(*mockNoOpRenderer).On("Render", mock.Anything).Return("default")
+	}
 
 	tests := []struct {
 		name            string
 		setupFilesystem func(t *testing.T, fs afero.Fs)
+		setupRenderer   func(mr renderer)
 		path            string
 		want            []*ExplainableQuery
 		wantErr         bool
@@ -31,6 +50,7 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 				err := afero.WriteFile(fs, "somefile.txt", []byte("set variable1 = asd; set variable2 = 123;"), 0o644)
 				require.NoError(t, err)
 			},
+			setupRenderer: noOpRenderer,
 		},
 		{
 			name: "single query",
@@ -39,9 +59,28 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 				err := afero.WriteFile(fs, "somefile.txt", []byte("select * from users;"), 0o644)
 				require.NoError(t, err)
 			},
+			setupRenderer: noOpRenderer,
 			want: []*ExplainableQuery{
 				{
 					Query: "select * from users",
+				},
+			},
+		},
+		{
+			name: "single query, rendered properly",
+			path: "somefile.txt",
+			setupFilesystem: func(t *testing.T, fs afero.Fs) {
+				err := afero.WriteFile(fs, "somefile.txt", []byte("select * from users-{{ds}};"), 0o644)
+				require.NoError(t, err)
+			},
+			setupRenderer: func(mr renderer) {
+				mr.(*mockNoOpRenderer).
+					On("Render", mock.Anything).
+					Return("select * from users-2022-01-01")
+			},
+			want: []*ExplainableQuery{
+				{
+					Query: "select * from users-2022-01-01",
 				},
 			},
 		},
@@ -56,6 +95,7 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 				err := afero.WriteFile(fs, "somefile.txt", []byte(query), 0o644)
 				require.NoError(t, err)
 			},
+			setupRenderer: noOpRenderer,
 			want: []*ExplainableQuery{
 				{
 					Query: "select * from users",
@@ -78,6 +118,7 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 				err := afero.WriteFile(fs, "somefile.txt", []byte(query), 0o644)
 				require.NoError(t, err)
 			},
+			setupRenderer: noOpRenderer,
 			want: []*ExplainableQuery{
 				{
 					Query: "select * from users",
@@ -105,6 +146,7 @@ some random query between comments;
 				err := afero.WriteFile(fs, "somefile.txt", []byte(query), 0o644)
 				require.NoError(t, err)
 			},
+			setupRenderer: noOpRenderer,
 			want: []*ExplainableQuery{
 				{
 					Query: "select * from users",
@@ -133,6 +175,7 @@ set min_level_req = 22;
 				err := afero.WriteFile(fs, "somefile.txt", []byte(query), 0o644)
 				require.NoError(t, err)
 			},
+			setupRenderer: noOpRenderer,
 			want: []*ExplainableQuery{
 				{
 					VariableDefinitions: []string{
@@ -161,8 +204,14 @@ set min_level_req = 22;
 				tt.setupFilesystem(t, fs)
 			}
 
+			mr := new(mockNoOpRenderer)
+			if tt.setupRenderer != nil {
+				tt.setupRenderer(mr)
+			}
+
 			f := FileExtractor{
-				Fs: fs,
+				Fs:       fs,
+				Renderer: mr,
 			}
 
 			got, err := f.ExtractQueriesFromFile(tt.path)
@@ -173,6 +222,7 @@ set min_level_req = 22;
 			}
 
 			assert.Equal(t, tt.want, got)
+			mr.AssertExpectations(t)
 		})
 	}
 }

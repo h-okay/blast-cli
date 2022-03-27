@@ -8,10 +8,6 @@ import (
 	"github.com/spf13/afero"
 )
 
-type FileExtractor struct {
-	Fs afero.Fs
-}
-
 type ExplainableQuery struct {
 	VariableDefinitions []string
 	Query               string
@@ -29,6 +25,14 @@ func (e ExplainableQuery) ToExplainQuery() string {
 
 var queryCommentRegex = regexp.MustCompile(`(?s)\/\*.*?\*\/|--.*?\n`)
 
+type renderer interface {
+	Render(string) string
+}
+type FileExtractor struct {
+	Fs       afero.Fs
+	Renderer renderer
+}
+
 func (f FileExtractor) ExtractQueriesFromFile(filepath string) ([]*ExplainableQuery, error) {
 	contents, err := afero.ReadFile(f.Fs, filepath)
 	if err != nil {
@@ -36,6 +40,7 @@ func (f FileExtractor) ExtractQueriesFromFile(filepath string) ([]*ExplainableQu
 	}
 
 	cleanedUpQueries := queryCommentRegex.ReplaceAllLiteralString(string(contents), "\n")
+	cleanedUpQueries = f.Renderer.Render(cleanedUpQueries)
 
 	return splitQueries(cleanedUpQueries), nil
 }
@@ -65,6 +70,10 @@ func splitQueries(fileContent string) []*ExplainableQuery {
 		lowerCaseVersion := strings.ToLower(cleanQuery)
 		if strings.HasPrefix(lowerCaseVersion, "set") || strings.HasPrefix(lowerCaseVersion, "declare") {
 			sqlVariablesSeenSoFar = append(sqlVariablesSeenSoFar, cleanQuery)
+			continue
+		}
+
+		if strings.HasPrefix(lowerCaseVersion, "use") {
 			continue
 		}
 
