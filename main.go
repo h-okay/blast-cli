@@ -87,10 +87,15 @@ func main() {
 }
 
 func makeLogger(isDebug bool) *zap.SugaredLogger {
-	logger, err := zap.NewProduction()
+	config := zap.NewProductionConfig()
 	if isDebug {
-		logger, err = zap.NewDevelopment()
+		config = zap.NewDevelopmentConfig()
 	}
+
+	config.Sampling = nil
+	config.Encoding = "console"
+
+	logger, err := config.Build()
 
 	if err != nil {
 		panic(err)
