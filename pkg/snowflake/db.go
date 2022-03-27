@@ -47,7 +47,7 @@ func (db DB) IsValid(ctx context.Context, query string) (bool, error) {
 		err = rows.Err()
 	}
 
-	if err != nil || rows.Err() != nil {
+	if err != nil {
 		errorMessage := err.Error()
 		if strings.Contains(errorMessage, invalidQueryError) {
 			errorSegments := strings.Split(errorMessage, "\n")
