@@ -96,7 +96,6 @@ func makeLogger(isDebug bool) *zap.SugaredLogger {
 	config.Encoding = "console"
 
 	logger, err := config.Build()
-
 	if err != nil {
 		panic(err)
 	}
