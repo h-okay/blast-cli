@@ -10,6 +10,9 @@ type Config struct {
 	Username string `envconfig:"SNOWFLAKE_USERNAME"`
 	Password string `envconfig:"SNOWFLAKE_PASSWORD"`
 	Region   string `envconfig:"SNOWFLAKE_REGION"`
+	Role     string `envconfig:"SNOWFLAKE_ROLE"`
+	Database string `envconfig:"SNOWFLAKE_DATABASE"`
+	Schema   string `envconfig:"SNOWFLAKE_SCHEMA"`
 }
 
 func (c Config) DSN() (string, error) {
@@ -18,9 +21,16 @@ func (c Config) DSN() (string, error) {
 		User:     c.Username,
 		Password: c.Password,
 		Region:   c.Region,
+		Role:     c.Role,
+		Database: c.Database,
+		Schema:   c.Schema,
 	}
 
 	return gosnowflake.DSN(&snowflakeConfig)
+}
+
+func (c Config) IsValid() bool {
+	return c.Account != "" && c.Username != "" && c.Password != "" && c.Region != ""
 }
 
 func LoadConfigFromEnv() (*Config, error) {

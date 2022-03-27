@@ -28,7 +28,7 @@ func TestDB_IsValid(t *testing.T) {
 				mock.ExpectQuery(`EXPLAIN SELECT 1`).
 					WillReturnRows(sqlmock.NewRows([]string{"rows", "filtered"}))
 			},
-			query: `SELECT 1`,
+			query: `EXPLAIN SELECT 1`,
 			want:  true,
 		},
 		{
@@ -38,7 +38,7 @@ func TestDB_IsValid(t *testing.T) {
 					WillReturnRows(sqlmock.NewRows([]string{"rows", "filtered"})).
 					WillReturnError(fmt.Errorf("%s\nsome actual error", invalidQueryError))
 			},
-			query:        `some broken query`,
+			query:        `EXPLAIN some broken query`,
 			want:         false,
 			wantErr:      true,
 			errorMessage: "some actual error",
@@ -46,7 +46,7 @@ func TestDB_IsValid(t *testing.T) {
 		{
 			name: "generic errors are just propagated",
 			mockConnection: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(`EXPLAIN some broken query`).
+				mock.ExpectQuery(`some broken query`).
 					WillReturnRows(sqlmock.NewRows([]string{"rows", "filtered"})).
 					WillReturnError(errors.New("something went wrong"))
 			},

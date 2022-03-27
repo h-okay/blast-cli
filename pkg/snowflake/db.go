@@ -2,7 +2,6 @@ package snowflake
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"strings"
 
@@ -38,8 +37,17 @@ func NewDB(c *Config, logger *zap.SugaredLogger) (*DB, error) {
 }
 
 func (db DB) IsValid(ctx context.Context, query string) (bool, error) {
-	rows, err := db.conn.QueryContext(ctx, fmt.Sprintf("EXPLAIN %s", query))
+	ctx, err := gosnowflake.WithMultiStatement(ctx, 0)
 	if err != nil {
+		return false, errors.Wrap(err, "failed to create snowflake context")
+	}
+
+	rows, err := db.conn.QueryContext(ctx, query)
+	if err == nil {
+		err = rows.Err()
+	}
+
+	if err != nil || rows.Err() != nil {
 		errorMessage := err.Error()
 		if strings.Contains(errorMessage, invalidQueryError) {
 			errorSegments := strings.Split(errorMessage, "\n")
