@@ -8,7 +8,9 @@ import (
 	"github.com/fatih/color"
 )
 
-type Printer struct{}
+type Printer struct {
+	RootCheckPath string
+}
 
 type taskSummary struct {
 	rule   Rule
@@ -26,14 +28,18 @@ var (
 
 func (l *Printer) PrintIssues(analysis *PipelineAnalysisResult) {
 	for _, pipelineIssues := range analysis.Pipelines {
-		printPipelineSummary(pipelineIssues)
+		l.printPipelineSummary(pipelineIssues)
 	}
 }
 
-func printPipelineSummary(pipelineIssues *PipelineIssues) {
+func (l *Printer) printPipelineSummary(pipelineIssues *PipelineIssues) {
 	successPrinter.Println()
 
-	pipelineDirectory := filepath.Dir(pipelineIssues.Pipeline.DefinitionFile.Path)
+	pipelineDir := filepath.Dir(pipelineIssues.Pipeline.DefinitionFile.Path)
+	pipelineDirectory, err := filepath.Rel(l.RootCheckPath, pipelineDir)
+	if err != nil {
+		issuePrinter.Printf("Cannot construct pipeline dir: %v\n", err)
+	}
 	pipelinePrinter.Printf("Pipeline: %s %s\n", pipelineIssues.Pipeline.Name, faint(fmt.Sprintf("(%s)", pipelineDirectory)))
 
 	if len(pipelineIssues.Issues) == 0 {
