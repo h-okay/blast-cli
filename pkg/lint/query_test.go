@@ -6,8 +6,10 @@ import (
 	"testing"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/datablast-analytics/blast-cli/pkg/query"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 type mockValidator struct {
@@ -23,9 +25,9 @@ type mockExtractor struct {
 	mock.Mock
 }
 
-func (m *mockExtractor) ExtractQueriesFromFile(filepath string) ([]string, error) {
+func (m *mockExtractor) ExtractQueriesFromFile(filepath string) ([]*query.ExplainableQuery, error) {
 	res := m.Called(filepath)
-	return res.Get(0).([]string), res.Error(1)
+	return res.Get(0).([]*query.ExplainableQuery), res.Error(1)
 }
 
 func TestQueryValidatorRule_Validate(t *testing.T) {
@@ -82,7 +84,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 			},
 			setupExtractor: func(m *mockExtractor) {
 				m.On("ExtractQueriesFromFile", "path/to/file-with-no-queries.sql").
-					Return([]string{}, errors.New("something failed"))
+					Return([]*query.ExplainableQuery{}, errors.New("something failed"))
 			},
 			want: []*Issue{
 				{
@@ -112,7 +114,8 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 				},
 			},
 			setupExtractor: func(m *mockExtractor) {
-				m.On("ExtractQueriesFromFile", "path/to/file-with-no-queries.sql").Return([]string{}, nil)
+				m.On("ExtractQueriesFromFile", "path/to/file-with-no-queries.sql").
+					Return([]*query.ExplainableQuery{}, nil)
 			},
 			want: []*Issue{
 				{
@@ -149,18 +152,32 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 			},
 			setupExtractor: func(m *mockExtractor) {
 				m.On("ExtractQueriesFromFile", "path/to/file1.sql").
-					Return([]string{"query11", "query12", "query13"}, nil)
+					Return(
+						[]*query.ExplainableQuery{
+							{Query: "query11"},
+							{Query: "query12"},
+							{Query: "query13"},
+						},
+						nil,
+					)
 				m.On("ExtractQueriesFromFile", "path/to/file2.sql").
-					Return([]string{"query21", "query22", "query23"}, nil)
+					Return(
+						[]*query.ExplainableQuery{
+							{Query: "query21"},
+							{Query: "query22"},
+							{Query: "query23"},
+						},
+						nil,
+					)
 			},
 			setupValidator: func(m *mockValidator) {
-				m.On("IsValid", mock.Anything, "query11").Return(true, nil)
-				m.On("IsValid", mock.Anything, "query12").Return(false, errors.New("invalid query query12"))
-				m.On("IsValid", mock.Anything, "query13").Return(true, nil)
+				m.On("IsValid", mock.Anything, "EXPLAIN query11;").Return(true, nil)
+				m.On("IsValid", mock.Anything, "EXPLAIN query12;").Return(false, errors.New("invalid query query12"))
+				m.On("IsValid", mock.Anything, "EXPLAIN query13;").Return(true, nil)
 
-				m.On("IsValid", mock.Anything, "query21").Return(true, nil)
-				m.On("IsValid", mock.Anything, "query22").Return(true, nil)
-				m.On("IsValid", mock.Anything, "query23").Return(false, nil)
+				m.On("IsValid", mock.Anything, "EXPLAIN query21;").Return(true, nil)
+				m.On("IsValid", mock.Anything, "EXPLAIN query22;").Return(true, nil)
+				m.On("IsValid", mock.Anything, "EXPLAIN query23;").Return(false, nil)
 			},
 			want: []*Issue{
 				{
@@ -170,7 +187,10 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 							Path: "path/to/file1.sql",
 						},
 					},
-					Description: "Invalid query found at 'query12': invalid query query12",
+					Description: "Invalid query found at index 1: invalid query query12",
+					Context: []string{
+						"Query: EXPLAIN query12;",
+					},
 				},
 				{
 					Task: &pipeline.Task{
@@ -180,6 +200,9 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 						},
 					},
 					Description: "Query 'query23' is invalid",
+					Context: []string{
+						"Query: EXPLAIN query23;",
+					},
 				},
 			},
 		},
@@ -204,16 +227,18 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 				TaskType:    taskType,
 				Validator:   validator,
 				Extractor:   extractor,
-				WorkerCount: 8,
-			}
-			got, err := q.Validate(tt.p)
-			if tt.wantErr {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
+				Logger:      zap.NewNop().Sugar(),
+				WorkerCount: 1,
 			}
 
-			require.ElementsMatchf(t, tt.want, got, "the wanted and got values dont match for issues")
+			got, err := q.Validate(tt.p)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.ElementsMatch(t, tt.want, got)
 			validator.AssertExpectations(t)
 			extractor.AssertExpectations(t)
 		})

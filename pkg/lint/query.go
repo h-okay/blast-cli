@@ -6,6 +6,8 @@ import (
 	"sync"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/datablast-analytics/blast-cli/pkg/query"
+	"go.uber.org/zap"
 )
 
 type queryValidator interface {
@@ -13,7 +15,7 @@ type queryValidator interface {
 }
 
 type queryExtractor interface {
-	ExtractQueriesFromFile(filepath string) ([]string, error)
+	ExtractQueriesFromFile(filepath string) ([]*query.ExplainableQuery, error)
 }
 
 type QueryValidatorRule struct {
@@ -22,13 +24,14 @@ type QueryValidatorRule struct {
 	Validator   queryValidator
 	Extractor   queryExtractor
 	WorkerCount int
+	Logger      *zap.SugaredLogger
 }
 
 func (q QueryValidatorRule) Name() string {
 	return q.Identifier
 }
 
-func (q QueryValidatorRule) validateTask(task *pipeline.Task, done chan []*Issue) {
+func (q QueryValidatorRule) validateTask(task *pipeline.Task, done chan<- []*Issue) {
 	issues := make([]*Issue, 0)
 
 	queries, err := q.Extractor.ExtractQueriesFromFile(task.ExecutableFile.Path)
@@ -42,6 +45,8 @@ func (q QueryValidatorRule) validateTask(task *pipeline.Task, done chan []*Issue
 		return
 	}
 
+	q.Logger.Debugf("Found %d queries in file '%s'", len(queries), task.ExecutableFile.Path)
+
 	if len(queries) == 0 {
 		issues = append(issues, &Issue{
 			Task:        task,
@@ -54,33 +59,47 @@ func (q QueryValidatorRule) validateTask(task *pipeline.Task, done chan []*Issue
 
 	var mu sync.Mutex
 	var wg sync.WaitGroup
-	wg.Add(len(queries))
 
-	for _, query := range queries {
-		go func(query string) {
+	for index, foundQuery := range queries {
+		wg.Add(1)
+		go func(index int, foundQuery *query.ExplainableQuery) {
 			defer wg.Done()
 
-			valid, err := q.Validator.IsValid(context.Background(), query)
+			q.Logger.Debugf("Checking if a query is valid")
+
+			valid, err := q.Validator.IsValid(context.Background(), foundQuery.ToExplainQuery())
 			if err != nil {
 				mu.Lock()
 				issues = append(issues, &Issue{
 					Task:        task,
-					Description: fmt.Sprintf("Invalid query found at '%s': %+v", query, err),
+					Description: fmt.Sprintf("Invalid query found at index %d: %s", index, err),
+					Context: []string{
+						"Query: " + foundQuery.ToExplainQuery(),
+					},
 				})
 				mu.Unlock()
 			} else if !valid {
 				mu.Lock()
 				issues = append(issues, &Issue{
 					Task:        task,
-					Description: fmt.Sprintf("Query '%s' is invalid", query),
+					Description: fmt.Sprintf("Query '%s' is invalid", foundQuery.Query),
+					Context: []string{
+						"Query: " + foundQuery.ToExplainQuery(),
+					},
 				})
 				mu.Unlock()
 			}
-		}(query)
+
+			q.Logger.Debugf("Finished with query checking")
+		}(index, foundQuery)
 	}
 
 	wg.Wait()
 	done <- issues
+}
+
+func (q QueryValidatorRule) bufferSize() int {
+	return 256
 }
 
 func (q *QueryValidatorRule) Validate(p *pipeline.Pipeline) ([]*Issue, error) {
@@ -91,31 +110,39 @@ func (q *QueryValidatorRule) Validate(p *pipeline.Pipeline) ([]*Issue, error) {
 		return issues, nil
 	}
 
-	taskChannel := make(chan *pipeline.Task)
-	results := make(chan []*Issue)
+	q.Logger.Debugf("Starting validation with %d workers for task type '%s'", q.WorkerCount, q.TaskType)
+
+	taskChannel := make(chan *pipeline.Task, q.bufferSize())
+	results := make(chan []*Issue, q.bufferSize())
 
 	// start the workers
 	for i := 0; i < q.WorkerCount; i++ {
-		go func() {
+		go func(taskChannel <-chan *pipeline.Task, results chan<- []*Issue) {
 			for task := range taskChannel {
 				q.validateTask(task, results)
 			}
-		}()
+		}(taskChannel, results)
 	}
 
 	processedTaskCount := 0
 	for _, task := range p.Tasks {
 		if task.Type != q.TaskType {
+			q.Logger.Debug("Skipping task, task type not matched")
 			continue
 		}
+		q.Logger.Debug("Processing task type")
 
 		processedTaskCount++
 		taskChannel <- task
+		q.Logger.Debugf("Pushed a task to the taskChannel")
 	}
+	q.Logger.Infof("Processed %d tasks at path '%s', closing channel", processedTaskCount, p.DefinitionFile.Path)
 	close(taskChannel)
+	q.Logger.Debugf("Closed the channel")
 
 	for i := 0; i < processedTaskCount; i++ {
 		foundIssues := <-results
+		q.Logger.Debugf("Received issues: %d/%d", i+1, processedTaskCount)
 		issues = append(issues, foundIssues...)
 	}
 
