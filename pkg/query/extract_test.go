@@ -25,6 +25,14 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "only variables, no query",
+			path: "somefile.txt",
+			setupFilesystem: func(t *testing.T, fs afero.Fs) {
+				err := afero.WriteFile(fs, "somefile.txt", []byte("set variable1 = asd; set variable2 = 123;"), 0o644)
+				require.NoError(t, err)
+			},
+		},
+		{
 			name: "single query",
 			path: "somefile.txt",
 			setupFilesystem: func(t *testing.T, fs afero.Fs) {
