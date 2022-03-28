@@ -1,4 +1,4 @@
-name: Go
+name: Build and Test
 
 on:
   push:
@@ -7,19 +7,12 @@ on:
     branches: [ master ]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-
-    - name: Set up Go
-      uses: actions/setup-go@v2
+    - uses: actions/setup-go@v2
       with:
-        go-version: 1.17
-
-    - name: Test
-      run: make test
-
-    - name: Format
-      run: make format
+        go-version: 1.18
+    - run: make test
+    - run: make format
