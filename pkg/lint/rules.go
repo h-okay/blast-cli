@@ -36,13 +36,14 @@ const (
 )
 
 var validTaskTypes = map[string]struct{}{
-	"bq.sql":               {},
-	"bq.sensor.table":      {},
-	"bash":                 {},
-	"gcs.from.s3":          {},
-	taskTypePython:         {},
-	"s3.sensor.key_sensor": {},
-	taskTypeSnowflakeQuery: {},
+	"bq.sql":                               {},
+	"bq.sensor.table":                      {},
+	"bash":                                 {},
+	"gcs.from.s3":                          {},
+	"gcs.sensor.object_sensor_with_prefix": {},
+	taskTypePython:                         {},
+	"s3.sensor.key_sensor":                 {},
+	taskTypeSnowflakeQuery:                 {},
 }
 
 var validIDRegexCompiled = regexp.MustCompile(validIDRegex)
