@@ -228,7 +228,7 @@ set min_level_req = 22;
 	}
 }
 
-func TestExplainableQuery_ToExplainQuery(t *testing.T) {
+func TestQuery_ToExplainQuery(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
@@ -241,20 +241,21 @@ func TestExplainableQuery_ToExplainQuery(t *testing.T) {
 		want   string
 	}{
 		{
-			name: "no variables, simple query",
+			name: "no variable definitions",
 			fields: fields{
 				Query: "select * from users",
 			},
 			want: "EXPLAIN select * from users;",
 		},
 		{
-			name: "multiple variables, simple query",
+			name: "no variable definitions",
 			fields: fields{
-				VariableDefinitions: []string{"set var1 = '1'", "set var2 = 2"},
-				Query:               "select * from users",
+				VariableDefinitions: []string{
+					"set analysis_period_days = 21",
+				},
+				Query: "select * from users",
 			},
-			want: `set var1 = '1';
-set var2 = 2;
+			want: `set analysis_period_days = 21;
 EXPLAIN select * from users;`,
 		},
 	}
@@ -267,7 +268,54 @@ EXPLAIN select * from users;`,
 				VariableDefinitions: tt.fields.VariableDefinitions,
 				Query:               tt.fields.Query,
 			}
+
 			assert.Equal(t, tt.want, e.ToExplainQuery())
+		})
+	}
+}
+
+func TestQuery_ToDryRunQuery(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		VariableDefinitions []string
+		Query               string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "no variable definitions",
+			fields: fields{
+				Query: "select * from users",
+			},
+			want: "select * from users;",
+		},
+		{
+			name: "no variable definitions",
+			fields: fields{
+				VariableDefinitions: []string{
+					"set analysis_period_days = 21",
+				},
+				Query: "select * from users",
+			},
+			want: `set analysis_period_days = 21;
+select * from users;`,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			e := Query{
+				VariableDefinitions: tt.fields.VariableDefinitions,
+				Query:               tt.fields.Query,
+			}
+
+			assert.Equal(t, tt.want, e.ToDryRunQuery())
 		})
 	}
 }

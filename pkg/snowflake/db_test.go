@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
 )

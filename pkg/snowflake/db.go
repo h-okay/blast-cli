@@ -2,10 +2,10 @@ package snowflake
 
 import (
 	"context"
-	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"io/ioutil"
 	"strings"
 
+	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/snowflakedb/gosnowflake"

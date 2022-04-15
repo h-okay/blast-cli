@@ -13,13 +13,27 @@ type Query struct {
 	Query               string
 }
 
-func (e Query) ToExplainQuery() string {
+func (q Query) ToExplainQuery() string {
 	eq := ""
-	if len(e.VariableDefinitions) > 0 {
-		eq += strings.Join(e.VariableDefinitions, ";\n") + ";\n"
+	if len(q.VariableDefinitions) > 0 {
+		eq += strings.Join(q.VariableDefinitions, ";\n") + ";\n"
 	}
 
-	eq += "EXPLAIN " + e.Query
+	eq += "EXPLAIN " + q.Query
+	if !strings.HasSuffix(eq, ";") {
+		eq += ";"
+	}
+
+	return eq
+}
+
+func (q Query) ToDryRunQuery() string {
+	eq := ""
+	if len(q.VariableDefinitions) > 0 {
+		eq += strings.Join(q.VariableDefinitions, ";\n") + ";\n"
+	}
+
+	eq += q.Query
 	if !strings.HasSuffix(eq, ";") {
 		eq += ";"
 	}
