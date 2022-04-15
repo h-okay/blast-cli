@@ -33,10 +33,11 @@ const (
 const (
 	taskTypePython         = "python"
 	taskTypeSnowflakeQuery = "sf.sql"
+	taskTypeBigqueryQuery  = "bq.sql"
 )
 
 var validTaskTypes = map[string]struct{}{
-	"bq.sql":                               {},
+	taskTypeBigqueryQuery:                  {},
 	"bq.sensor.table":                      {},
 	"bash":                                 {},
 	"gcs.from.s3":                          {},

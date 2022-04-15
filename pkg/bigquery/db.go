@@ -2,9 +2,9 @@ package bigquery
 
 import (
 	"context"
-	"fmt"
 
 	"cloud.google.com/go/bigquery"
+	"github.com/pkg/errors"
 	"google.golang.org/api/option"
 )
 
@@ -12,14 +12,14 @@ type DB struct {
 	client *bigquery.Client
 }
 
-func NewDB(c *Config) *DB {
+func NewDB(c *Config) (*DB, error) {
 	client, err := bigquery.NewClient(
 		context.Background(),
 		c.ProjectID,
 		option.WithCredentialsFile(c.CredentialsFilePath),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("cannot create bigquery client: %v", err))
+		return nil, errors.Wrap(err, "failed to create bigquery client")
 	}
 
 	if c.Location != "" {
@@ -28,7 +28,7 @@ func NewDB(c *Config) *DB {
 
 	return &DB{
 		client: client,
-	}
+	}, nil
 }
 
 func (d DB) IsValid(ctx context.Context, query string) (bool, error) {
