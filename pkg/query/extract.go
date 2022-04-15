@@ -19,7 +19,11 @@ func (e Query) ToExplainQuery() string {
 		eq += strings.Join(e.VariableDefinitions, ";\n") + ";\n"
 	}
 
-	eq += "EXPLAIN " + e.Query + ";"
+	eq += "EXPLAIN " + e.Query
+	if !strings.HasSuffix(eq, ";") {
+		eq += ";"
+	}
+
 	return eq
 }
 

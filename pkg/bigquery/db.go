@@ -2,6 +2,7 @@ package bigquery
 
 import (
 	"context"
+	"github.com/datablast-analytics/blast-cli/pkg/query"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/pkg/errors"
@@ -31,8 +32,8 @@ func NewDB(c *Config) (*DB, error) {
 	}, nil
 }
 
-func (d DB) IsValid(ctx context.Context, query string) (bool, error) {
-	q := d.client.Query(query)
+func (d DB) IsValid(ctx context.Context, query *query.Query) (bool, error) {
+	q := d.client.Query(query.Query)
 	q.DryRun = true
 
 	job, err := q.Run(ctx)

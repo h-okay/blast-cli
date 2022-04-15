@@ -2,6 +2,7 @@ package snowflake
 
 import (
 	"context"
+	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"io/ioutil"
 	"strings"
 
@@ -36,13 +37,13 @@ func NewDB(c *Config, logger *zap.SugaredLogger) (*DB, error) {
 	return &DB{conn: db, logger: logger}, nil
 }
 
-func (db DB) IsValid(ctx context.Context, query string) (bool, error) {
+func (db DB) IsValid(ctx context.Context, query *query.Query) (bool, error) {
 	ctx, err := gosnowflake.WithMultiStatement(ctx, 0)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to create snowflake context")
 	}
 
-	rows, err := db.conn.QueryContext(ctx, query)
+	rows, err := db.conn.QueryContext(ctx, query.ToExplainQuery())
 	if err == nil {
 		err = rows.Err()
 	}

@@ -3,6 +3,7 @@ package bigquery
 import (
 	"context"
 	"encoding/json"
+	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -110,7 +111,7 @@ func TestDB_IsValid(t *testing.T) {
 
 			d := DB{client: client}
 
-			got, err := d.IsValid(context.Background(), tt.query)
+			got, err := d.IsValid(context.Background(), &query.Query{Query: tt.query})
 			if tt.err == nil {
 				assert.NoError(t, err)
 			} else {

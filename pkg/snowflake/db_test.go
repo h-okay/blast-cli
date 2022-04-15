@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -17,7 +18,7 @@ func TestDB_IsValid(t *testing.T) {
 	tests := []struct {
 		name           string
 		mockConnection func(mock sqlmock.Sqlmock)
-		query          string
+		query          query.Query
 		want           bool
 		wantErr        bool
 		errorMessage   string
@@ -25,20 +26,24 @@ func TestDB_IsValid(t *testing.T) {
 		{
 			name: "simple valid select query is handled",
 			mockConnection: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(`EXPLAIN SELECT 1`).
+				mock.ExpectQuery(`EXPLAIN SELECT 1;`).
 					WillReturnRows(sqlmock.NewRows([]string{"rows", "filtered"}))
 			},
-			query: `EXPLAIN SELECT 1`,
-			want:  true,
+			query: query.Query{
+				Query: "SELECT 1",
+			},
+			want: true,
 		},
 		{
 			name: "invalid query is properly handled",
 			mockConnection: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(`EXPLAIN some broken query`).
+				mock.ExpectQuery(`EXPLAIN some broken query;`).
 					WillReturnRows(sqlmock.NewRows([]string{"rows", "filtered"})).
 					WillReturnError(fmt.Errorf("%s\nsome actual error", invalidQueryError))
 			},
-			query:        `EXPLAIN some broken query`,
+			query: query.Query{
+				Query: "some broken query",
+			},
 			want:         false,
 			wantErr:      true,
 			errorMessage: "some actual error",
@@ -46,11 +51,13 @@ func TestDB_IsValid(t *testing.T) {
 		{
 			name: "generic errors are just propagated",
 			mockConnection: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(`some broken query`).
+				mock.ExpectQuery(`EXPLAIN some broken query;`).
 					WillReturnRows(sqlmock.NewRows([]string{"rows", "filtered"})).
 					WillReturnError(errors.New("something went wrong"))
 			},
-			query:        `some broken query`,
+			query: query.Query{
+				Query: "some broken query",
+			},
 			want:         false,
 			wantErr:      true,
 			errorMessage: "something went wrong",
@@ -69,7 +76,7 @@ func TestDB_IsValid(t *testing.T) {
 			tt.mockConnection(mock)
 			db := DB{conn: sqlxDB}
 
-			got, err := db.IsValid(context.Background(), tt.query)
+			got, err := db.IsValid(context.Background(), &tt.query)
 			if tt.wantErr {
 				require.Error(t, err)
 				require.Equal(t, tt.errorMessage, err.Error())

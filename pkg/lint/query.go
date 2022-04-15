@@ -11,7 +11,7 @@ import (
 )
 
 type queryValidator interface {
-	IsValid(ctx context.Context, query string) (bool, error)
+	IsValid(ctx context.Context, query *query.Query) (bool, error)
 }
 
 type queryExtractor interface {
@@ -67,7 +67,7 @@ func (q QueryValidatorRule) validateTask(task *pipeline.Task, done chan<- []*Iss
 
 			q.Logger.Debugf("Checking if a query is valid")
 
-			valid, err := q.Validator.IsValid(context.Background(), foundQuery.ToExplainQuery())
+			valid, err := q.Validator.IsValid(context.Background(), foundQuery)
 			if err != nil {
 				mu.Lock()
 				issues = append(issues, &Issue{
