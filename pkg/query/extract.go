@@ -47,12 +47,15 @@ type renderer interface {
 	Render(string) string
 }
 
-type FileExtractor struct {
+// FileQuerySplitterExtractor is a regular file extractor, but it splits the queries in the given file into multiple
+// instances. For usecases that require EXPLAIN statements, such as validating Snowflake queries, it is not possible
+// to EXPLAIN a multi-query string directly, therefore we have to split them.
+type FileQuerySplitterExtractor struct {
 	Fs       afero.Fs
 	Renderer renderer
 }
 
-func (f FileExtractor) ExtractQueriesFromFile(filepath string) ([]*Query, error) {
+func (f FileQuerySplitterExtractor) ExtractQueriesFromFile(filepath string) ([]*Query, error) {
 	contents, err := afero.ReadFile(f.Fs, filepath)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not read file")
@@ -104,3 +107,4 @@ func splitQueries(fileContent string) []*Query {
 
 	return queries
 }
+

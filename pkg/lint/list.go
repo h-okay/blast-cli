@@ -20,7 +20,7 @@ var (
 		},
 	}
 	fs  = afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)
-	qex = query.FileExtractor{
+	qex = query.FileQuerySplitterExtractor{
 		Fs:       fs,
 		Renderer: renderer,
 	}

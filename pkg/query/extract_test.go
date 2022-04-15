@@ -210,7 +210,7 @@ set min_level_req = 22;
 				tt.setupRenderer(mr)
 			}
 
-			f := FileExtractor{
+			f := FileQuerySplitterExtractor{
 				Fs:       fs,
 				Renderer: mr,
 			}
