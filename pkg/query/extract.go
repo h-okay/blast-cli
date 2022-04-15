@@ -8,12 +8,12 @@ import (
 	"github.com/spf13/afero"
 )
 
-type ExplainableQuery struct {
+type Query struct {
 	VariableDefinitions []string
 	Query               string
 }
 
-func (e ExplainableQuery) ToExplainQuery() string {
+func (e Query) ToExplainQuery() string {
 	eq := ""
 	if len(e.VariableDefinitions) > 0 {
 		eq += strings.Join(e.VariableDefinitions, ";\n") + ";\n"
@@ -34,7 +34,7 @@ type FileExtractor struct {
 	Renderer renderer
 }
 
-func (f FileExtractor) ExtractQueriesFromFile(filepath string) ([]*ExplainableQuery, error) {
+func (f FileExtractor) ExtractQueriesFromFile(filepath string) ([]*Query, error) {
 	contents, err := afero.ReadFile(f.Fs, filepath)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not read file")
@@ -46,8 +46,8 @@ func (f FileExtractor) ExtractQueriesFromFile(filepath string) ([]*ExplainableQu
 	return splitQueries(cleanedUpQueries), nil
 }
 
-func splitQueries(fileContent string) []*ExplainableQuery {
-	queries := make([]*ExplainableQuery, 0)
+func splitQueries(fileContent string) []*Query {
+	queries := make([]*Query, 0)
 	var sqlVariablesSeenSoFar []string
 
 	for _, query := range strings.Split(fileContent, ";") {
@@ -78,7 +78,7 @@ func splitQueries(fileContent string) []*ExplainableQuery {
 			continue
 		}
 
-		queries = append(queries, &ExplainableQuery{
+		queries = append(queries, &Query{
 			VariableDefinitions: sqlVariablesSeenSoFar,
 			Query:               strings.TrimSpace(cleanQuery),
 		})

@@ -15,7 +15,7 @@ type queryValidator interface {
 }
 
 type queryExtractor interface {
-	ExtractQueriesFromFile(filepath string) ([]*query.ExplainableQuery, error)
+	ExtractQueriesFromFile(filepath string) ([]*query.Query, error)
 }
 
 type QueryValidatorRule struct {
@@ -62,7 +62,7 @@ func (q QueryValidatorRule) validateTask(task *pipeline.Task, done chan<- []*Iss
 
 	for index, foundQuery := range queries {
 		wg.Add(1)
-		go func(index int, foundQuery *query.ExplainableQuery) {
+		go func(index int, foundQuery *query.Query) {
 			defer wg.Done()
 
 			q.Logger.Debugf("Checking if a query is valid")

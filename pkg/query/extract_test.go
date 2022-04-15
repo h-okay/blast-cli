@@ -34,7 +34,7 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 		setupFilesystem func(t *testing.T, fs afero.Fs)
 		setupRenderer   func(mr renderer)
 		path            string
-		want            []*ExplainableQuery
+		want            []*Query
 		wantErr         bool
 	}{
 		{
@@ -51,7 +51,7 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 				require.NoError(t, err)
 			},
 			setupRenderer: noOpRenderer,
-			want:          make([]*ExplainableQuery, 0),
+			want:          make([]*Query, 0),
 		},
 		{
 			name: "single query",
@@ -61,7 +61,7 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 				require.NoError(t, err)
 			},
 			setupRenderer: noOpRenderer,
-			want: []*ExplainableQuery{
+			want: []*Query{
 				{
 					Query: "select * from users",
 				},
@@ -79,7 +79,7 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 					On("Render", mock.Anything).
 					Return("select * from users-2022-01-01")
 			},
-			want: []*ExplainableQuery{
+			want: []*Query{
 				{
 					Query: "select * from users-2022-01-01",
 				},
@@ -97,7 +97,7 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 				require.NoError(t, err)
 			},
 			setupRenderer: noOpRenderer,
-			want: []*ExplainableQuery{
+			want: []*Query{
 				{
 					Query: "select * from users",
 				},
@@ -120,7 +120,7 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 				require.NoError(t, err)
 			},
 			setupRenderer: noOpRenderer,
-			want: []*ExplainableQuery{
+			want: []*Query{
 				{
 					Query: "select * from users",
 				},
@@ -148,7 +148,7 @@ some random query between comments;
 				require.NoError(t, err)
 			},
 			setupRenderer: noOpRenderer,
-			want: []*ExplainableQuery{
+			want: []*Query{
 				{
 					Query: "select * from users",
 				},
@@ -177,7 +177,7 @@ set min_level_req = 22;
 				require.NoError(t, err)
 			},
 			setupRenderer: noOpRenderer,
-			want: []*ExplainableQuery{
+			want: []*Query{
 				{
 					VariableDefinitions: []string{
 						"set analysis_period_days = 21",
@@ -263,7 +263,7 @@ EXPLAIN select * from users;`,
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			e := ExplainableQuery{
+			e := Query{
 				VariableDefinitions: tt.fields.VariableDefinitions,
 				Query:               tt.fields.Query,
 			}

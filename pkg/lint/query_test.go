@@ -25,9 +25,9 @@ type mockExtractor struct {
 	mock.Mock
 }
 
-func (m *mockExtractor) ExtractQueriesFromFile(filepath string) ([]*query.ExplainableQuery, error) {
+func (m *mockExtractor) ExtractQueriesFromFile(filepath string) ([]*query.Query, error) {
 	res := m.Called(filepath)
-	return res.Get(0).([]*query.ExplainableQuery), res.Error(1)
+	return res.Get(0).([]*query.Query), res.Error(1)
 }
 
 func TestQueryValidatorRule_Validate(t *testing.T) {
@@ -84,7 +84,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 			},
 			setupExtractor: func(m *mockExtractor) {
 				m.On("ExtractQueriesFromFile", "path/to/file-with-no-queries.sql").
-					Return([]*query.ExplainableQuery{}, errors.New("something failed"))
+					Return([]*query.Query{}, errors.New("something failed"))
 			},
 			want: []*Issue{
 				{
@@ -115,7 +115,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 			},
 			setupExtractor: func(m *mockExtractor) {
 				m.On("ExtractQueriesFromFile", "path/to/file-with-no-queries.sql").
-					Return([]*query.ExplainableQuery{}, nil)
+					Return([]*query.Query{}, nil)
 			},
 			want: []*Issue{
 				{
@@ -153,7 +153,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 			setupExtractor: func(m *mockExtractor) {
 				m.On("ExtractQueriesFromFile", "path/to/file1.sql").
 					Return(
-						[]*query.ExplainableQuery{
+						[]*query.Query{
 							{Query: "query11"},
 							{Query: "query12"},
 							{Query: "query13"},
@@ -162,7 +162,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 					)
 				m.On("ExtractQueriesFromFile", "path/to/file2.sql").
 					Return(
-						[]*query.ExplainableQuery{
+						[]*query.Query{
 							{Query: "query21"},
 							{Query: "query22"},
 							{Query: "query23"},

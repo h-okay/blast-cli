@@ -61,7 +61,7 @@ with dummy_dates as (
 ;
 `
 
-	expectedQueries := []*ExplainableQuery{
+	expectedQueries := []*Query{
 		{
 			VariableDefinitions: []string{
 				"set variable1 = '2022-01-01'::date",
