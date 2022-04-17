@@ -108,3 +108,23 @@ func splitQueries(fileContent string) []*Query {
 	return queries
 }
 
+// WholeFileExtractor is a regular file extractor that returns the whole file content as the query string. It is useful
+// for cases where the whole file content can be treated as a single query, such as validating BigQuery queries via dry-run.
+type WholeFileExtractor struct {
+	Fs       afero.Fs
+	Renderer renderer
+}
+
+func (f *WholeFileExtractor) ExtractQueriesFromFile(filepath string) ([]*Query, error) {
+	contents, err := afero.ReadFile(f.Fs, filepath)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not read file")
+	}
+
+	render := f.Renderer.Render(strings.TrimSpace(string(contents)))
+	return []*Query{
+		{
+			Query: render,
+		},
+	}, nil
+}

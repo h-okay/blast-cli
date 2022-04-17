@@ -9,6 +9,12 @@ import (
 	"google.golang.org/api/option"
 )
 
+var scopes = []string{
+	bigquery.Scope,
+	"https://www.googleapis.com/auth/cloud-platform",
+	"https://www.googleapis.com/auth/drive",
+}
+
 type DB struct {
 	client *bigquery.Client
 }
@@ -18,6 +24,7 @@ func NewDB(c *Config) (*DB, error) {
 		context.Background(),
 		c.ProjectID,
 		option.WithCredentialsFile(c.CredentialsFilePath),
+		option.WithScopes(scopes...),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create bigquery client")

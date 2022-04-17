@@ -19,8 +19,12 @@ var (
 			"macros.ds_add(ds, 1)": time.Now().Add(24 * time.Hour).Format("2006-01-02"),
 		},
 	}
-	fs  = afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)
-	qex = query.FileQuerySplitterExtractor{
+	fs                  = afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)
+	splitQueryExtractor = query.FileQuerySplitterExtractor{
+		Fs:       fs,
+		Renderer: renderer,
+	}
+	wholeFileExtractor = query.WholeFileExtractor{
 		Fs:       fs,
 		Renderer: renderer,
 	}
@@ -103,7 +107,7 @@ func appendSnowflakeValidatorIfExists(logger *zap.SugaredLogger, rules []Rule) (
 		Identifier:  "snowflake-validator",
 		TaskType:    taskTypeSnowflakeQuery,
 		Validator:   sf,
-		Extractor:   &qex,
+		Extractor:   &splitQueryExtractor,
 		WorkerCount: 32,
 		Logger:      logger,
 	}
@@ -132,7 +136,7 @@ func appendBigqueryValidatorIfExists(logger *zap.SugaredLogger, rules []Rule) ([
 		Identifier:  "bigquery-validator",
 		TaskType:    taskTypeBigqueryQuery,
 		Validator:   bq,
-		Extractor:   &qex,
+		Extractor:   &wholeFileExtractor,
 		WorkerCount: 32,
 		Logger:      logger,
 	}
