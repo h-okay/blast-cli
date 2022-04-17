@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/datablast-analytics/blast-cli/pkg/query"
@@ -65,7 +66,8 @@ func (q QueryValidatorRule) validateTask(task *pipeline.Task, done chan<- []*Iss
 		go func(index int, foundQuery *query.Query) {
 			defer wg.Done()
 
-			q.Logger.Debugf("Checking if a query is valid")
+			q.Logger.Debugw("Checking if a query is valid", "path", task.ExecutableFile.Path)
+			start := time.Now()
 
 			valid, err := q.Validator.IsValid(context.Background(), foundQuery)
 			if err != nil {
@@ -90,7 +92,8 @@ func (q QueryValidatorRule) validateTask(task *pipeline.Task, done chan<- []*Iss
 				mu.Unlock()
 			}
 
-			q.Logger.Debugf("Finished with query checking")
+			duration := time.Since(start)
+			q.Logger.Debugw("Finished with query checking", "path", task.ExecutableFile.Path, "duration", duration)
 		}(index, foundQuery)
 	}
 
