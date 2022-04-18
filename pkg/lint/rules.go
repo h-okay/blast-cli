@@ -39,6 +39,7 @@ const (
 var validTaskTypes = map[string]struct{}{
 	taskTypeBigqueryQuery:                  {},
 	"bq.sensor.table":                      {},
+	"bq.sensor.query":                      {},
 	"bash":                                 {},
 	"gcs.from.s3":                          {},
 	"gcs.sensor.object_sensor_with_prefix": {},
