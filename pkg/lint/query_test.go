@@ -16,7 +16,7 @@ type mockValidator struct {
 	mock.Mock
 }
 
-func (m *mockValidator) IsValid(ctx context.Context, query string) (bool, error) {
+func (m *mockValidator) IsValid(ctx context.Context, query *query.Query) (bool, error) {
 	res := m.Called(ctx, query)
 	return res.Bool(0), res.Error(1)
 }
@@ -25,9 +25,9 @@ type mockExtractor struct {
 	mock.Mock
 }
 
-func (m *mockExtractor) ExtractQueriesFromFile(filepath string) ([]*query.ExplainableQuery, error) {
+func (m *mockExtractor) ExtractQueriesFromFile(filepath string) ([]*query.Query, error) {
 	res := m.Called(filepath)
-	return res.Get(0).([]*query.ExplainableQuery), res.Error(1)
+	return res.Get(0).([]*query.Query), res.Error(1)
 }
 
 func TestQueryValidatorRule_Validate(t *testing.T) {
@@ -84,7 +84,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 			},
 			setupExtractor: func(m *mockExtractor) {
 				m.On("ExtractQueriesFromFile", "path/to/file-with-no-queries.sql").
-					Return([]*query.ExplainableQuery{}, errors.New("something failed"))
+					Return([]*query.Query{}, errors.New("something failed"))
 			},
 			want: []*Issue{
 				{
@@ -115,7 +115,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 			},
 			setupExtractor: func(m *mockExtractor) {
 				m.On("ExtractQueriesFromFile", "path/to/file-with-no-queries.sql").
-					Return([]*query.ExplainableQuery{}, nil)
+					Return([]*query.Query{}, nil)
 			},
 			want: []*Issue{
 				{
@@ -153,7 +153,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 			setupExtractor: func(m *mockExtractor) {
 				m.On("ExtractQueriesFromFile", "path/to/file1.sql").
 					Return(
-						[]*query.ExplainableQuery{
+						[]*query.Query{
 							{Query: "query11"},
 							{Query: "query12"},
 							{Query: "query13"},
@@ -162,7 +162,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 					)
 				m.On("ExtractQueriesFromFile", "path/to/file2.sql").
 					Return(
-						[]*query.ExplainableQuery{
+						[]*query.Query{
 							{Query: "query21"},
 							{Query: "query22"},
 							{Query: "query23"},
@@ -171,13 +171,12 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 					)
 			},
 			setupValidator: func(m *mockValidator) {
-				m.On("IsValid", mock.Anything, "EXPLAIN query11;").Return(true, nil)
-				m.On("IsValid", mock.Anything, "EXPLAIN query12;").Return(false, errors.New("invalid query query12"))
-				m.On("IsValid", mock.Anything, "EXPLAIN query13;").Return(true, nil)
-
-				m.On("IsValid", mock.Anything, "EXPLAIN query21;").Return(true, nil)
-				m.On("IsValid", mock.Anything, "EXPLAIN query22;").Return(true, nil)
-				m.On("IsValid", mock.Anything, "EXPLAIN query23;").Return(false, nil)
+				m.On("IsValid", mock.Anything, &query.Query{Query: "query11"}).Return(true, nil)
+				m.On("IsValid", mock.Anything, &query.Query{Query: "query12"}).Return(false, errors.New("invalid query query12"))
+				m.On("IsValid", mock.Anything, &query.Query{Query: "query13"}).Return(true, nil)
+				m.On("IsValid", mock.Anything, &query.Query{Query: "query21"}).Return(true, nil)
+				m.On("IsValid", mock.Anything, &query.Query{Query: "query22"}).Return(true, nil)
+				m.On("IsValid", mock.Anything, &query.Query{Query: "query23"}).Return(false, nil)
 			},
 			want: []*Issue{
 				{
@@ -189,7 +188,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 					},
 					Description: "Invalid query found at index 1: invalid query query12",
 					Context: []string{
-						"Query: EXPLAIN query12;",
+						"Query: query12",
 					},
 				},
 				{
@@ -201,7 +200,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 					},
 					Description: "Query 'query23' is invalid",
 					Context: []string{
-						"Query: EXPLAIN query23;",
+						"Query: query23",
 					},
 				},
 			},

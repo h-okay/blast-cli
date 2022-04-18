@@ -61,7 +61,7 @@ with dummy_dates as (
 ;
 `
 
-	expectedQueries := []*ExplainableQuery{
+	expectedQueries := []*Query{
 		{
 			VariableDefinitions: []string{
 				"set variable1 = '2022-01-01'::date",
@@ -108,7 +108,7 @@ with dummy_dates as (
 	err := afero.WriteFile(fs, "somefile.sql", []byte(query), 0o644)
 	assert.NoError(t, err)
 
-	extractor := FileExtractor{
+	extractor := FileQuerySplitterExtractor{
 		Fs: fs,
 		Renderer: Renderer{
 			Args: map[string]string{

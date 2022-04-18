@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/datablast-analytics/blast-cli/pkg/query"
@@ -11,11 +12,11 @@ import (
 )
 
 type queryValidator interface {
-	IsValid(ctx context.Context, query string) (bool, error)
+	IsValid(ctx context.Context, query *query.Query) (bool, error)
 }
 
 type queryExtractor interface {
-	ExtractQueriesFromFile(filepath string) ([]*query.ExplainableQuery, error)
+	ExtractQueriesFromFile(filepath string) ([]*query.Query, error)
 }
 
 type QueryValidatorRule struct {
@@ -62,19 +63,20 @@ func (q QueryValidatorRule) validateTask(task *pipeline.Task, done chan<- []*Iss
 
 	for index, foundQuery := range queries {
 		wg.Add(1)
-		go func(index int, foundQuery *query.ExplainableQuery) {
+		go func(index int, foundQuery *query.Query) {
 			defer wg.Done()
 
-			q.Logger.Debugf("Checking if a query is valid")
+			q.Logger.Debugw("Checking if a query is valid", "path", task.ExecutableFile.Path)
+			start := time.Now()
 
-			valid, err := q.Validator.IsValid(context.Background(), foundQuery.ToExplainQuery())
+			valid, err := q.Validator.IsValid(context.Background(), foundQuery)
 			if err != nil {
 				mu.Lock()
 				issues = append(issues, &Issue{
 					Task:        task,
 					Description: fmt.Sprintf("Invalid query found at index %d: %s", index, err),
 					Context: []string{
-						"Query: " + foundQuery.ToExplainQuery(),
+						"Query: " + foundQuery.Query,
 					},
 				})
 				mu.Unlock()
@@ -84,13 +86,14 @@ func (q QueryValidatorRule) validateTask(task *pipeline.Task, done chan<- []*Iss
 					Task:        task,
 					Description: fmt.Sprintf("Query '%s' is invalid", foundQuery.Query),
 					Context: []string{
-						"Query: " + foundQuery.ToExplainQuery(),
+						"Query: " + foundQuery.Query,
 					},
 				})
 				mu.Unlock()
 			}
 
-			q.Logger.Debugf("Finished with query checking")
+			duration := time.Since(start)
+			q.Logger.Debugw("Finished with query checking", "path", task.ExecutableFile.Path, "duration", duration)
 		}(index, foundQuery)
 	}
 

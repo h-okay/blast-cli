@@ -34,7 +34,7 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 		setupFilesystem func(t *testing.T, fs afero.Fs)
 		setupRenderer   func(mr renderer)
 		path            string
-		want            []*ExplainableQuery
+		want            []*Query
 		wantErr         bool
 	}{
 		{
@@ -51,7 +51,7 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 				require.NoError(t, err)
 			},
 			setupRenderer: noOpRenderer,
-			want:          make([]*ExplainableQuery, 0),
+			want:          make([]*Query, 0),
 		},
 		{
 			name: "single query",
@@ -61,7 +61,7 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 				require.NoError(t, err)
 			},
 			setupRenderer: noOpRenderer,
-			want: []*ExplainableQuery{
+			want: []*Query{
 				{
 					Query: "select * from users",
 				},
@@ -79,7 +79,7 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 					On("Render", mock.Anything).
 					Return("select * from users-2022-01-01")
 			},
-			want: []*ExplainableQuery{
+			want: []*Query{
 				{
 					Query: "select * from users-2022-01-01",
 				},
@@ -97,7 +97,7 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 				require.NoError(t, err)
 			},
 			setupRenderer: noOpRenderer,
-			want: []*ExplainableQuery{
+			want: []*Query{
 				{
 					Query: "select * from users",
 				},
@@ -120,7 +120,7 @@ func TestFileExtractor_ExtractQueriesFromFile(t *testing.T) {
 				require.NoError(t, err)
 			},
 			setupRenderer: noOpRenderer,
-			want: []*ExplainableQuery{
+			want: []*Query{
 				{
 					Query: "select * from users",
 				},
@@ -148,7 +148,7 @@ some random query between comments;
 				require.NoError(t, err)
 			},
 			setupRenderer: noOpRenderer,
-			want: []*ExplainableQuery{
+			want: []*Query{
 				{
 					Query: "select * from users",
 				},
@@ -177,7 +177,7 @@ set min_level_req = 22;
 				require.NoError(t, err)
 			},
 			setupRenderer: noOpRenderer,
-			want: []*ExplainableQuery{
+			want: []*Query{
 				{
 					VariableDefinitions: []string{
 						"set analysis_period_days = 21",
@@ -210,7 +210,7 @@ set min_level_req = 22;
 				tt.setupRenderer(mr)
 			}
 
-			f := FileExtractor{
+			f := FileQuerySplitterExtractor{
 				Fs:       fs,
 				Renderer: mr,
 			}
@@ -228,7 +228,151 @@ set min_level_req = 22;
 	}
 }
 
-func TestExplainableQuery_ToExplainQuery(t *testing.T) {
+func TestWholeFileExtractor_ExtractQueriesFromFile(t *testing.T) {
+	t.Parallel()
+
+	noOpRenderer := func(mr renderer) {
+		mr.(*mockNoOpRenderer).On("Render", mock.Anything).Return("default")
+	}
+
+	tests := []struct {
+		name            string
+		setupFilesystem func(t *testing.T, fs afero.Fs)
+		setupRenderer   func(mr renderer)
+		path            string
+		want            []*Query
+		wantErr         bool
+	}{
+		{
+			name:    "file doesnt exist, fail",
+			path:    "somefile.txt",
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "only variables, no query",
+			path: "somefile.txt",
+			setupFilesystem: func(t *testing.T, fs afero.Fs) {
+				err := afero.WriteFile(fs, "somefile.txt", []byte("set variable1 = asd; set variable2 = 123;"), 0o644)
+				require.NoError(t, err)
+			},
+			setupRenderer: noOpRenderer,
+			want: []*Query{
+				{
+					Query: "set variable1 = asd; set variable2 = 123;",
+				},
+			},
+		},
+		{
+			name: "single query",
+			path: "somefile.txt",
+			setupFilesystem: func(t *testing.T, fs afero.Fs) {
+				err := afero.WriteFile(fs, "somefile.txt", []byte("select * from users;"), 0o644)
+				require.NoError(t, err)
+			},
+			setupRenderer: noOpRenderer,
+			want: []*Query{
+				{
+					Query: "select * from users;",
+				},
+			},
+		},
+		{
+			name: "single query, rendered properly",
+			path: "somefile.txt",
+			setupFilesystem: func(t *testing.T, fs afero.Fs) {
+				err := afero.WriteFile(fs, "somefile.txt", []byte("select * from users-{{ds}};"), 0o644)
+				require.NoError(t, err)
+			},
+			setupRenderer: func(mr renderer) {
+				mr.(*mockNoOpRenderer).
+					On("Render", mock.Anything).
+					Return("select * from users-2022-01-01")
+			},
+			want: []*Query{
+				{
+					Query: "select * from users-2022-01-01",
+				},
+			},
+		},
+		{
+			name: "multiple queries, multiline",
+			path: "somefile.txt",
+			setupFilesystem: func(t *testing.T, fs afero.Fs) {
+				query := `  select * from users;
+		;;
+									select name from countries;;
+`
+				err := afero.WriteFile(fs, "somefile.txt", []byte(query), 0o644)
+				require.NoError(t, err)
+			},
+			setupRenderer: noOpRenderer,
+			want: []*Query{
+				{
+					Query: `select * from users;
+		;;
+									select name from countries;;`,
+				},
+			},
+		},
+		{
+			name: "multiple queries, multiline, starts with a comment",
+			path: "somefile.txt",
+			setupFilesystem: func(t *testing.T, fs afero.Fs) {
+				query := `
+		-- here's some comment
+		select * from users;
+		;;
+									select name from countries;;
+									`
+				err := afero.WriteFile(fs, "somefile.txt", []byte(query), 0o644)
+				require.NoError(t, err)
+			},
+			setupRenderer: noOpRenderer,
+			want: []*Query{
+				{
+					Query: `-- here's some comment
+		select * from users;
+		;;
+									select name from countries;;`,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			fs := afero.NewMemMapFs()
+			if tt.setupFilesystem != nil {
+				tt.setupFilesystem(t, fs)
+			}
+
+			mr := new(mockNoOpRenderer)
+			if tt.setupRenderer != nil {
+				tt.setupRenderer(mr)
+			}
+
+			f := WholeFileExtractor{
+				Fs:       fs,
+				Renderer: mr,
+			}
+
+			got, err := f.ExtractQueriesFromFile(tt.path)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.want, got)
+			mr.AssertExpectations(t)
+		})
+	}
+}
+
+func TestQuery_ToExplainQuery(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
@@ -241,20 +385,21 @@ func TestExplainableQuery_ToExplainQuery(t *testing.T) {
 		want   string
 	}{
 		{
-			name: "no variables, simple query",
+			name: "no variable definitions",
 			fields: fields{
 				Query: "select * from users",
 			},
 			want: "EXPLAIN select * from users;",
 		},
 		{
-			name: "multiple variables, simple query",
+			name: "no variable definitions",
 			fields: fields{
-				VariableDefinitions: []string{"set var1 = '1'", "set var2 = 2"},
-				Query:               "select * from users",
+				VariableDefinitions: []string{
+					"set analysis_period_days = 21",
+				},
+				Query: "select * from users",
 			},
-			want: `set var1 = '1';
-set var2 = 2;
+			want: `set analysis_period_days = 21;
 EXPLAIN select * from users;`,
 		},
 	}
@@ -263,11 +408,58 @@ EXPLAIN select * from users;`,
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			e := ExplainableQuery{
+			e := Query{
 				VariableDefinitions: tt.fields.VariableDefinitions,
 				Query:               tt.fields.Query,
 			}
+
 			assert.Equal(t, tt.want, e.ToExplainQuery())
+		})
+	}
+}
+
+func TestQuery_ToDryRunQuery(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		VariableDefinitions []string
+		Query               string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "no variable definitions",
+			fields: fields{
+				Query: "select * from users",
+			},
+			want: "select * from users;",
+		},
+		{
+			name: "no variable definitions",
+			fields: fields{
+				VariableDefinitions: []string{
+					"set analysis_period_days = 21",
+				},
+				Query: "select * from users",
+			},
+			want: `set analysis_period_days = 21;
+select * from users;`,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			e := Query{
+				VariableDefinitions: tt.fields.VariableDefinitions,
+				Query:               tt.fields.Query,
+			}
+
+			assert.Equal(t, tt.want, e.ToDryRunQuery())
 		})
 	}
 }

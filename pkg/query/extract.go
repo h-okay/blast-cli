@@ -8,18 +8,36 @@ import (
 	"github.com/spf13/afero"
 )
 
-type ExplainableQuery struct {
+type Query struct {
 	VariableDefinitions []string
 	Query               string
 }
 
-func (e ExplainableQuery) ToExplainQuery() string {
+func (q Query) ToExplainQuery() string {
 	eq := ""
-	if len(e.VariableDefinitions) > 0 {
-		eq += strings.Join(e.VariableDefinitions, ";\n") + ";\n"
+	if len(q.VariableDefinitions) > 0 {
+		eq += strings.Join(q.VariableDefinitions, ";\n") + ";\n"
 	}
 
-	eq += "EXPLAIN " + e.Query + ";"
+	eq += "EXPLAIN " + q.Query
+	if !strings.HasSuffix(eq, ";") {
+		eq += ";"
+	}
+
+	return eq
+}
+
+func (q Query) ToDryRunQuery() string {
+	eq := ""
+	if len(q.VariableDefinitions) > 0 {
+		eq += strings.Join(q.VariableDefinitions, ";\n") + ";\n"
+	}
+
+	eq += q.Query
+	if !strings.HasSuffix(eq, ";") {
+		eq += ";"
+	}
+
 	return eq
 }
 
@@ -29,12 +47,15 @@ type renderer interface {
 	Render(string) string
 }
 
-type FileExtractor struct {
+// FileQuerySplitterExtractor is a regular file extractor, but it splits the queries in the given file into multiple
+// instances. For usecases that require EXPLAIN statements, such as validating Snowflake queries, it is not possible
+// to EXPLAIN a multi-query string directly, therefore we have to split them.
+type FileQuerySplitterExtractor struct {
 	Fs       afero.Fs
 	Renderer renderer
 }
 
-func (f FileExtractor) ExtractQueriesFromFile(filepath string) ([]*ExplainableQuery, error) {
+func (f FileQuerySplitterExtractor) ExtractQueriesFromFile(filepath string) ([]*Query, error) {
 	contents, err := afero.ReadFile(f.Fs, filepath)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not read file")
@@ -46,8 +67,8 @@ func (f FileExtractor) ExtractQueriesFromFile(filepath string) ([]*ExplainableQu
 	return splitQueries(cleanedUpQueries), nil
 }
 
-func splitQueries(fileContent string) []*ExplainableQuery {
-	queries := make([]*ExplainableQuery, 0)
+func splitQueries(fileContent string) []*Query {
+	queries := make([]*Query, 0)
 	var sqlVariablesSeenSoFar []string
 
 	for _, query := range strings.Split(fileContent, ";") {
@@ -78,11 +99,32 @@ func splitQueries(fileContent string) []*ExplainableQuery {
 			continue
 		}
 
-		queries = append(queries, &ExplainableQuery{
+		queries = append(queries, &Query{
 			VariableDefinitions: sqlVariablesSeenSoFar,
 			Query:               strings.TrimSpace(cleanQuery),
 		})
 	}
 
 	return queries
+}
+
+// WholeFileExtractor is a regular file extractor that returns the whole file content as the query string. It is useful
+// for cases where the whole file content can be treated as a single query, such as validating BigQuery queries via dry-run.
+type WholeFileExtractor struct {
+	Fs       afero.Fs
+	Renderer renderer
+}
+
+func (f *WholeFileExtractor) ExtractQueriesFromFile(filepath string) ([]*Query, error) {
+	contents, err := afero.ReadFile(f.Fs, filepath)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not read file")
+	}
+
+	render := f.Renderer.Render(strings.TrimSpace(string(contents)))
+	return []*Query{
+		{
+			Query: render,
+		},
+	}, nil
 }
