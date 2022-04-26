@@ -76,7 +76,8 @@ func (q QueryValidatorRule) validateTask(task *pipeline.Task, done chan<- []*Iss
 					Task:        task,
 					Description: fmt.Sprintf("Invalid query found at index %d: %s", index, err),
 					Context: []string{
-						"Query: " + foundQuery.Query,
+						"The failing query is as follows:",
+						foundQuery.Query,
 					},
 				})
 				mu.Unlock()
@@ -86,7 +87,8 @@ func (q QueryValidatorRule) validateTask(task *pipeline.Task, done chan<- []*Iss
 					Task:        task,
 					Description: fmt.Sprintf("Query '%s' is invalid", foundQuery.Query),
 					Context: []string{
-						"Query: " + foundQuery.Query,
+						"The failing query is as follows:",
+						foundQuery.Query,
 					},
 				})
 				mu.Unlock()

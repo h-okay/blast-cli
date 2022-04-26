@@ -137,7 +137,7 @@ func printIssueContext(context []string, lastIssue bool) {
 			connector = "└─"
 		}
 
-		contextPrinter.Printf("    %s   %s %s\n", beginning, connector, padLinesIfMultiline(row, 18))
+		contextPrinter.Printf("    %s   %s %s\n", beginning, connector, padLinesIfMultiline(row, 11))
 	}
 }
 

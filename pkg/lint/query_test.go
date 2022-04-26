@@ -188,7 +188,8 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 					},
 					Description: "Invalid query found at index 1: invalid query query12",
 					Context: []string{
-						"Query: query12",
+						"The failing query is as follows:",
+						"query12",
 					},
 				},
 				{
@@ -200,7 +201,8 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 					},
 					Description: "Query 'query23' is invalid",
 					Context: []string{
-						"Query: query23",
+						"The failing query is as follows:",
+						"query23",
 					},
 				},
 			},
