@@ -3,6 +3,7 @@ package lint
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/fatih/color"
@@ -23,7 +24,7 @@ var (
 	pipelinePrinter = color.New(color.FgBlue, color.Bold)
 	taskNamePrinter = color.New(color.FgYellow, color.Bold)
 	issuePrinter    = color.New(color.FgRed)
-	contextPrinter  = color.New(color.FgRed, color.Concealed)
+	contextPrinter  = color.New(color.FgRed)
 )
 
 func (l *Printer) PrintIssues(analysis *PipelineAnalysisResult) {
@@ -136,6 +137,25 @@ func printIssueContext(context []string, lastIssue bool) {
 			connector = "└─"
 		}
 
-		contextPrinter.Printf("    %s   %s %s\n", beginning, connector, row)
+		contextPrinter.Printf("    %s   %s %s\n", beginning, connector, padLinesIfMultiline(row, 18))
 	}
+}
+
+func padLinesIfMultiline(str string, padding int) string {
+	lines := strings.Split(str, "\n")
+	if len(lines) == 1 {
+		return str
+	}
+
+	paddedLines := make([]string, 0, len(lines))
+	for i, line := range lines {
+		if i == 0 {
+			paddedLines = append(paddedLines, line)
+			continue
+		}
+
+		paddedLines = append(paddedLines, fmt.Sprintf("%s%s", strings.Repeat(" ", padding), line))
+	}
+
+	return strings.Join(paddedLines, "\n")
 }
