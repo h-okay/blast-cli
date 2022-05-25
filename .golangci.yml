@@ -19,6 +19,7 @@ linters:
     - nilnil
     - varnamelen
     - forcetypeassert
+    - exhaustruct
   presets:
     - bugs
     - comment
