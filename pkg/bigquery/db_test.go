@@ -3,6 +3,7 @@ package bigquery
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -23,7 +24,7 @@ func TestDB_IsValid(t *testing.T) {
 	tests := []struct {
 		name       string
 		query      string
-		response   *bigquery2.Job
+		response   any
 		statusCode int
 		want       bool
 		err        error
@@ -63,6 +64,24 @@ func TestDB_IsValid(t *testing.T) {
 				Message:  "some message",
 				Reason:   "some reason",
 			},
+		},
+		{
+			name:  "Google API returns 404",
+			query: "select * from users",
+			response: map[string]interface{}{
+				"error": googleapi.Error{
+					Code:    404,
+					Message: "not found: Table project:schema.table was not found in location ABC",
+					Errors: []googleapi.ErrorItem{
+						{
+							Reason:  "notFound",
+							Message: "not found: Table project:schema.table was not found in location ABC",
+						},
+					},
+				},
+			},
+			statusCode: http.StatusNotFound,
+			err:        errors.New("not found: Table project:schema.table was not found in location ABC"),
 		},
 		{
 			name:  "no error returned",

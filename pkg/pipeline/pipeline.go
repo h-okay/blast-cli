@@ -38,6 +38,7 @@ type Task struct {
 	Parameters     map[string]string
 	Connections    map[string]string
 	DependsOn      []string
+	Pipeline       *Pipeline
 }
 
 type Pipeline struct {
@@ -48,6 +49,17 @@ type Pipeline struct {
 	DefaultParameters  map[string]string `yaml:"defaultParameters"`
 	DefaultConnections map[string]string `yaml:"defaultConnections"`
 	Tasks              []*Task
+}
+
+func (p *Pipeline) RelativeTaskPath(t *Task) string {
+	absolutePipelineRoot := filepath.Dir(p.DefinitionFile.Path)
+
+	pipelineDirectory, err := filepath.Rel(absolutePipelineRoot, t.DefinitionFile.Path)
+	if err != nil {
+		return absolutePipelineRoot
+	}
+
+	return pipelineDirectory
 }
 
 type TaskCreator func(path string) (*Task, error)

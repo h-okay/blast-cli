@@ -141,7 +141,7 @@ func (q *QueryValidatorRule) Validate(p *pipeline.Pipeline) ([]*Issue, error) {
 		taskChannel <- task
 		q.Logger.Debugf("Pushed a task to the taskChannel")
 	}
-	q.Logger.Infof("Processed %d tasks at path '%s', closing channel", processedTaskCount, p.DefinitionFile.Path)
+	q.Logger.Debugf("Processed %d tasks at path '%s', closing channel", processedTaskCount, p.DefinitionFile.Path)
 	close(taskChannel)
 	q.Logger.Debugf("Closed the channel")
 
