@@ -2,10 +2,12 @@ package bigquery
 
 import (
 	"context"
+	"fmt"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"github.com/pkg/errors"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 )
 
@@ -45,7 +47,16 @@ func (d DB) IsValid(ctx context.Context, query *query.Query) (bool, error) {
 
 	job, err := q.Run(ctx)
 	if err != nil {
-		return false, err
+		var googleError *googleapi.Error
+		if !errors.As(err, &googleError) {
+			return false, err
+		}
+
+		if googleError.Code == 404 {
+			return false, fmt.Errorf("%s", googleError.Message)
+		}
+
+		return false, googleError
 	}
 
 	status := job.LastStatus()
