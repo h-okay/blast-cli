@@ -88,7 +88,8 @@ func (l *Printer) printPipelineSummary(pipelineIssues *PipelineIssues) {
 	}
 
 	for task, summary := range taskIssueMap {
-		taskNamePrinter.Printf("  %s (%s)\n", task.Name, task.DefinitionFile.Path)
+		relativeTaskPath := pipelineIssues.Pipeline.RelativeTaskPath(task)
+		taskNamePrinter.Printf("  %s %s\n", task.Name, faint(fmt.Sprintf("(%s)", relativeTaskPath)))
 		printIssues(summary.rule, summary.issues)
 
 		issuePrinter.Println()

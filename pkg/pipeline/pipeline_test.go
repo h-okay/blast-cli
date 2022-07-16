@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -188,6 +189,55 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			}
 
 			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestTask_RelativePathToPipelineRoot(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		pipeline *pipeline.Pipeline
+		task     *pipeline.Task
+		want     string
+	}{
+		{
+			name: "simple relative path returned",
+			pipeline: &pipeline.Pipeline{
+				DefinitionFile: pipeline.DefinitionFile{
+					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
+				},
+			},
+			task: &pipeline.Task{
+				Name: "test-task",
+				DefinitionFile: pipeline.DefinitionFile{
+					Path: "/users/user1/pipelines/pipeline1/tasks/task-folder/task1.sql",
+				},
+			},
+			want: "tasks/task-folder/task1.sql",
+		},
+		{
+			name: "relative path is calculated even if the tasks are on a parent folder",
+			pipeline: &pipeline.Pipeline{
+				DefinitionFile: pipeline.DefinitionFile{
+					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
+				},
+			},
+			task: &pipeline.Task{
+				Name: "test-task",
+				DefinitionFile: pipeline.DefinitionFile{
+					Path: "/users/user1/pipelines/task-folder/task1.sql",
+				},
+			},
+			want: "../task-folder/task1.sql",
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.want, tt.pipeline.RelativeTaskPath(tt.task))
 		})
 	}
 }
