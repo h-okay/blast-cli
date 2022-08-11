@@ -2,6 +2,7 @@ package path
 
 import (
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -35,6 +36,25 @@ func GetPipelinePaths(root, pipelineDefinitionFile string) ([]string, error) {
 	}
 
 	return pipelinePaths, nil
+}
+
+func GetPipelinePathFromTask(taskPath, pipelineDefinitionFile string) (string, error) {
+	absoluteTaskPath, err := filepath.Abs(taskPath)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to convert task path to absolute path")
+	}
+
+	currentFolder := filepath.Dir(absoluteTaskPath)
+	for currentFolder != "/" {
+		tryPath := filepath.Join(currentFolder, pipelineDefinitionFile)
+		if _, err := os.Stat(tryPath); err == nil {
+			return tryPath, nil
+		}
+
+		currentFolder = filepath.Dir(currentFolder)
+	}
+
+	return "", errors.New("cannot find a pipeline the given task belongs to, are you sure this task is in an actual pipeline?")
 }
 
 func GetAllFilesRecursive(root string) ([]string, error) {
