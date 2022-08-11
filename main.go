@@ -83,6 +83,46 @@ func main() {
 					return nil
 				},
 			},
+			{
+				Name:      "run-task",
+				Usage:     "run a single Blast task",
+				ArgsUsage: "[path to the task file]",
+				Action: func(c *cli.Context) error {
+					errorPrinter := color.New(color.FgRed, color.Bold)
+
+					taskPath := c.Args().Get(0)
+					if taskPath == "" {
+						errorPrinter.Printf("Please give a task path: blast-cli run-task <path to the task definition>)\n")
+						return cli.Exit("", 1)
+					}
+
+					builderConfig := pipeline.BuilderConfig{
+						PipelineFileName:   pipelineDefinitionFile,
+						TasksDirectoryName: defaultTasksPath,
+						TasksFileName:      defaultTaskFileName,
+					}
+					builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
+
+					task, err := builder.CreateTaskFromFile(taskPath)
+					if err != nil {
+						errorPrinter.Printf("Failed to build task: %v\n", err.Error())
+						return cli.Exit("", 1)
+					}
+
+					if task == nil {
+						errorPrinter.Printf("The given file path doesn't seem to be a Blast task definition: '%s'\n", taskPath)
+						return cli.Exit("", 1)
+					}
+
+					_, err = path.GetPipelinePathFromTask(taskPath, pipelineDefinitionFile)
+					if err != nil {
+						errorPrinter.Printf("Failed to find the pipeline this task belongs to: '%s'\n", taskPath)
+						return cli.Exit("", 1)
+					}
+
+					return nil
+				},
+			},
 		},
 	}
 
