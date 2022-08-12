@@ -262,7 +262,7 @@ func TestDB_RunQueryWithoutResult(t *testing.T) {
 					return
 				}
 
-				w.WriteHeader(500)
+				w.WriteHeader(http.StatusInternalServerError)
 				_, err := w.Write([]byte("there is no test definition found for the given request"))
 				assert.NoError(t, err)
 			}))
