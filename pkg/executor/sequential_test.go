@@ -14,7 +14,7 @@ type mockOperator struct {
 	mock.Mock
 }
 
-func (d *mockOperator) RunTask(ctx context.Context, p pipeline.Pipeline, t pipeline.Task) error {
+func (d *mockOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pipeline.Task) error {
 	args := d.Called(ctx, p, t)
 	return args.Error(0)
 }
@@ -22,8 +22,8 @@ func (d *mockOperator) RunTask(ctx context.Context, p pipeline.Pipeline, t pipel
 func TestLocal_RunSingleTask(t *testing.T) {
 	t.Parallel()
 
-	p := pipeline.Pipeline{}
-	task := pipeline.Task{
+	p := &pipeline.Pipeline{}
+	task := &pipeline.Task{
 		Name: "task1",
 		Type: "test",
 	}
@@ -36,7 +36,7 @@ func TestLocal_RunSingleTask(t *testing.T) {
 			Return(nil)
 
 		l := Sequential{
-			TaskTypeMap: map[string]operator{
+			TaskTypeMap: map[string]Operator{
 				"test": mockOperator,
 			},
 		}
@@ -53,7 +53,7 @@ func TestLocal_RunSingleTask(t *testing.T) {
 		mockOperator := new(mockOperator)
 
 		l := Sequential{
-			TaskTypeMap: map[string]operator{
+			TaskTypeMap: map[string]Operator{
 				"some-other-task": mockOperator,
 			},
 		}
@@ -72,7 +72,7 @@ func TestLocal_RunSingleTask(t *testing.T) {
 			Return(errors.New("some error occurred"))
 
 		l := Sequential{
-			TaskTypeMap: map[string]operator{
+			TaskTypeMap: map[string]Operator{
 				"test": mockOperator,
 			},
 		}
