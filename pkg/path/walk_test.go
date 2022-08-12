@@ -55,6 +55,64 @@ func TestGetPipelinePaths(t *testing.T) {
 	}
 }
 
+func TestGetPipelineRootFromTask(t *testing.T) {
+	t.Parallel()
+
+	firstPipelineAbsolute, err := filepath.Abs("testdata/walk/task-to-pipeline/first-pipeline")
+	require.NoError(t, err)
+
+	secondPipelineAbsolute, err := filepath.Abs("testdata/walk/task-to-pipeline/second-pipeline")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name                   string
+		taskPath               string
+		pipelineDefinitionFile string
+		want                   string
+		wantErr                bool
+	}{
+		{
+			name:                   "pipeline is found from a deeply nested task",
+			taskPath:               "testdata/walk/task-to-pipeline/first-pipeline/tasks/helloworld/task.yml",
+			pipelineDefinitionFile: "pipeline.yml",
+			want:                   firstPipelineAbsolute,
+		},
+		{
+			name:                   "pipeline is found from a shallow nested task",
+			taskPath:               "testdata/walk/task-to-pipeline/second-pipeline/tasks/task1.yml",
+			pipelineDefinitionFile: "pipeline.yml",
+			want:                   secondPipelineAbsolute,
+		},
+		{
+			name:                   "pipeline is found even if definition file name is different",
+			taskPath:               "testdata/walk/task-to-pipeline/second-pipeline/tasks/test2/task.yml",
+			pipelineDefinitionFile: "task1.yml",
+			want:                   filepath.Join(secondPipelineAbsolute, "tasks"),
+		},
+		{
+			name:                   "an error is returned when the pipeline is not found",
+			taskPath:               "testdata",
+			pipelineDefinitionFile: "pipeline.yml",
+			wantErr:                true,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := GetPipelineRootFromTask(tt.taskPath, tt.pipelineDefinitionFile)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetPipelinePaths() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestGetAllFilesRecursive(t *testing.T) {
 	t.Parallel()
 

@@ -1,13 +1,18 @@
 package main
 
 import (
+	"context"
 	"os"
 	"time"
 
+	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
+	"github.com/datablast-analytics/blast-cli/pkg/executor"
 	"github.com/datablast-analytics/blast-cli/pkg/lint"
 	"github.com/datablast-analytics/blast-cli/pkg/path"
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"github.com/fatih/color"
+	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -79,6 +84,92 @@ func main() {
 					if result.HasErrors() {
 						return cli.Exit("", 1)
 					}
+
+					return nil
+				},
+			},
+			{
+				Name:      "run-task",
+				Usage:     "run a single Blast task",
+				ArgsUsage: "[path to the task file]",
+				Action: func(c *cli.Context) error {
+					errorPrinter := color.New(color.FgRed, color.Bold)
+					successPrinter := color.New(color.FgGreen, color.Bold)
+
+					taskPath := c.Args().Get(0)
+					if taskPath == "" {
+						errorPrinter.Printf("Please give a task path: blast-cli run-task <path to the task definition>)\n")
+						return cli.Exit("", 1)
+					}
+
+					builderConfig := pipeline.BuilderConfig{
+						PipelineFileName:   pipelineDefinitionFile,
+						TasksDirectoryName: defaultTasksPath,
+						TasksFileName:      defaultTaskFileName,
+					}
+					builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
+
+					task, err := builder.CreateTaskFromFile(taskPath)
+					if err != nil {
+						errorPrinter.Printf("Failed to build task: %v\n", err.Error())
+						return cli.Exit("", 1)
+					}
+
+					if task == nil {
+						errorPrinter.Printf("The given file path doesn't seem to be a Blast task definition: '%s'\n", taskPath)
+						return cli.Exit("", 1)
+					}
+
+					pathToPipeline, err := path.GetPipelineRootFromTask(taskPath, pipelineDefinitionFile)
+					if err != nil {
+						errorPrinter.Printf("Failed to find the pipeline this task belongs to: '%s'\n", taskPath)
+						return cli.Exit("", 1)
+					}
+
+					foundPipeline, err := builder.CreatePipelineFromPath(pathToPipeline)
+					if err != nil {
+						errorPrinter.Printf("Failed to build pipeline: %v\n", err.Error())
+						return cli.Exit("", 1)
+					}
+
+					config, err := bigquery.LoadConfigFromEnv()
+					if err != nil || !config.IsValid() {
+						errorPrinter.Printf("failed to setup bigquery connection, please set the BIGQUERY_CREDENTIALS_FILE and BIGQUERY_PROJECT environment variables.\n")
+						return cli.Exit("", 1)
+					}
+
+					bq, err := bigquery.NewDB(config)
+					if err != nil {
+						errorPrinter.Printf("failed to connect to bigquery: %v\n", err)
+						return cli.Exit("", 1)
+					}
+
+					renderer := &query.Renderer{
+						Args: map[string]string{
+							"ds":                   time.Now().Format("2006-01-02"),
+							"ds_nodash":            time.Now().Format("20060102"),
+							"macros.ds_add(ds, 1)": time.Now().Add(24 * time.Hour).Format("2006-01-02"),
+						},
+					}
+					fs := afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)
+					wholeFileExtractor := &query.WholeFileExtractor{
+						Fs:       fs,
+						Renderer: renderer,
+					}
+
+					e := executor.Sequential{
+						TaskTypeMap: map[string]executor.Operator{
+							"bq.sql": bigquery.NewBasicOperator(bq, wholeFileExtractor),
+						},
+					}
+
+					err = e.RunSingleTask(context.Background(), foundPipeline, task)
+					if err != nil {
+						errorPrinter.Printf("Failed to run task: %v\n", err.Error())
+						return cli.Exit("", 1)
+					}
+
+					successPrinter.Printf("Task '%s' successfully executed.\n", task.Name)
 
 					return nil
 				},

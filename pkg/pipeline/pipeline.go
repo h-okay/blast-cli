@@ -115,14 +115,7 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 	}
 
 	for _, file := range taskFiles {
-		isSeparateDefinitionFile := false
-		creator := p.commentTaskCreator
-		if strings.HasSuffix(file, p.config.TasksFileName) {
-			creator = p.yamlTaskCreator
-			isSeparateDefinitionFile = true
-		}
-
-		task, err := creator(file)
+		task, err := p.CreateTaskFromFile(file)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error creating Task from file '%s'", file)
 		}
@@ -131,15 +124,35 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 			continue
 		}
 
-		task.DefinitionFile.Name = filepath.Base(file)
-		task.DefinitionFile.Path = file
-		task.DefinitionFile.Type = CommentTask
-		if isSeparateDefinitionFile {
-			task.DefinitionFile.Type = YamlTask
-		}
-
 		pipeline.Tasks = append(pipeline.Tasks, task)
 	}
 
 	return &pipeline, nil
+}
+
+func (p *builder) CreateTaskFromFile(path string) (*Task, error) {
+	isSeparateDefinitionFile := false
+	creator := p.commentTaskCreator
+	if strings.HasSuffix(path, p.config.TasksFileName) {
+		creator = p.yamlTaskCreator
+		isSeparateDefinitionFile = true
+	}
+
+	task, err := creator(path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error creating task from file '%s'", path)
+	}
+
+	if task == nil {
+		return nil, nil
+	}
+
+	task.DefinitionFile.Name = filepath.Base(path)
+	task.DefinitionFile.Path = path
+	task.DefinitionFile.Type = CommentTask
+	if isSeparateDefinitionFile {
+		task.DefinitionFile.Type = YamlTask
+	}
+
+	return task, nil
 }

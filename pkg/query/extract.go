@@ -41,6 +41,10 @@ func (q Query) ToDryRunQuery() string {
 	return eq
 }
 
+func (q Query) String() string {
+	return q.Query
+}
+
 var queryCommentRegex = regexp.MustCompile(`(?m)(?s)\/\*.*?\*\/|(^|\s)--.*?\n`)
 
 type renderer interface {
