@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"context"
 	"testing"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
@@ -13,8 +14,8 @@ type mockOperator struct {
 	mock.Mock
 }
 
-func (d *mockOperator) RunTask(p pipeline.Pipeline, t pipeline.Task) error {
-	args := d.Called(p, t)
+func (d *mockOperator) RunTask(ctx context.Context, p pipeline.Pipeline, t pipeline.Task) error {
+	args := d.Called(ctx, p, t)
 	return args.Error(0)
 }
 
@@ -31,7 +32,7 @@ func TestLocal_RunSingleTask(t *testing.T) {
 		t.Parallel()
 
 		mockOperator := new(mockOperator)
-		mockOperator.On("RunTask", p, task).
+		mockOperator.On("RunTask", mock.Anything, p, task).
 			Return(nil)
 
 		l := Sequential{
@@ -40,7 +41,7 @@ func TestLocal_RunSingleTask(t *testing.T) {
 			},
 		}
 
-		err := l.RunSingleTask(p, task)
+		err := l.RunSingleTask(context.Background(), p, task)
 
 		assert.NoError(t, err)
 		mockOperator.AssertExpectations(t)
@@ -57,7 +58,7 @@ func TestLocal_RunSingleTask(t *testing.T) {
 			},
 		}
 
-		err := l.RunSingleTask(p, task)
+		err := l.RunSingleTask(context.Background(), p, task)
 
 		assert.Error(t, err)
 		mockOperator.AssertExpectations(t)
@@ -67,7 +68,7 @@ func TestLocal_RunSingleTask(t *testing.T) {
 		t.Parallel()
 
 		mockOperator := new(mockOperator)
-		mockOperator.On("RunTask", p, task).
+		mockOperator.On("RunTask", mock.Anything, p, task).
 			Return(errors.New("some error occurred"))
 
 		l := Sequential{
@@ -76,7 +77,7 @@ func TestLocal_RunSingleTask(t *testing.T) {
 			},
 		}
 
-		err := l.RunSingleTask(p, task)
+		err := l.RunSingleTask(context.Background(), p, task)
 
 		assert.Error(t, err)
 		mockOperator.AssertExpectations(t)
