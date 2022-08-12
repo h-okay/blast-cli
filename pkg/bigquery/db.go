@@ -66,3 +66,22 @@ func (d DB) IsValid(ctx context.Context, query *query.Query) (bool, error) {
 
 	return true, nil
 }
+
+func (d DB) RunQueryWithoutResult(ctx context.Context, query *query.Query) error {
+	q := d.client.Query(query.String())
+	_, err := q.Read(ctx)
+	if err != nil {
+		var googleError *googleapi.Error
+		if !errors.As(err, &googleError) {
+			return err
+		}
+
+		if googleError.Code == 404 {
+			return fmt.Errorf("%s", googleError.Message)
+		}
+
+		return googleError
+	}
+
+	return nil
+}
