@@ -55,7 +55,7 @@ func TestGetPipelinePaths(t *testing.T) {
 	}
 }
 
-func TestGetPipelinePathFromTask(t *testing.T) {
+func TestGetPipelineRootFromTask(t *testing.T) {
 	t.Parallel()
 
 	firstPipelineAbsolute, err := filepath.Abs("testdata/walk/task-to-pipeline/first-pipeline")
@@ -75,19 +75,19 @@ func TestGetPipelinePathFromTask(t *testing.T) {
 			name:                   "pipeline is found from a deeply nested task",
 			taskPath:               "testdata/walk/task-to-pipeline/first-pipeline/tasks/helloworld/task.yml",
 			pipelineDefinitionFile: "pipeline.yml",
-			want:                   filepath.Join(firstPipelineAbsolute, "pipeline.yml"),
+			want:                   firstPipelineAbsolute,
 		},
 		{
 			name:                   "pipeline is found from a shallow nested task",
 			taskPath:               "testdata/walk/task-to-pipeline/second-pipeline/tasks/task1.yml",
 			pipelineDefinitionFile: "pipeline.yml",
-			want:                   filepath.Join(secondPipelineAbsolute, "pipeline.yml"),
+			want:                   secondPipelineAbsolute,
 		},
 		{
 			name:                   "pipeline is found even if definition file name is different",
 			taskPath:               "testdata/walk/task-to-pipeline/second-pipeline/tasks/test2/task.yml",
 			pipelineDefinitionFile: "task1.yml",
-			want:                   filepath.Join(secondPipelineAbsolute, "tasks/task1.yml"),
+			want:                   filepath.Join(secondPipelineAbsolute, "tasks"),
 		},
 		{
 			name:                   "an error is returned when the pipeline is not found",
@@ -101,7 +101,7 @@ func TestGetPipelinePathFromTask(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := GetPipelinePathFromTask(tt.taskPath, tt.pipelineDefinitionFile)
+			got, err := GetPipelineRootFromTask(tt.taskPath, tt.pipelineDefinitionFile)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetPipelinePaths() error = %v, wantErr %v", err, tt.wantErr)
