@@ -37,10 +37,6 @@ func GetRules(logger *zap.SugaredLogger) ([]Rule, error) {
 			Validator:  EnsureTaskNameIsValid,
 		},
 		&SimpleRule{
-			Identifier: "task-name-valid",
-			Validator:  EnsureTaskNameIsValid,
-		},
-		&SimpleRule{
 			Identifier: "task-name-unique",
 			Validator:  EnsureTaskNameIsUnique,
 		},
