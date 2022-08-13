@@ -10,3 +10,8 @@ parameters:
 connections:
   conn1: first connection
   conn2: second connection
+schedule:
+  days:
+    - sunday
+    - monday
+    - tuesday

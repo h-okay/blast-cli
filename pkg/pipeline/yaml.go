@@ -7,6 +7,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+type taskSchedule struct {
+	Days []string `yaml:"days"`
+}
 type taskDefinition struct {
 	Name        string            `yaml:"name"`
 	Description string            `yaml:"description"`
@@ -15,6 +18,7 @@ type taskDefinition struct {
 	Depends     []string          `yaml:"depends"`
 	Parameters  map[string]string `yaml:"parameters"`
 	Connections map[string]string `yaml:"connections"`
+	Schedule    taskSchedule      `yaml:"schedule"`
 }
 
 func CreateTaskFromYamlDefinition(filePath string) (*Task, error) {
@@ -49,6 +53,7 @@ func CreateTaskFromYamlDefinition(filePath string) (*Task, error) {
 		Connections:    definition.Connections,
 		DependsOn:      definition.Depends,
 		ExecutableFile: executableFile,
+		Schedule:       TaskSchedule{Days: definition.Schedule.Days},
 	}
 
 	return &task, nil

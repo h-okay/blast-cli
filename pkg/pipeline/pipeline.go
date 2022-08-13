@@ -29,6 +29,10 @@ type DefinitionFile struct {
 	Type TaskDefinitionType
 }
 
+type TaskSchedule struct {
+	Days []string
+}
+
 type Task struct {
 	Name           string
 	Description    string
@@ -39,6 +43,7 @@ type Task struct {
 	Connections    map[string]string
 	DependsOn      []string
 	Pipeline       *Pipeline
+	Schedule       TaskSchedule
 }
 
 type Pipeline struct {
