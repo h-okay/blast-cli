@@ -878,3 +878,109 @@ func TestEnsurePipelineHasNoCycles(t *testing.T) {
 		})
 	}
 }
+
+func TestEnsureTaskScheduleIsValid(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		p *pipeline.Pipeline
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []*Issue
+		wantErr bool
+	}{
+		{
+			name: "no days in task schedule, should return no issues",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name: "task1",
+						},
+						{
+							Name: "task2",
+						},
+					},
+				},
+			},
+			want: noIssues,
+		},
+
+		{
+			name: "two invalid days in task schedule, all caught",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name:     "task1",
+							Schedule: pipeline.TaskSchedule{Days: []string{"monday", "wrong1", "wrong2"}},
+						},
+						{
+							Name:     "task2",
+							Schedule: pipeline.TaskSchedule{Days: []string{"sunday", "wrong3", "friday"}},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Task: &pipeline.Task{
+						Name:     "task1",
+						Schedule: pipeline.TaskSchedule{Days: []string{"monday", "wrong1", "wrong2"}},
+					},
+					Description: taskScheduleDayDoesNotExist,
+					Context: []string{
+						"Given day: wrong1",
+						"Given day: wrong2",
+					},
+				},
+
+				{
+					Task: &pipeline.Task{
+						Name:     "task2",
+						Schedule: pipeline.TaskSchedule{Days: []string{"sunday", "wrong3", "friday"}},
+					},
+					Description: taskScheduleDayDoesNotExist,
+					Context: []string{
+						"Given day: wrong3",
+					},
+				},
+			},
+		},
+		{
+			name: "no issues",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name:     "task1",
+							Schedule: pipeline.TaskSchedule{Days: []string{"monday", "tuesday", "wednesday"}},
+						},
+						{
+							Name:     "task2",
+							Schedule: pipeline.TaskSchedule{Days: []string{"thursday", "friday", "sunday"}},
+						},
+					},
+				},
+			},
+			want: noIssues,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := EnsureTaskScheduleIsValid(tt.args.p)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equalf(t, tt.want, got, "EnsureTaskScheduleIsValid(%v)", tt.args.p)
+		})
+	}
+}

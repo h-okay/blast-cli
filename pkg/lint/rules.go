@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/pkg/errors"
@@ -28,6 +29,8 @@ const (
 	pipelineNameMustBeAlphanumeric = "The pipeline name must be made of alphanumeric characters, dashes, dots and underscores"
 
 	pipelineContainsCycle = "The pipeline has a cycle with dependencies, make sure there are no cyclic dependencies"
+
+	taskScheduleDayDoesNotExist = "Task schedule day must be a valid weekday"
 )
 
 const (
@@ -308,4 +311,31 @@ func EnsurePipelineHasNoCycles(p *pipeline.Pipeline) ([]*Issue, error) {
 	}
 
 	return issues, nil
+}
+
+func EnsureTaskScheduleIsValid(p *pipeline.Pipeline) ([]*Issue, error) {
+	issues := make([]*Issue, 0)
+	days := []string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
+	for _, task := range p.Tasks {
+		for _, day := range task.Schedule.Days {
+			if !isStringInArray(days, strings.ToLower(day)) {
+				issues = append(issues, &Issue{
+					Task:        task,
+					Description: taskScheduleDayDoesNotExist,
+					Context:     []string{fmt.Sprintf("Given day: %s", day)},
+				})
+			}
+		}
+	}
+
+	return issues, nil
+}
+
+func isStringInArray(arr []string, str string) bool {
+	for _, a := range arr {
+		if str == a {
+			return true
+		}
+	}
+	return false
 }
