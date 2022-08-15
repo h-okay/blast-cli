@@ -973,8 +973,8 @@ func TestEnsureTaskScheduleIsValid(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-
 			got, err := EnsureTaskScheduleIsValid(tt.args.p)
+
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

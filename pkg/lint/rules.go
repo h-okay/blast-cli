@@ -317,14 +317,22 @@ func EnsureTaskScheduleIsValid(p *pipeline.Pipeline) ([]*Issue, error) {
 	issues := make([]*Issue, 0)
 	days := []string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
 	for _, task := range p.Tasks {
+		var wrongDays []string
 		for _, day := range task.Schedule.Days {
 			if !isStringInArray(days, strings.ToLower(day)) {
-				issues = append(issues, &Issue{
-					Task:        task,
-					Description: taskScheduleDayDoesNotExist,
-					Context:     []string{fmt.Sprintf("Given day: %s", day)},
-				})
+				wrongDays = append(wrongDays, day)
 			}
+		}
+		if wrongDays != nil {
+			contextMessages := make([]string, 0)
+			for _, wrongDay := range wrongDays {
+				contextMessages = append(contextMessages, fmt.Sprintf("Given day: %s", wrongDay))
+			}
+			issues = append(issues, &Issue{
+				Task:        task,
+				Description: taskScheduleDayDoesNotExist,
+				Context:     contextMessages,
+			})
 		}
 	}
 
