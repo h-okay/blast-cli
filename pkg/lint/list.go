@@ -64,6 +64,10 @@ func GetRules(logger *zap.SugaredLogger) ([]Rule, error) {
 			Identifier: "acyclic-pipeline",
 			Validator:  EnsurePipelineHasNoCycles,
 		},
+		&SimpleRule{
+			Identifier: "valid-task-schedule",
+			Validator:  EnsureTaskScheduleIsValid,
+		},
 	}
 
 	rules, err := appendSnowflakeValidatorIfExists(logger, rules)

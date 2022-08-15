@@ -110,6 +110,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 					"conn2": "second connection",
 				},
 				DependsOn: []string{"gcs-to-bq"},
+				Schedule:  pipeline.TaskSchedule{Days: []string{"sunday", "monday", "tuesday"}},
 			},
 		},
 		{

@@ -9,5 +9,8 @@
 # @blast.parameters.param3: third-parameter
 # @blast.connections.conn1: first-connection
 # @blast.connections.conn2: second-connection
+# @blast.schedule.days: SUNDAY, MONDAY
+# @blast.schedule.days: TUESDAY
+
 
 print('hello world')

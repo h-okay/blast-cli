@@ -70,6 +70,7 @@ func commentRowsToTask(commentRows []string) *Task {
 		Parameters:  make(map[string]string),
 		Connections: make(map[string]string),
 		DependsOn:   []string{},
+		Schedule:    TaskSchedule{},
 	}
 	for _, row := range commentRows {
 		keyValue := strings.Split(row, ":")
@@ -119,6 +120,18 @@ func commentRowsToTask(commentRows []string) *Task {
 			}
 
 			task.Connections[connections[1]] = value
+		}
+
+		if strings.HasPrefix(key, "schedule.") {
+			schedule := strings.Split(key, ".")
+			if len(schedule) != 2 {
+				continue
+			}
+
+			valueArray := strings.Split(value, ",")
+			for _, a := range valueArray {
+				task.Schedule.Days = append(task.Schedule.Days, strings.TrimSpace(a))
+			}
 		}
 	}
 

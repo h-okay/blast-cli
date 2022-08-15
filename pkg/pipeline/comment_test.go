@@ -87,6 +87,7 @@ func Test_createTaskFromFile(t *testing.T) {
 					"conn2": "second-connection",
 				},
 				DependsOn: []string{"task1", "task2", "task3", "task4", "task5", "task3"},
+				Schedule:  pipeline.TaskSchedule{Days: []string{"SUNDAY", "MONDAY", "TUESDAY"}},
 			},
 		},
 	}
