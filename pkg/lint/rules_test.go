@@ -997,6 +997,29 @@ func TestEnsureTaskTypeIsValid(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name: "no type in task",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name: "task1",
+							Type: "",
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Task: &pipeline.Task{
+						Name: "task1",
+						Type: "",
+					},
+					Description: taskTypeDoesNotExist,
+					Context:     []string{"Given type: "},
+				},
+			},
+		},
+		{
 			name: "no issues",
 			args: args{
 				p: &pipeline.Pipeline{

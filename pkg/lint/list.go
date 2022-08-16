@@ -68,6 +68,10 @@ func GetRules(logger *zap.SugaredLogger) ([]Rule, error) {
 			Identifier: "valid-task-schedule",
 			Validator:  EnsureTaskScheduleIsValid,
 		},
+		&SimpleRule{
+			Identifier: "valid-task-type",
+			Validator:  EnsureTaskTypeIsValid,
+		},
 	}
 
 	rules, err := appendSnowflakeValidatorIfExists(logger, rules)
