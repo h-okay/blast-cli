@@ -347,3 +347,20 @@ func isStringInArray(arr []string, str string) bool {
 	}
 	return false
 }
+
+func EnsureTaskTypeIsValid(p *pipeline.Pipeline) ([]*Issue, error) {
+	issues := make([]*Issue, 0)
+	taskTypes := []string{"bash", "bq.sensor.partition", "bq.sensor.query", "bq.sensor.table", "bq.sql", "bq.transfer", "branch", "gcs.from.s3", "gcs.sensor.object", "gcs.sensor.object_sensor_with_prefix", "pipeline.trigger", "python", "python.pod", "s3.sensor.key_sensor", "sf.sql", "bq.cost_tracker", "empty", "athena.sql", "athena.sensor.query"}
+
+	for _, task := range p.Tasks {
+		if !isStringInArray(taskTypes, task.Type) {
+			issues = append(issues, &Issue{
+				Task:        task,
+				Description: taskScheduleDayDoesNotExist,
+				Context:     []string{fmt.Sprintf("Given type: %s", task.Type)},
+			})
+		}
+	}
+
+	return issues, nil
+}
