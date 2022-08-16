@@ -31,6 +31,8 @@ const (
 	pipelineContainsCycle = "The pipeline has a cycle with dependencies, make sure there are no cyclic dependencies"
 
 	taskScheduleDayDoesNotExist = "Task schedule day must be a valid weekday"
+
+	taskTypeDoesNotExist = "Task type must be a valid typ"
 )
 
 const (
@@ -356,7 +358,7 @@ func EnsureTaskTypeIsValid(p *pipeline.Pipeline) ([]*Issue, error) {
 		if !isStringInArray(taskTypes, task.Type) {
 			issues = append(issues, &Issue{
 				Task:        task,
-				Description: taskScheduleDayDoesNotExist,
+				Description: taskTypeDoesNotExist,
 				Context:     []string{fmt.Sprintf("Given type: %s", task.Type)},
 			})
 		}

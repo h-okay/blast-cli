@@ -984,3 +984,69 @@ func TestEnsureTaskScheduleIsValid(t *testing.T) {
 		})
 	}
 }
+
+func TestEnsureTaskTypeIsValid(t *testing.T) {
+	t.Parallel()
+	type args struct {
+		p *pipeline.Pipeline
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []*Issue
+		wantErr bool
+	}{
+		{
+			name: "no issues",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name: "task1",
+							Type: "bq.sql",
+						},
+					},
+				},
+			},
+			want: noIssues,
+		},
+
+		{
+			name: "wrong task type, caught",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name: "task1",
+							Type: "wrong",
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Task: &pipeline.Task{
+						Name: "task1",
+						Type: "wrong",
+					},
+					Description: taskTypeDoesNotExist,
+					Context:     []string{"Given type: wrong"},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := EnsureTaskTypeIsValid(tt.args.p)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equalf(t, tt.want, got, "EnsureTaskTypeIsValid(%v)", tt.args.p)
+		})
+	}
+}
