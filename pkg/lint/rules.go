@@ -31,8 +31,6 @@ const (
 	pipelineContainsCycle = "The pipeline has a cycle with dependencies, make sure there are no cyclic dependencies"
 
 	taskScheduleDayDoesNotExist = "Task schedule day must be a valid weekday"
-
-	taskTypeDoesNotExist = "Task type must be a valid typ"
 )
 
 const (
