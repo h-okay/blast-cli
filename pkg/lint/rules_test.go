@@ -986,6 +986,7 @@ func TestEnsureTaskScheduleIsValid(t *testing.T) {
 }
 
 func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
+	t.Parallel()
 	type args struct {
 		p *pipeline.Pipeline
 	}

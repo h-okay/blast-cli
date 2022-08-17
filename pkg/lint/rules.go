@@ -368,7 +368,7 @@ func EnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(p *pipeline.Pipeline) ([]*
 				issues = append(issues, &Issue{
 					Task:        task,
 					Description: athenaSQLInvalidDatabaseField,
-					Context:     []string{fmt.Sprintf("There is no any database field")},
+					Context:     []string{"There is no any database field"},
 				})
 			}
 			if ok && databaseVar == "" {
@@ -383,7 +383,7 @@ func EnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(p *pipeline.Pipeline) ([]*
 				issues = append(issues, &Issue{
 					Task:        task,
 					Description: athenaSQEmptyS3FilePath,
-					Context:     []string{fmt.Sprintf("There is no any s3 file path field")},
+					Context:     []string{"There is no any s3 file path field"},
 				})
 			}
 			if ok && !strings.HasPrefix(s3FilePathVar, "s3://") {
@@ -394,7 +394,6 @@ func EnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(p *pipeline.Pipeline) ([]*
 				})
 			}
 		}
-
 	}
 
 	return issues, nil
