@@ -1216,6 +1216,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 }
 
 func TestEnsureSlackFieldInPipelineIsValid(t *testing.T) {
+	t.Parallel()
 	type args struct {
 		p *pipeline.Pipeline
 	}
@@ -1225,6 +1226,22 @@ func TestEnsureSlackFieldInPipelineIsValid(t *testing.T) {
 		want    []*Issue
 		wantErr bool
 	}{
+		{
+			name: "no issues",
+			args: args{
+				p: &pipeline.Pipeline{
+					Notifications: pipeline.Notifications{
+						Slack: []pipeline.SlackNotification{
+							{
+								Name:       "name",
+								Connection: "connect",
+							},
+						},
+					},
+				},
+			},
+			want: noIssues,
+		},
 		{
 			name: "empty slack name field",
 			args: args{
@@ -1245,6 +1262,27 @@ func TestEnsureSlackFieldInPipelineIsValid(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "empty slack connection field",
+			args: args{
+				p: &pipeline.Pipeline{
+					Notifications: pipeline.Notifications{
+						Slack: []pipeline.SlackNotification{
+							{
+								Name:       "name",
+								Connection: "",
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Description: pipelineSlackFieldEmptyConnection,
+				},
+			},
+		},
+
 		{
 			name: "no slack name field",
 			args: args{
@@ -1328,36 +1366,11 @@ func TestEnsureSlackFieldInPipelineIsValid(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "name fields are not unique, caught",
-			args: args{
-				p: &pipeline.Pipeline{
-					Notifications: pipeline.Notifications{
-						Slack: []pipeline.SlackNotification{
-							{
-								Name:       "name",
-								Connection: "connect",
-							},
-							{
-								Name:       "name",
-								Connection: "connect",
-							},
-						},
-					},
-				},
-			},
-			want: []*Issue{
-				{
-					Description: pipelineSlackFieldUniqueName,
-				},
-				{
-					Description: pipelineSlackFieldUniqueName,
-				},
-			},
-		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := EnsureSlackFieldInPipelineIsValid(tt.args.p)
 			if tt.wantErr {
 				assert.Error(t, err)
