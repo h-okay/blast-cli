@@ -33,6 +33,17 @@ type TaskSchedule struct {
 	Days []string
 }
 
+type Notifications struct {
+	Slack []SlackNotification
+}
+
+type SlackNotification struct {
+	Name       string
+	Connection string
+	Success    string
+	Failure    string
+}
+
 type Task struct {
 	Name           string
 	Description    string
@@ -54,6 +65,7 @@ type Pipeline struct {
 	DefaultParameters  map[string]string `yaml:"defaultParameters"`
 	DefaultConnections map[string]string `yaml:"defaultConnections"`
 	Tasks              []*Task
+	Notifications      Notifications `yaml:"notifications"`
 }
 
 func (p *Pipeline) RelativeTaskPath(t *Task) string {

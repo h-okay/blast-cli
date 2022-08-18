@@ -36,6 +36,10 @@ const (
 	athenaSQLInvalidS3FilePath    = "S3 file must start with s3://"
 	athenaSQLInvalidDatabaseField = "Database filed must be a valid"
 	athenaSQEmptyS3FilePath       = "s3 file path cannot be empty"
+
+	pipelineSlackFieldEmptyName       = "Name in pipeline slack field is cannot be empty"
+	pipelineSlackFieldEmptyConnection = "Connection in pipeline slack field is cannot be empty"
+	pipelineSlackFieldUniqueName      = "Name value in slack field, must be a unique value"
 )
 
 const (
@@ -394,6 +398,33 @@ func EnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(p *pipeline.Pipeline) ([]*
 				})
 			}
 		}
+	}
+
+	return issues, nil
+}
+
+func EnsureSlackFieldInPipelineIsValid(p *pipeline.Pipeline) ([]*Issue, error) {
+	issues := make([]*Issue, 0)
+
+	for _, slack := range p.Notifications.Slack {
+		var slackNames []string
+		slackNames = append(slackNames, slack.Name)
+		if slack.Name == "" {
+			issues = append(issues, &Issue{
+				Description: pipelineSlackFieldEmptyName,
+			})
+		}
+		if slack.Connection == "" {
+			issues = append(issues, &Issue{
+				Description: pipelineSlackFieldEmptyConnection,
+			})
+		}
+		if len(slackNames) > 0 && slack.Name != "" && isStringInArray(slackNames, slack.Name) {
+			issues = append(issues, &Issue{
+				Description: pipelineSlackFieldUniqueName,
+			})
+		}
+
 	}
 
 	return issues, nil
