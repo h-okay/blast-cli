@@ -31,6 +31,11 @@ const (
 	pipelineContainsCycle = "The pipeline has a cycle with dependencies, make sure there are no cyclic dependencies"
 
 	taskScheduleDayDoesNotExist = "Task schedule day must be a valid weekday"
+
+	athenaSQLEmptyDatabaseField       = "The `database` parameter cannot be empty"
+	athenaSQLInvalidS3FilePath        = "The `s3_file_path` parameter must start with `s3://`"
+	athenaSQLMissingDatabaseParameter = "The `database` parameter is required for Athena SQL tasks"
+	athenaSQLEmptyS3FilePath          = "The `s3_file_path` parameter cannot be empty"
 )
 
 const (
@@ -352,4 +357,46 @@ func isStringInArray(arr []string, str string) bool {
 		}
 	}
 	return false
+}
+
+func EnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(p *pipeline.Pipeline) ([]*Issue, error) {
+	issues := make([]*Issue, 0)
+	for _, task := range p.Tasks {
+		if task.Type == "athena.sql" {
+			databaseVar, ok := task.Parameters["database"]
+
+			if !ok {
+				issues = append(issues, &Issue{
+					Task:        task,
+					Description: athenaSQLMissingDatabaseParameter,
+				})
+			}
+
+			if ok && databaseVar == "" {
+				issues = append(issues, &Issue{
+					Task:        task,
+					Description: athenaSQLEmptyDatabaseField,
+				})
+			}
+
+			s3FilePathVar, ok := task.Parameters["s3_file_path"]
+
+			if !ok {
+				issues = append(issues, &Issue{
+					Task:        task,
+					Description: athenaSQLEmptyS3FilePath,
+				})
+			}
+
+			if ok && !strings.HasPrefix(s3FilePathVar, "s3://") {
+				issues = append(issues, &Issue{
+					Task:        task,
+					Description: athenaSQLInvalidS3FilePath,
+					Context:     []string{fmt.Sprintf("Given `s3_file_path` is: %s", s3FilePathVar)},
+				})
+			}
+		}
+	}
+
+	return issues, nil
 }

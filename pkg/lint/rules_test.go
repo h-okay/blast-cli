@@ -984,3 +984,226 @@ func TestEnsureTaskScheduleIsValid(t *testing.T) {
 		})
 	}
 }
+
+func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
+	t.Parallel()
+	type args struct {
+		p *pipeline.Pipeline
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []*Issue
+		wantErr bool
+	}{
+		{
+			name: "no athena.sql task type",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name: "task1",
+						},
+						{
+							Name: "task2",
+						},
+					},
+				},
+			},
+			want: noIssues,
+		},
+		{
+			name: "all fields and values are correct, no issues",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name: "task1",
+							Type: "athena.sql",
+							Parameters: map[string]string{
+								"database":     "database",
+								"s3_file_path": "s3://",
+							},
+						},
+					},
+				},
+			},
+			want: noIssues,
+		},
+		{
+			name: "database value is empty, caught",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name: "task1",
+							Type: "athena.sql",
+							Parameters: map[string]string{
+								"database":     "",
+								"s3_file_path": "s3://",
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Task: &pipeline.Task{
+						Name: "task1",
+						Type: "athena.sql",
+						Parameters: map[string]string{
+							"database":     "",
+							"s3_file_path": "s3://",
+						},
+					},
+					Description: athenaSQLEmptyDatabaseField,
+				},
+			},
+		},
+		{
+			name: "s3 file path value is wrong, caught",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name: "task1",
+							Type: "athena.sql",
+							Parameters: map[string]string{
+								"database":     "database",
+								"s3_file_path": "wrongs3://",
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Task: &pipeline.Task{
+						Name: "task1",
+						Type: "athena.sql",
+						Parameters: map[string]string{
+							"database":     "database",
+							"s3_file_path": "wrongs3://",
+						},
+					},
+					Description: athenaSQLInvalidS3FilePath,
+					Context:     []string{"Given `s3_file_path` is: wrongs3://"},
+				},
+			},
+		},
+		{
+			name: "database and s3_file_path fields are wrong, caught",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name: "task1",
+							Type: "athena.sql",
+							Parameters: map[string]string{
+								"wrongdb": "database",
+								"wrongs3": "s3://",
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Task: &pipeline.Task{
+						Name: "task1",
+						Type: "athena.sql",
+						Parameters: map[string]string{
+							"wrongdb": "database",
+							"wrongs3": "s3://",
+						},
+					},
+					Description: athenaSQLMissingDatabaseParameter,
+				},
+				{
+					Task: &pipeline.Task{
+						Name: "task1",
+						Type: "athena.sql",
+						Parameters: map[string]string{
+							"wrongdb": "database",
+							"wrongs3": "s3://",
+						},
+					},
+					Description: athenaSQLEmptyS3FilePath,
+				},
+			},
+		},
+		{
+			name: "database field is wrong, caught",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name: "task1",
+							Type: "athena.sql",
+							Parameters: map[string]string{
+								"wrongdb":      "database",
+								"s3_file_path": "s3://",
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Task: &pipeline.Task{
+						Name: "task1",
+						Type: "athena.sql",
+						Parameters: map[string]string{
+							"wrongdb":      "database",
+							"s3_file_path": "s3://",
+						},
+					},
+					Description: athenaSQLMissingDatabaseParameter,
+				},
+			},
+		},
+		{
+			name: "s3_file_path field is wrong, caught",
+			args: args{
+				p: &pipeline.Pipeline{
+					Tasks: []*pipeline.Task{
+						{
+							Name: "task1",
+							Type: "athena.sql",
+							Parameters: map[string]string{
+								"database": "database",
+								"wrongs3":  "s3://",
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Task: &pipeline.Task{
+						Name: "task1",
+						Type: "athena.sql",
+						Parameters: map[string]string{
+							"database": "database",
+							"wrongs3":  "s3://",
+						},
+					},
+					Description: athenaSQLEmptyS3FilePath,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := EnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(tt.args.p)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
