@@ -66,7 +66,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 				Name:     "first-pipeline",
 				LegacyID: "first-pipeline",
 				Schedule: "",
-				DefinitionFile: pipeline.DefinitionFile{
+				DefinitionFile: pipeline.PipelineDefinitionFile{
 					Name: "pipeline.yml",
 					Path: absPath("testdata/pipeline/first-pipeline/pipeline.yml"),
 				},
@@ -87,7 +87,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 							Name: "hello.sh",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/task1/hello.sh"),
 						},
-						DefinitionFile: pipeline.DefinitionFile{
+						DefinitionFile: pipeline.TaskDefinitionFile{
 							Name: "task.yml",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/task1/task.yml"),
 							Type: pipeline.YamlTask,
@@ -124,7 +124,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 							Name: "test.py",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
 						},
-						DefinitionFile: pipeline.DefinitionFile{
+						DefinitionFile: pipeline.TaskDefinitionFile{
 							Name: "test.py",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
 							Type: pipeline.CommentTask,
@@ -148,7 +148,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 							Name: "test.sql",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
 						},
-						DefinitionFile: pipeline.DefinitionFile{
+						DefinitionFile: pipeline.TaskDefinitionFile{
 							Name: "test.sql",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
 							Type: pipeline.CommentTask,
@@ -205,13 +205,13 @@ func TestTask_RelativePathToPipelineRoot(t *testing.T) {
 		{
 			name: "simple relative path returned",
 			pipeline: &pipeline.Pipeline{
-				DefinitionFile: pipeline.DefinitionFile{
+				DefinitionFile: pipeline.PipelineDefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
 			},
 			task: &pipeline.Task{
 				Name: "test-task",
-				DefinitionFile: pipeline.DefinitionFile{
+				DefinitionFile: pipeline.TaskDefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/tasks/task-folder/task1.sql",
 				},
 			},
@@ -220,13 +220,13 @@ func TestTask_RelativePathToPipelineRoot(t *testing.T) {
 		{
 			name: "relative path is calculated even if the tasks are on a parent folder",
 			pipeline: &pipeline.Pipeline{
-				DefinitionFile: pipeline.DefinitionFile{
+				DefinitionFile: pipeline.PipelineDefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
 			},
 			task: &pipeline.Task{
 				Name: "test-task",
-				DefinitionFile: pipeline.DefinitionFile{
+				DefinitionFile: pipeline.TaskDefinitionFile{
 					Path: "/users/user1/pipelines/task-folder/task1.sql",
 				},
 			},

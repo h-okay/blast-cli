@@ -23,10 +23,15 @@ type ExecutableFile struct {
 	Path string
 }
 
-type DefinitionFile struct {
+type TaskDefinitionFile struct {
 	Name string
 	Path string
 	Type TaskDefinitionType
+}
+
+type PipelineDefinitionFile struct {
+	Name string
+	Path string
 }
 
 type TaskSchedule struct {
@@ -49,7 +54,7 @@ type Task struct {
 	Description    string
 	Type           string
 	ExecutableFile ExecutableFile
-	DefinitionFile DefinitionFile
+	DefinitionFile TaskDefinitionFile
 	Parameters     map[string]string
 	Connections    map[string]string
 	DependsOn      []string
@@ -61,7 +66,7 @@ type Pipeline struct {
 	LegacyID           string   `yaml:"id"`
 	Name               string   `yaml:"name"`
 	Schedule           schedule `yaml:"schedule"`
-	DefinitionFile     DefinitionFile
+	DefinitionFile     PipelineDefinitionFile
 	DefaultParameters  map[string]string `yaml:"defaultParameters"`
 	DefaultConnections map[string]string `yaml:"defaultConnections"`
 	Tasks              []*Task
@@ -77,6 +82,10 @@ func (p *Pipeline) RelativeTaskPath(t *Task) string {
 	}
 
 	return pipelineDirectory
+}
+
+func (p Pipeline) GetScheduleableTasks() ([]*Task, error) {
+	return nil, nil
 }
 
 type TaskCreator func(path string) (*Task, error)
@@ -121,7 +130,7 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		return nil, errors.Wrapf(err, "error getting absolute path for pipeline file at '%s'", pipelineFilePath)
 	}
 
-	pipeline.DefinitionFile = DefinitionFile{
+	pipeline.DefinitionFile = PipelineDefinitionFile{
 		Name: filepath.Base(pipelineFilePath),
 		Path: absPipelineFilePath,
 	}
