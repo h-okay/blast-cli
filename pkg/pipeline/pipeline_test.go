@@ -66,7 +66,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 				Name:     "first-pipeline",
 				LegacyID: "first-pipeline",
 				Schedule: "",
-				DefinitionFile: pipeline.PipelineDefinitionFile{
+				DefinitionFile: pipeline.DefinitionFile{
 					Name: "pipeline.yml",
 					Path: absPath("testdata/pipeline/first-pipeline/pipeline.yml"),
 				},
@@ -205,7 +205,7 @@ func TestTask_RelativePathToPipelineRoot(t *testing.T) {
 		{
 			name: "simple relative path returned",
 			pipeline: &pipeline.Pipeline{
-				DefinitionFile: pipeline.PipelineDefinitionFile{
+				DefinitionFile: pipeline.DefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
 			},
@@ -220,7 +220,7 @@ func TestTask_RelativePathToPipelineRoot(t *testing.T) {
 		{
 			name: "relative path is calculated even if the tasks are on a parent folder",
 			pipeline: &pipeline.Pipeline{
-				DefinitionFile: pipeline.PipelineDefinitionFile{
+				DefinitionFile: pipeline.DefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
 			},

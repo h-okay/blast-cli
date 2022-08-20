@@ -13,6 +13,16 @@ const (
 	YamlTask    TaskDefinitionType = "yaml"
 )
 
+type TaskStatus int
+
+const (
+	Pending TaskStatus = iota
+	Queued
+	Running
+	Failed
+	Succeeded
+)
+
 type (
 	schedule           string
 	TaskDefinitionType string
@@ -29,7 +39,7 @@ type TaskDefinitionFile struct {
 	Type TaskDefinitionType
 }
 
-type PipelineDefinitionFile struct {
+type DefinitionFile struct {
 	Name string
 	Path string
 }
@@ -66,7 +76,7 @@ type Pipeline struct {
 	LegacyID           string   `yaml:"id"`
 	Name               string   `yaml:"name"`
 	Schedule           schedule `yaml:"schedule"`
-	DefinitionFile     PipelineDefinitionFile
+	DefinitionFile     DefinitionFile
 	DefaultParameters  map[string]string `yaml:"defaultParameters"`
 	DefaultConnections map[string]string `yaml:"defaultConnections"`
 	Tasks              []*Task
@@ -130,7 +140,7 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		return nil, errors.Wrapf(err, "error getting absolute path for pipeline file at '%s'", pipelineFilePath)
 	}
 
-	pipeline.DefinitionFile = PipelineDefinitionFile{
+	pipeline.DefinitionFile = DefinitionFile{
 		Name: filepath.Base(pipelineFilePath),
 		Path: absPipelineFilePath,
 	}

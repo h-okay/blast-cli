@@ -116,7 +116,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 				pipeline: pipeline.Pipeline{
 					Tasks: []*pipeline.Task{
 						{
-							DefinitionFile: pipeline.DefinitionFile{
+							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.CommentTask,
 							},
 						},
@@ -131,7 +131,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 				pipeline: pipeline.Pipeline{
 					Tasks: []*pipeline.Task{
 						{
-							DefinitionFile: pipeline.DefinitionFile{
+							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.YamlTask,
 							},
 						},
@@ -147,7 +147,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 					Tasks: []*pipeline.Task{
 						{
 							Type: taskTypePython,
-							DefinitionFile: pipeline.DefinitionFile{
+							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.YamlTask,
 							},
 						},
@@ -158,7 +158,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 				{
 					Task: &pipeline.Task{
 						Type: taskTypePython,
-						DefinitionFile: pipeline.DefinitionFile{
+						DefinitionFile: pipeline.TaskDefinitionFile{
 							Type: pipeline.YamlTask,
 						},
 					},
@@ -172,7 +172,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 				pipeline: pipeline.Pipeline{
 					Tasks: []*pipeline.Task{
 						{
-							DefinitionFile: pipeline.DefinitionFile{
+							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.YamlTask,
 							},
 							ExecutableFile: pipeline.ExecutableFile{
@@ -186,7 +186,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			want: []*Issue{
 				{
 					Task: &pipeline.Task{
-						DefinitionFile: pipeline.DefinitionFile{
+						DefinitionFile: pipeline.TaskDefinitionFile{
 							Type: pipeline.YamlTask,
 						},
 						ExecutableFile: pipeline.ExecutableFile{
@@ -208,7 +208,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 				pipeline: pipeline.Pipeline{
 					Tasks: []*pipeline.Task{
 						{
-							DefinitionFile: pipeline.DefinitionFile{
+							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.YamlTask,
 							},
 							ExecutableFile: pipeline.ExecutableFile{
@@ -222,7 +222,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			want: []*Issue{
 				{
 					Task: &pipeline.Task{
-						DefinitionFile: pipeline.DefinitionFile{
+						DefinitionFile: pipeline.TaskDefinitionFile{
 							Type: pipeline.YamlTask,
 						},
 						ExecutableFile: pipeline.ExecutableFile{
@@ -248,7 +248,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 				pipeline: pipeline.Pipeline{
 					Tasks: []*pipeline.Task{
 						{
-							DefinitionFile: pipeline.DefinitionFile{
+							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.YamlTask,
 							},
 							ExecutableFile: pipeline.ExecutableFile{
@@ -262,7 +262,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			want: []*Issue{
 				{
 					Task: &pipeline.Task{
-						DefinitionFile: pipeline.DefinitionFile{
+						DefinitionFile: pipeline.TaskDefinitionFile{
 							Type: pipeline.YamlTask,
 						},
 						ExecutableFile: pipeline.ExecutableFile{
@@ -274,7 +274,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 				},
 				{
 					Task: &pipeline.Task{
-						DefinitionFile: pipeline.DefinitionFile{
+						DefinitionFile: pipeline.TaskDefinitionFile{
 							Type: pipeline.YamlTask,
 						},
 						ExecutableFile: pipeline.ExecutableFile{
@@ -303,7 +303,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 				pipeline: pipeline.Pipeline{
 					Tasks: []*pipeline.Task{
 						{
-							DefinitionFile: pipeline.DefinitionFile{
+							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.YamlTask,
 							},
 							ExecutableFile: pipeline.ExecutableFile{
@@ -317,7 +317,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			want: []*Issue{
 				{
 					Task: &pipeline.Task{
-						DefinitionFile: pipeline.DefinitionFile{
+						DefinitionFile: pipeline.TaskDefinitionFile{
 							Type: pipeline.YamlTask,
 						},
 						ExecutableFile: pipeline.ExecutableFile{
@@ -356,7 +356,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 				pipeline: pipeline.Pipeline{
 					Tasks: []*pipeline.Task{
 						{
-							DefinitionFile: pipeline.DefinitionFile{
+							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.YamlTask,
 							},
 							ExecutableFile: pipeline.ExecutableFile{
@@ -365,7 +365,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 							},
 						},
 						{
-							DefinitionFile: pipeline.DefinitionFile{
+							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.YamlTask,
 							},
 							ExecutableFile: pipeline.ExecutableFile{
@@ -674,19 +674,19 @@ func TestEnsureTaskNameIsUnique(t *testing.T) {
 					Tasks: []*pipeline.Task{
 						{
 							Name: "name1",
-							DefinitionFile: pipeline.DefinitionFile{
+							DefinitionFile: pipeline.TaskDefinitionFile{
 								Path: "path1",
 							},
 						},
 						{
 							Name: "name2",
-							DefinitionFile: pipeline.DefinitionFile{
+							DefinitionFile: pipeline.TaskDefinitionFile{
 								Path: "path2",
 							},
 						},
 						{
 							Name: "name1",
-							DefinitionFile: pipeline.DefinitionFile{
+							DefinitionFile: pipeline.TaskDefinitionFile{
 								Path: "path3",
 							},
 						},
@@ -697,7 +697,7 @@ func TestEnsureTaskNameIsUnique(t *testing.T) {
 				{
 					Task: &pipeline.Task{
 						Name: "name1",
-						DefinitionFile: pipeline.DefinitionFile{
+						DefinitionFile: pipeline.TaskDefinitionFile{
 							Path: "path1",
 						},
 					},
