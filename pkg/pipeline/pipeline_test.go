@@ -1,10 +1,9 @@
-package pipeline_test
+package pipeline
 
 import (
 	"path/filepath"
 	"testing"
 
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,8 +18,8 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 
 	type fields struct {
 		tasksDirectoryName string
-		yamlTaskCreator    pipeline.TaskCreator
-		commentTaskCreator pipeline.TaskCreator
+		yamlTaskCreator    TaskCreator
+		commentTaskCreator TaskCreator
 	}
 	type args struct {
 		pathToPipeline string
@@ -29,7 +28,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *pipeline.Pipeline
+		want    *Pipeline
 		wantErr bool
 	}{
 		{
@@ -56,17 +55,17 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			name: "should create pipeline from path",
 			fields: fields{
 				tasksDirectoryName: "tasks",
-				commentTaskCreator: pipeline.CreateTaskFromFileComments,
-				yamlTaskCreator:    pipeline.CreateTaskFromYamlDefinition,
+				commentTaskCreator: CreateTaskFromFileComments,
+				yamlTaskCreator:    CreateTaskFromYamlDefinition,
 			},
 			args: args{
 				pathToPipeline: "testdata/pipeline/first-pipeline",
 			},
-			want: &pipeline.Pipeline{
+			want: &Pipeline{
 				Name:     "first-pipeline",
 				LegacyID: "first-pipeline",
 				Schedule: "",
-				DefinitionFile: pipeline.DefinitionFile{
+				DefinitionFile: DefinitionFile{
 					Name: "pipeline.yml",
 					Path: absPath("testdata/pipeline/first-pipeline/pipeline.yml"),
 				},
@@ -78,19 +77,19 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 					"slack":           "slack-connection",
 					"gcpConnectionId": "gcp-connection-id-here",
 				},
-				Tasks: []*pipeline.Task{
+				Tasks: []*Task{
 					{
 						Name:        "hello-world",
 						Description: "This is a hello world task",
 						Type:        "bash",
-						ExecutableFile: pipeline.ExecutableFile{
+						ExecutableFile: ExecutableFile{
 							Name: "hello.sh",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/task1/hello.sh"),
 						},
-						DefinitionFile: pipeline.TaskDefinitionFile{
+						DefinitionFile: TaskDefinitionFile{
 							Name: "task.yml",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/task1/task.yml"),
-							Type: pipeline.YamlTask,
+							Type: YamlTask,
 						},
 						Parameters: map[string]string{
 							"param1": "value1",
@@ -110,24 +109,24 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 							"project_id":         "a-new-project-id",
 							"location":           "europe-west1",
 						},
-						DefinitionFile: pipeline.DefinitionFile{
+						DefinitionFile: TaskDefinitionFile{
 							Name: "task.yaml",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/task2/task.yaml"),
-							Type: pipeline.YamlTask,
+							Type: YamlTask,
 						},
 					},
 					{
 						Name:        "some-python-task",
 						Description: "some description goes here",
 						Type:        "python",
-						ExecutableFile: pipeline.ExecutableFile{
+						ExecutableFile: ExecutableFile{
 							Name: "test.py",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
 						},
-						DefinitionFile: pipeline.TaskDefinitionFile{
+						DefinitionFile: TaskDefinitionFile{
 							Name: "test.py",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
-							Type: pipeline.CommentTask,
+							Type: CommentTask,
 						},
 						Parameters: map[string]string{
 							"param1": "first-parameter",
@@ -144,14 +143,14 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 						Name:        "some-sql-task",
 						Description: "some description goes here",
 						Type:        "bq.sql",
-						ExecutableFile: pipeline.ExecutableFile{
+						ExecutableFile: ExecutableFile{
 							Name: "test.sql",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
 						},
-						DefinitionFile: pipeline.TaskDefinitionFile{
+						DefinitionFile: TaskDefinitionFile{
 							Name: "test.sql",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
-							Type: pipeline.CommentTask,
+							Type: CommentTask,
 						},
 						Parameters: map[string]string{
 							"param1": "first-parameter",
@@ -173,13 +172,13 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			builderConfig := pipeline.BuilderConfig{
+			builderConfig := BuilderConfig{
 				PipelineFileName:   "pipeline.yml",
 				TasksDirectoryName: tt.fields.tasksDirectoryName,
 				TasksFileSuffixes:  []string{"task.yml", "task.yaml"},
 			}
 
-			p := pipeline.NewBuilder(builderConfig, tt.fields.yamlTaskCreator, tt.fields.commentTaskCreator)
+			p := NewBuilder(builderConfig, tt.fields.yamlTaskCreator, tt.fields.commentTaskCreator)
 
 			got, err := p.CreatePipelineFromPath(tt.args.pathToPipeline)
 			if tt.wantErr {
@@ -198,20 +197,20 @@ func TestTask_RelativePathToPipelineRoot(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		pipeline *pipeline.Pipeline
-		task     *pipeline.Task
+		pipeline *Pipeline
+		task     *Task
 		want     string
 	}{
 		{
 			name: "simple relative path returned",
-			pipeline: &pipeline.Pipeline{
-				DefinitionFile: pipeline.DefinitionFile{
+			pipeline: &Pipeline{
+				DefinitionFile: DefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
 			},
-			task: &pipeline.Task{
+			task: &Task{
 				Name: "test-task",
-				DefinitionFile: pipeline.TaskDefinitionFile{
+				DefinitionFile: TaskDefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/tasks/task-folder/task1.sql",
 				},
 			},
@@ -219,14 +218,14 @@ func TestTask_RelativePathToPipelineRoot(t *testing.T) {
 		},
 		{
 			name: "relative path is calculated even if the tasks are on a parent folder",
-			pipeline: &pipeline.Pipeline{
-				DefinitionFile: pipeline.DefinitionFile{
+			pipeline: &Pipeline{
+				DefinitionFile: DefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
 			},
-			task: &pipeline.Task{
+			task: &Task{
 				Name: "test-task",
-				DefinitionFile: pipeline.TaskDefinitionFile{
+				DefinitionFile: TaskDefinitionFile{
 					Path: "/users/user1/pipelines/task-folder/task1.sql",
 				},
 			},

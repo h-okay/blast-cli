@@ -13,16 +13,6 @@ const (
 	YamlTask    TaskDefinitionType = "yaml"
 )
 
-type TaskStatus int
-
-const (
-	Pending TaskStatus = iota
-	Queued
-	Running
-	Failed
-	Succeeded
-)
-
 type (
 	schedule           string
 	TaskDefinitionType string
@@ -92,10 +82,6 @@ func (p *Pipeline) RelativeTaskPath(t *Task) string {
 	}
 
 	return pipelineDirectory
-}
-
-func (p Pipeline) GetScheduleableTasks() ([]*Task, error) {
-	return nil, nil
 }
 
 type TaskCreator func(path string) (*Task, error)
