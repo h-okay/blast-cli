@@ -37,9 +37,10 @@ const (
 	athenaSQLInvalidDatabaseField = "Database filed must be a valid"
 	athenaSQEmptyS3FilePath       = "s3 file path cannot be empty"
 
-	pipelineSlackFieldEmptyName       = "Name in pipeline slack field is cannot be empty"
-	pipelineSlackFieldEmptyConnection = "Connection in pipeline slack field is cannot be empty"
-	pipelineSlackNameFieldNotUnique   = "Name in pipeline slack field must be a unique value"
+	pipelineSlackFieldEmptyName           = "Name in pipeline slack field is cannot be empty"
+	pipelineSlackFieldEmptyConnection     = "Connection in pipeline slack field is cannot be empty"
+	pipelineSlackNameFieldNotUnique       = "Name in pipeline slack field must be a unique value"
+	pipelineSlackConnectionFieldNotUnique = "Connection in pipeline slack field must be a unique value"
 )
 
 const (
@@ -407,6 +408,7 @@ func EnsureSlackFieldInPipelineIsValid(p *pipeline.Pipeline) ([]*Issue, error) {
 	issues := make([]*Issue, 0)
 
 	slackNames := make([]string, 0)
+	slackConnections := make([]string, 0)
 	for _, slack := range p.Notifications.Slack {
 		if slack.Name == "" {
 			issues = append(issues, &Issue{
@@ -419,21 +421,22 @@ func EnsureSlackFieldInPipelineIsValid(p *pipeline.Pipeline) ([]*Issue, error) {
 				Description: pipelineSlackFieldEmptyConnection,
 			})
 		}
-		slackNames = append(slackNames, slack.Name)
-	}
 
-	for _, slack := range p.Notifications.Slack {
-		if len(slackNames) == 1 {
-			continue
+		if isStringInArray(slackNames, slack.Name) {
+			issues = append(issues, &Issue{
+				Description: pipelineSlackNameFieldNotUnique,
+			})
+		} else {
+			slackNames = append(slackNames, slack.Name)
 		}
 
-		if !isStringInArray(slackNames, slack.Name) {
-			continue
+		if isStringInArray(slackConnections, slack.Connection) {
+			issues = append(issues, &Issue{
+				Description: pipelineSlackConnectionFieldNotUnique,
+			})
+		} else {
+			slackConnections = append(slackConnections, slack.Connection)
 		}
-
-		issues = append(issues, &Issue{
-			Description: pipelineSlackNameFieldNotUnique,
-		})
 	}
 
 	return issues, nil
