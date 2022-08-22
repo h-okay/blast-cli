@@ -251,7 +251,7 @@ func TestDB_RunQueryWithoutResult(t *testing.T) {
 					_, err = w.Write(response)
 					assert.NoError(t, err)
 					return
-				} else if r.Method == "POST" && strings.HasPrefix(r.RequestURI, fmt.Sprintf("/projects/%s/jobs", projectID)) {
+				} else if r.Method == "POST" && strings.HasPrefix(r.RequestURI, fmt.Sprintf("/projects/%s/queries", projectID)) {
 					w.WriteHeader(tt.jobSubmitResponse.statusCode)
 
 					response, err := json.Marshal(tt.jobSubmitResponse.response)

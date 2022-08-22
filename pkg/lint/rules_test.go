@@ -1012,7 +1012,6 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 			},
 			want: noIssues,
 		},
-
 		{
 			name: "all fields and values are correct, no issues",
 			args: args{
@@ -1031,7 +1030,6 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 			},
 			want: noIssues,
 		},
-
 		{
 			name: "database value is empty, caught",
 			args: args{
@@ -1059,7 +1057,6 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 						},
 					},
 					Description: athenaSQLEmptyDatabaseField,
-					Context:     []string{"Given database field is: "},
 				},
 			},
 		},
@@ -1090,7 +1087,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 						},
 					},
 					Description: athenaSQLInvalidS3FilePath,
-					Context:     []string{"Given s3 file path is: wrongs3://"},
+					Context:     []string{"Given `s3_file_path` is: wrongs3://"},
 				},
 			},
 		},
@@ -1120,8 +1117,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 							"wrongs3": "s3://",
 						},
 					},
-					Description: athenaSQLInvalidDatabaseField,
-					Context:     []string{"There is no any database field"},
+					Description: athenaSQLMissingDatabaseParameter,
 				},
 				{
 					Task: &pipeline.Task{
@@ -1132,8 +1128,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 							"wrongs3": "s3://",
 						},
 					},
-					Description: athenaSQEmptyS3FilePath,
-					Context:     []string{"There is no any s3 file path field"},
+					Description: athenaSQLEmptyS3FilePath,
 				},
 			},
 		},
@@ -1163,8 +1158,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 							"s3_file_path": "s3://",
 						},
 					},
-					Description: athenaSQLInvalidDatabaseField,
-					Context:     []string{"There is no any database field"},
+					Description: athenaSQLMissingDatabaseParameter,
 				},
 			},
 		},
@@ -1194,8 +1188,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 							"wrongs3":  "s3://",
 						},
 					},
-					Description: athenaSQEmptyS3FilePath,
-					Context:     []string{"There is no any s3 file path field"},
+					Description: athenaSQLEmptyS3FilePath,
 				},
 			},
 		},
@@ -1210,7 +1203,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.Equalf(t, tt.want, got, "EnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(%v)", tt.args.p)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
