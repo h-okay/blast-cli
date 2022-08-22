@@ -39,6 +39,7 @@ const (
 
 	pipelineSlackFieldEmptyName       = "Name in pipeline slack field is cannot be empty"
 	pipelineSlackFieldEmptyConnection = "Connection in pipeline slack field is cannot be empty"
+	pipelineSlackNameFieldNotUnique   = "Name in pipeline slack field must be a unique value"
 )
 
 const (
@@ -405,10 +406,8 @@ func EnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(p *pipeline.Pipeline) ([]*
 func EnsureSlackFieldInPipelineIsValid(p *pipeline.Pipeline) ([]*Issue, error) {
 	issues := make([]*Issue, 0)
 
+	slackNames := make([]string, 0)
 	for _, slack := range p.Notifications.Slack {
-		//	var slackNames []string
-		//	slackNames = append(slackNames, slack.Name)
-
 		if slack.Name == "" {
 			issues = append(issues, &Issue{
 				Description: pipelineSlackFieldEmptyName,
@@ -420,6 +419,21 @@ func EnsureSlackFieldInPipelineIsValid(p *pipeline.Pipeline) ([]*Issue, error) {
 				Description: pipelineSlackFieldEmptyConnection,
 			})
 		}
+		slackNames = append(slackNames, slack.Name)
+	}
+
+	for _, slack := range p.Notifications.Slack {
+		if len(slackNames) == 1 {
+			continue
+		}
+
+		if !isStringInArray(slackNames, slack.Name) {
+			continue
+		}
+
+		issues = append(issues, &Issue{
+			Description: pipelineSlackNameFieldNotUnique,
+		})
 	}
 
 	return issues, nil

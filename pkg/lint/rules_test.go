@@ -1366,6 +1366,34 @@ func TestEnsureSlackFieldInPipelineIsValid(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			name: "non unique name field",
+			args: args{
+				p: &pipeline.Pipeline{
+					Notifications: pipeline.Notifications{
+						Slack: []pipeline.SlackNotification{
+							{
+								Name:       "nonunique",
+								Connection: "connect",
+							},
+							{
+								Name:       "nonunique",
+								Connection: "connect",
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Description: pipelineSlackNameFieldNotUnique,
+				},
+				{
+					Description: pipelineSlackNameFieldNotUnique,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
