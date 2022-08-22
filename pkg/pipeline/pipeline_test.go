@@ -176,7 +176,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			builderConfig := pipeline.BuilderConfig{
 				PipelineFileName:   "pipeline.yml",
 				TasksDirectoryName: tt.fields.tasksDirectoryName,
-				TasksFileName:      "task.yml",
+				TasksFileSuffixes:  []string{"task.yml", "task.yaml"},
 			}
 
 			p := pipeline.NewBuilder(builderConfig, tt.fields.yamlTaskCreator, tt.fields.commentTaskCreator)

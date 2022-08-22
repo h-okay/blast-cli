@@ -22,7 +22,6 @@ const (
 	defaultPipelinePath    = "."
 	pipelineDefinitionFile = "pipeline.yml"
 	defaultTasksPath       = "tasks"
-	defaultTaskFileName    = "task.yml"
 )
 
 func main() {
@@ -53,7 +52,7 @@ func main() {
 					builderConfig := pipeline.BuilderConfig{
 						PipelineFileName:   pipelineDefinitionFile,
 						TasksDirectoryName: defaultTasksPath,
-						TasksFileName:      defaultTaskFileName,
+						TasksFileSuffixes:  []string{"task.yml", "task.yaml"},
 					}
 					builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
 
@@ -105,7 +104,7 @@ func main() {
 					builderConfig := pipeline.BuilderConfig{
 						PipelineFileName:   pipelineDefinitionFile,
 						TasksDirectoryName: defaultTasksPath,
-						TasksFileName:      defaultTaskFileName,
+						TasksFileSuffixes:  []string{"task.yml", "task.yaml"},
 					}
 					builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
 
