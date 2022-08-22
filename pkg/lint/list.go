@@ -69,7 +69,7 @@ func GetRules(logger *zap.SugaredLogger) ([]Rule, error) {
 			Validator:  EnsureTaskScheduleIsValid,
 		},
 		&SimpleRule{
-			Identifier: "valid-athena.sql-type-tasks",
+			Identifier: "valid-athena-sql-task",
 			Validator:  EnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath,
 		},
 		&SimpleRule{

@@ -32,15 +32,15 @@ const (
 
 	taskScheduleDayDoesNotExist = "Task schedule day must be a valid weekday"
 
-	athenaSQLEmptyDatabaseField   = "Database field cannot be empty"
-	athenaSQLInvalidS3FilePath    = "S3 file must start with s3://"
-	athenaSQLInvalidDatabaseField = "Database filed must be a valid"
-	athenaSQEmptyS3FilePath       = "s3 file path cannot be empty"
-
 	pipelineSlackFieldEmptyName           = "Name in pipeline slack field is cannot be empty"
 	pipelineSlackFieldEmptyConnection     = "Connection in pipeline slack field is cannot be empty"
 	pipelineSlackNameFieldNotUnique       = "Name in pipeline slack field must be a unique value"
 	pipelineSlackConnectionFieldNotUnique = "Connection in pipeline slack field must be a unique value"
+
+	athenaSQLEmptyDatabaseField       = "The `database` parameter cannot be empty"
+	athenaSQLInvalidS3FilePath        = "The `s3_file_path` parameter must start with `s3://`"
+	athenaSQLMissingDatabaseParameter = "The `database` parameter is required for Athena SQL tasks"
+	athenaSQLEmptyS3FilePath          = "The `s3_file_path` parameter cannot be empty"
 )
 
 const (
@@ -369,33 +369,35 @@ func EnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(p *pipeline.Pipeline) ([]*
 	for _, task := range p.Tasks {
 		if task.Type == "athena.sql" {
 			databaseVar, ok := task.Parameters["database"]
+
 			if !ok {
 				issues = append(issues, &Issue{
 					Task:        task,
-					Description: athenaSQLInvalidDatabaseField,
-					Context:     []string{"There is no any database field"},
+					Description: athenaSQLMissingDatabaseParameter,
 				})
 			}
+
 			if ok && databaseVar == "" {
 				issues = append(issues, &Issue{
 					Task:        task,
 					Description: athenaSQLEmptyDatabaseField,
-					Context:     []string{fmt.Sprintf("Given database field is: %s", databaseVar)},
 				})
 			}
+
 			s3FilePathVar, ok := task.Parameters["s3_file_path"]
+
 			if !ok {
 				issues = append(issues, &Issue{
 					Task:        task,
-					Description: athenaSQEmptyS3FilePath,
-					Context:     []string{"There is no any s3 file path field"},
+					Description: athenaSQLEmptyS3FilePath,
 				})
 			}
+
 			if ok && !strings.HasPrefix(s3FilePathVar, "s3://") {
 				issues = append(issues, &Issue{
 					Task:        task,
 					Description: athenaSQLInvalidS3FilePath,
-					Context:     []string{fmt.Sprintf("Given s3 file path is: %s", s3FilePathVar)},
+					Context:     []string{fmt.Sprintf("Given `s3_file_path` is: %s", s3FilePathVar)},
 				})
 			}
 		}
