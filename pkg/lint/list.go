@@ -73,7 +73,7 @@ func GetRules(logger *zap.SugaredLogger) ([]Rule, error) {
 			Validator:  EnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath,
 		},
 		&SimpleRule{
-			Identifier: "valid-slack-fields",
+			Identifier: "valid-slack-notification",
 			Validator:  EnsureSlackFieldInPipelineIsValid,
 		},
 	}

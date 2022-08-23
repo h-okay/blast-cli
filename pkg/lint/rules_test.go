@@ -1424,6 +1424,10 @@ func TestEnsureSlackFieldInPipelineIsValid(t *testing.T) {
 								Name:       "name",
 								Connection: "connect",
 							},
+							{
+								Name:       "name1",
+								Connection: "connect1",
+							},
 						},
 					},
 				},

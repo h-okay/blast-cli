@@ -32,10 +32,10 @@ const (
 
 	taskScheduleDayDoesNotExist = "Task schedule day must be a valid weekday"
 
-	pipelineSlackFieldEmptyName           = "Name in pipeline slack field is cannot be empty"
-	pipelineSlackFieldEmptyConnection     = "Connection in pipeline slack field is cannot be empty"
-	pipelineSlackNameFieldNotUnique       = "Name in pipeline slack field must be a unique value"
-	pipelineSlackConnectionFieldNotUnique = "Connection in pipeline slack field must be a unique value"
+	pipelineSlackFieldEmptyName           = "Slack notifications must have a `name` attribute"
+	pipelineSlackFieldEmptyConnection     = "Slack notifications must have a `connection` attribute"
+	pipelineSlackNameFieldNotUnique       = "The `name` attribute under the Slack notifications must be unique"
+	pipelineSlackConnectionFieldNotUnique = "The `connection` attribute under the Slack notifications must be unique"
 
 	athenaSQLEmptyDatabaseField       = "The `database` parameter cannot be empty"
 	athenaSQLInvalidS3FilePath        = "The `s3_file_path` parameter must start with `s3://`"
@@ -409,7 +409,7 @@ func EnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(p *pipeline.Pipeline) ([]*
 func EnsureSlackFieldInPipelineIsValid(p *pipeline.Pipeline) ([]*Issue, error) {
 	issues := make([]*Issue, 0)
 
-	slackNames := make([]string, 0)
+	slackNames := make([]string, 0, len(p.Notifications.Slack))
 	slackConnections := make([]string, 0)
 	for _, slack := range p.Notifications.Slack {
 		if slack.Name == "" {
@@ -429,7 +429,9 @@ func EnsureSlackFieldInPipelineIsValid(p *pipeline.Pipeline) ([]*Issue, error) {
 				Description: pipelineSlackNameFieldNotUnique,
 			})
 		} else {
-			slackNames = append(slackNames, slack.Name)
+			if slack.Name != "" {
+				slackNames = append(slackNames, slack.Name)
+			}
 		}
 
 		if isStringInArray(slackConnections, slack.Connection) {
@@ -437,7 +439,10 @@ func EnsureSlackFieldInPipelineIsValid(p *pipeline.Pipeline) ([]*Issue, error) {
 				Description: pipelineSlackConnectionFieldNotUnique,
 			})
 		} else {
-			slackConnections = append(slackConnections, slack.Connection)
+			if slack.Connection != "" {
+				slackConnections = append(slackConnections, slack.Connection)
+			}
+
 		}
 	}
 
