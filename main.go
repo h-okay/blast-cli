@@ -202,6 +202,7 @@ func main() {
 
 					s := scheduler.NewScheduler(foundPipeline)
 					ex := executor.NewConcurrent(map[string]executor.Operator{
+						"empty":  executor.EmptyOperator{},
 						"bq.sql": bqOperator,
 					}, 8)
 					ex.Start(s.WorkQueue, s.Results)
