@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
@@ -11,6 +12,7 @@ import (
 	"github.com/datablast-analytics/blast-cli/pkg/path"
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/datablast-analytics/blast-cli/pkg/query"
+	"github.com/datablast-analytics/blast-cli/pkg/scheduler"
 	"github.com/fatih/color"
 	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
@@ -22,6 +24,14 @@ const (
 	defaultPipelinePath    = "."
 	pipelineDefinitionFile = "pipeline.yml"
 	defaultTasksPath       = "tasks"
+)
+
+var (
+	fs = afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)
+
+	infoPrinter    = color.New(color.FgYellow)
+	errorPrinter   = color.New(color.FgRed, color.Bold)
+	successPrinter = color.New(color.FgGreen, color.Bold)
 )
 
 func main() {
@@ -46,7 +56,6 @@ func main() {
 				Usage:     "validate the blast pipeline configuration for all the pipelines in a given directory",
 				ArgsUsage: "[path to pipelines]",
 				Action: func(c *cli.Context) error {
-					errorPrinter := color.New(color.FgRed, color.Bold)
 					logger := makeLogger(isDebug)
 
 					builderConfig := pipeline.BuilderConfig{
@@ -92,9 +101,6 @@ func main() {
 				Usage:     "run a single Blast task",
 				ArgsUsage: "[path to the task file]",
 				Action: func(c *cli.Context) error {
-					errorPrinter := color.New(color.FgRed, color.Bold)
-					successPrinter := color.New(color.FgGreen, color.Bold)
-
 					taskPath := c.Args().Get(0)
 					if taskPath == "" {
 						errorPrinter.Printf("Please give a task path: blast-cli run-task <path to the task definition>)\n")
@@ -131,34 +137,20 @@ func main() {
 						return cli.Exit("", 1)
 					}
 
-					config, err := bigquery.LoadConfigFromEnv()
-					if err != nil || !config.IsValid() {
-						errorPrinter.Printf("failed to setup bigquery connection, please set the BIGQUERY_CREDENTIALS_FILE and BIGQUERY_PROJECT environment variables.\n")
-						return cli.Exit("", 1)
-					}
-
-					bq, err := bigquery.NewDB(config)
-					if err != nil {
-						errorPrinter.Printf("failed to connect to bigquery: %v\n", err)
-						return cli.Exit("", 1)
-					}
-
-					renderer := &query.Renderer{
-						Args: map[string]string{
-							"ds":                   time.Now().Format("2006-01-02"),
-							"ds_nodash":            time.Now().Format("20060102"),
-							"macros.ds_add(ds, 1)": time.Now().Add(24 * time.Hour).Format("2006-01-02"),
-						},
-					}
-					fs := afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)
 					wholeFileExtractor := &query.WholeFileExtractor{
 						Fs:       fs,
-						Renderer: renderer,
+						Renderer: query.DefaultRenderer,
+					}
+
+					bqOperator, err := bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor)
+					if err != nil {
+						errorPrinter.Printf(err.Error())
+						return cli.Exit("", 1)
 					}
 
 					e := executor.Sequential{
 						TaskTypeMap: map[string]executor.Operator{
-							"bq.sql": bigquery.NewBasicOperator(bq, wholeFileExtractor),
+							"bq.sql": bqOperator,
 						},
 					}
 
@@ -169,6 +161,59 @@ func main() {
 					}
 
 					successPrinter.Printf("Task '%s' successfully executed.\n", task.Name)
+
+					return nil
+				},
+			},
+			{
+				Name:      "run",
+				Usage:     "run a Blast pipeline",
+				ArgsUsage: "[path to the task file]",
+				Action: func(c *cli.Context) error {
+					pipelinePath := c.Args().Get(0)
+					if pipelinePath == "" {
+						errorPrinter.Printf("Please give a task or pipeline path: blast-cli run <path to the task definition>)\n")
+						return cli.Exit("", 1)
+					}
+
+					builderConfig := pipeline.BuilderConfig{
+						PipelineFileName:   pipelineDefinitionFile,
+						TasksDirectoryName: defaultTasksPath,
+						TasksFileName:      defaultTaskFileName,
+					}
+					builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
+
+					foundPipeline, err := builder.CreatePipelineFromPath(pipelinePath)
+					if err != nil {
+						errorPrinter.Printf("Failed to build pipeline: %v\n", err.Error())
+						return cli.Exit("", 1)
+					}
+
+					wholeFileExtractor := &query.WholeFileExtractor{
+						Fs:       fs,
+						Renderer: query.DefaultRenderer,
+					}
+
+					bqOperator, err := bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor)
+					if err != nil {
+						errorPrinter.Printf(err.Error())
+						return cli.Exit("", 1)
+					}
+
+					s := scheduler.NewScheduler(foundPipeline)
+					ex := executor.NewConcurrent(map[string]executor.Operator{
+						"bq.sql": bqOperator,
+					}, 8)
+					ex.Start(s.WorkQueue, s.Results)
+
+					infoPrinter.Println("Starting the pipeline execution...")
+
+					var wg sync.WaitGroup
+					wg.Add(1)
+					s.Run(context.Background(), &wg)
+					wg.Wait()
+
+					successPrinter.Println("Pipeline has been completed successfully")
 
 					return nil
 				},

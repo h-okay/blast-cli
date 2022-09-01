@@ -21,6 +21,20 @@ type BasicOperator struct {
 	extractor queryExtractor
 }
 
+func NewBasicOperatorFromGlobals(extractor queryExtractor) (*BasicOperator, error) {
+	config, err := LoadConfigFromEnv()
+	if err != nil || !config.IsValid() {
+		return nil, errors.New("failed to setup bigquery connection, please set the BIGQUERY_CREDENTIALS_FILE and BIGQUERY_PROJECT environment variables.")
+	}
+
+	bq, err := NewDB(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to connect to bigquery")
+	}
+
+	return NewBasicOperator(bq, extractor), nil
+}
+
 func NewBasicOperator(client *DB, extractor queryExtractor) *BasicOperator {
 	return &BasicOperator{
 		client:    client,
