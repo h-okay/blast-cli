@@ -71,6 +71,8 @@ type Pipeline struct {
 	DefaultConnections map[string]string `yaml:"defaultConnections"`
 	Tasks              []*Task
 	Notifications      Notifications `yaml:"notifications"`
+
+	tasksByType map[string][]*Task
 }
 
 func (p *Pipeline) RelativeTaskPath(t *Task) string {
@@ -82,6 +84,11 @@ func (p *Pipeline) RelativeTaskPath(t *Task) string {
 	}
 
 	return pipelineDirectory
+}
+
+func (p Pipeline) HasTaskType(taskType string) bool {
+	_, ok := p.tasksByType[taskType]
+	return ok
 }
 
 type TaskCreator func(path string) (*Task, error)
@@ -120,6 +127,7 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 	if pipeline.Name == "" {
 		pipeline.Name = pipeline.LegacyID
 	}
+	pipeline.tasksByType = make(map[string][]*Task)
 
 	absPipelineFilePath, err := filepath.Abs(pipelineFilePath)
 	if err != nil {
@@ -147,6 +155,12 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		}
 
 		pipeline.Tasks = append(pipeline.Tasks, task)
+
+		if _, ok := pipeline.tasksByType[task.Type]; !ok {
+			pipeline.tasksByType[task.Name] = make([]*Task, 0)
+		}
+
+		pipeline.tasksByType[task.Name] = append(pipeline.tasksByType[task.Name], task)
 	}
 
 	return &pipeline, nil

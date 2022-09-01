@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
@@ -182,12 +181,22 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 
 			got, err := p.CreatePipelineFromPath(tt.args.pathToPipeline)
 			if tt.wantErr {
-				require.Error(t, err)
+				assert.Error(t, err)
 			} else {
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 
-			require.Equal(t, tt.want, got)
+			if tt.want == nil {
+				return
+			}
+
+			assert.Equal(t, tt.want.Name, got.Name)
+			assert.Equal(t, tt.want.LegacyID, got.LegacyID)
+			assert.Equal(t, tt.want.Schedule, got.Schedule)
+			assert.Equal(t, tt.want.DefinitionFile, got.DefinitionFile)
+			assert.Equal(t, tt.want.DefaultConnections, got.DefaultConnections)
+			assert.Equal(t, tt.want.DefaultParameters, got.DefaultParameters)
+			assert.Equal(t, tt.want.Tasks, got.Tasks)
 		})
 	}
 }
@@ -237,6 +246,55 @@ func TestTask_RelativePathToPipelineRoot(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			assert.Equal(t, tt.want, tt.pipeline.RelativeTaskPath(tt.task))
+		})
+	}
+}
+
+func TestPipeline_HasTaskType(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		pipeline *Pipeline
+		taskType string
+		want     bool
+	}{
+		{
+			name: "existing task type is found",
+			pipeline: &Pipeline{
+				DefinitionFile: DefinitionFile{
+					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
+				},
+				tasksByType: map[string][]*Task{
+					"type1": []*Task{},
+					"type2": []*Task{},
+					"type3": []*Task{},
+				},
+			},
+			taskType: "type1",
+			want:     true,
+		},
+		{
+			name: "missing task type is returned as false",
+			pipeline: &Pipeline{
+				DefinitionFile: DefinitionFile{
+					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
+				},
+				tasksByType: map[string][]*Task{
+					"type1": []*Task{},
+					"type2": []*Task{},
+					"type3": []*Task{},
+				},
+			},
+			taskType: "some-other-type",
+			want:     false,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.want, tt.pipeline.HasTaskType(tt.taskType))
 		})
 	}
 }

@@ -194,10 +194,13 @@ func main() {
 						Renderer: query.DefaultRenderer,
 					}
 
-					bqOperator, err := bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor)
-					if err != nil {
-						errorPrinter.Printf(err.Error())
-						return cli.Exit("", 1)
+					var bqOperator *bigquery.BasicOperator
+					if foundPipeline.HasTaskType("bq.sql") {
+						bqOperator, err = bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor)
+						if err != nil {
+							errorPrinter.Printf(err.Error())
+							return cli.Exit("", 1)
+						}
 					}
 
 					s := scheduler.NewScheduler(foundPipeline)
