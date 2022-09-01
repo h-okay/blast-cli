@@ -111,8 +111,8 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 							"location":           "europe-west1",
 						},
 						DefinitionFile: pipeline.DefinitionFile{
-							Name: "task.yml",
-							Path: absPath("testdata/pipeline/first-pipeline/tasks/task2/task.yml"),
+							Name: "task.yaml",
+							Path: absPath("testdata/pipeline/first-pipeline/tasks/task2/task.yaml"),
 							Type: pipeline.YamlTask,
 						},
 					},
