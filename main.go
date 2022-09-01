@@ -170,6 +170,8 @@ func main() {
 				Usage:     "run a Blast pipeline",
 				ArgsUsage: "[path to the task file]",
 				Action: func(c *cli.Context) error {
+					logger := makeLogger(isDebug)
+
 					pipelinePath := c.Args().Get(0)
 					if pipelinePath == "" {
 						errorPrinter.Printf("Please give a task or pipeline path: blast-cli run <path to the task definition>)\n")
@@ -203,8 +205,8 @@ func main() {
 						}
 					}
 
-					s := scheduler.NewScheduler(foundPipeline)
-					ex := executor.NewConcurrent(map[string]executor.Operator{
+					s := scheduler.NewScheduler(logger, foundPipeline)
+					ex := executor.NewConcurrent(logger, map[string]executor.Operator{
 						"empty":  executor.EmptyOperator{},
 						"bq.sql": bqOperator,
 					}, 8)

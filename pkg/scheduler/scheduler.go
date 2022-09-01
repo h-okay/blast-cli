@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"go.uber.org/zap"
 	"sync"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
@@ -37,6 +38,8 @@ type TaskExecutionResult struct {
 }
 
 type Scheduler struct {
+	logger *zap.SugaredLogger
+
 	taskInstances    []*TaskInstance
 	taskScheduleLock sync.Mutex
 	taskNameMap      map[string]*TaskInstance
@@ -45,7 +48,7 @@ type Scheduler struct {
 	Results   chan *TaskExecutionResult
 }
 
-func NewScheduler(p *pipeline.Pipeline) *Scheduler {
+func NewScheduler(logger *zap.SugaredLogger, p *pipeline.Pipeline) *Scheduler {
 	instances := make([]*TaskInstance, 0, len(p.Tasks))
 	for _, task := range p.Tasks {
 		instances = append(instances, &TaskInstance{
@@ -56,6 +59,7 @@ func NewScheduler(p *pipeline.Pipeline) *Scheduler {
 	}
 
 	return &Scheduler{
+		logger:           logger,
 		taskInstances:    instances,
 		taskScheduleLock: sync.Mutex{},
 		WorkQueue:        make(chan *TaskInstance, 100),
@@ -73,8 +77,10 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				status: Succeeded,
 			},
 		})
+		s.logger.Debug("initiated the scheduler start task")
 	}()
 
+	s.logger.Debug("started the scheduler loop")
 	for {
 		select {
 		case <-ctx.Done():
@@ -82,8 +88,10 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 			close(s.WorkQueue)
 			return
 		case result := <-s.Results:
+			s.logger.Debug("received task result: ", result.Instance.Task.Name)
 			finished := s.Tick(result)
 			if finished {
+				s.logger.Debug("pipeline has completed, finishing the scheduler loop")
 				wg.Done()
 				return
 			}
