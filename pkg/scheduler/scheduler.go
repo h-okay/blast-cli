@@ -18,8 +18,9 @@ const (
 )
 
 type TaskInstance struct {
-	task   *pipeline.Task
-	status TaskInstanceStatus
+	Pipeline *pipeline.Pipeline
+	Task     *pipeline.Task
+	status   TaskInstanceStatus
 }
 
 func (t *TaskInstance) Completed() bool {
@@ -31,7 +32,8 @@ func (t *TaskInstance) MarkAs(status TaskInstanceStatus) {
 }
 
 type TaskExecutionResult struct {
-	instance *TaskInstance
+	Instance *TaskInstance
+	Error    error
 }
 
 type Scheduler struct {
@@ -43,12 +45,13 @@ type Scheduler struct {
 	Results   chan *TaskExecutionResult
 }
 
-func NewScheduler(p pipeline.Pipeline) *Scheduler {
+func NewScheduler(p *pipeline.Pipeline) *Scheduler {
 	instances := make([]*TaskInstance, 0, len(p.Tasks))
 	for _, task := range p.Tasks {
 		instances = append(instances, &TaskInstance{
-			task:   task,
-			status: Pending,
+			Pipeline: p,
+			Task:     task,
+			status:   Pending,
 		})
 	}
 
@@ -61,6 +64,17 @@ func NewScheduler(p pipeline.Pipeline) *Scheduler {
 }
 
 func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
+	go func() {
+		s.Tick(&TaskExecutionResult{
+			Instance: &TaskInstance{
+				Task: &pipeline.Task{
+					Name: "start",
+				},
+				status: Succeeded,
+			},
+		})
+	}()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -79,9 +93,12 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // Tick marks an iteration of the scheduler loop. It is called when a result is received.
 // Mainly, the results are fed from a channel, but Tick allows implementing additional methods of passing
-// task results and simulating scheduler loops, e.g. time travel. It is also useful for testing purposes.
+// Task results and simulating scheduler loops, e.g. time travel. It is also useful for testing purposes.
 func (s *Scheduler) Tick(result *TaskExecutionResult) bool {
-	result.instance.MarkAs(Succeeded)
+	s.taskScheduleLock.Lock()
+	defer s.taskScheduleLock.Unlock()
+
+	result.Instance.MarkAs(Succeeded)
 
 	if s.hasPipelineFinished() {
 		close(s.WorkQueue)
@@ -104,14 +121,11 @@ func (s *Scheduler) Tick(result *TaskExecutionResult) bool {
 func (s *Scheduler) constructTaskNameMap() {
 	s.taskNameMap = make(map[string]*TaskInstance)
 	for _, ti := range s.taskInstances {
-		s.taskNameMap[ti.task.Name] = ti
+		s.taskNameMap[ti.Task.Name] = ti
 	}
 }
 
 func (s *Scheduler) getScheduleableTasks() []*TaskInstance {
-	s.taskScheduleLock.Lock()
-	defer s.taskScheduleLock.Unlock()
-
 	if s.taskNameMap == nil {
 		s.constructTaskNameMap()
 	}
@@ -133,11 +147,11 @@ func (s *Scheduler) getScheduleableTasks() []*TaskInstance {
 }
 
 func (s *Scheduler) allDependenciesSucceededForTask(t *TaskInstance) bool {
-	if len(t.task.DependsOn) == 0 {
+	if len(t.Task.DependsOn) == 0 {
 		return true
 	}
 
-	for _, dep := range t.task.DependsOn {
+	for _, dep := range t.Task.DependsOn {
 		upstream, ok := s.taskNameMap[dep]
 		if !ok {
 			continue

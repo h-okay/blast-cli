@@ -1,0 +1,80 @@
+package executor
+
+import (
+	"context"
+	"sync"
+	"testing"
+
+	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/datablast-analytics/blast-cli/pkg/scheduler"
+	"github.com/stretchr/testify/mock"
+)
+
+func TestConcurrent_Start(t *testing.T) {
+	t.Parallel()
+
+	t11 := &pipeline.Task{
+		Name: "task11",
+		Type: "test",
+	}
+
+	t21 := &pipeline.Task{
+		Name: "task21",
+		Type: "test",
+	}
+
+	t12 := &pipeline.Task{
+		Name:      "task12",
+		Type:      "test",
+		DependsOn: []string{"task11"},
+	}
+
+	t22 := &pipeline.Task{
+		Name:      "task22",
+		Type:      "test",
+		DependsOn: []string{"task21"},
+	}
+
+	t3 := &pipeline.Task{
+		Name:      "task3",
+		Type:      "test",
+		DependsOn: []string{"task12", "task22"},
+	}
+
+	p := &pipeline.Pipeline{
+		Tasks: []*pipeline.Task{t11, t21, t12, t22, t3},
+	}
+
+	mockOperator := new(mockOperator)
+	mockOperator.On("RunTask", mock.Anything, p, t11).
+		Return(nil).
+		Once()
+
+	mockOperator.On("RunTask", mock.Anything, p, t21).
+		Return(nil).
+		Once()
+
+	mockOperator.On("RunTask", mock.Anything, p, t12).
+		Return(nil).
+		Once()
+
+	mockOperator.On("RunTask", mock.Anything, p, t22).
+		Return(nil).
+		Once()
+
+	mockOperator.On("RunTask", mock.Anything, p, t3).
+		Return(nil).
+		Once()
+
+	s := scheduler.NewScheduler(p)
+
+	ex := NewConcurrent(map[string]Operator{"test": mockOperator}, 8)
+	ex.Start(s.WorkQueue, s.Results)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	s.Run(context.Background(), &wg)
+	wg.Wait()
+
+	mockOperator.AssertExpectations(t)
+}

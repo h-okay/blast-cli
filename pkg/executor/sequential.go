@@ -23,24 +23,3 @@ func (s Sequential) RunSingleTask(ctx context.Context, pipeline *pipeline.Pipeli
 
 	return s.TaskTypeMap[task.Type].RunTask(ctx, pipeline, task)
 }
-
-func (s Sequential) RunPipeline(ctx context.Context, pipeline *pipeline.Pipeline, task *pipeline.Task) error {
-	// check if task type exists in map
-	notRunnableTaskTypes := s.getNotRunnableTaskTypes(pipeline)
-	if len(notRunnableTaskTypes) != 0 {
-		return errors.Errorf("some of the task types are not runnable yet: %v", notRunnableTaskTypes)
-	}
-
-	return s.TaskTypeMap[task.Type].RunTask(ctx, pipeline, task)
-}
-
-func (s Sequential) getNotRunnableTaskTypes(pipeline *pipeline.Pipeline) []string {
-	types := make([]string, 0)
-	for _, task := range pipeline.Tasks {
-		if _, ok := s.TaskTypeMap[task.Type]; !ok {
-			types = append(types, task.Type)
-		}
-	}
-
-	return types
-}
