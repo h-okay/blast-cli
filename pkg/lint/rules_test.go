@@ -1207,3 +1207,252 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 		})
 	}
 }
+
+func TestEnsureSlackFieldInPipelineIsValid(t *testing.T) {
+	t.Parallel()
+	type args struct {
+		p *pipeline.Pipeline
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []*Issue
+		wantErr bool
+	}{
+		{
+			name: "no issues",
+			args: args{
+				p: &pipeline.Pipeline{
+					Notifications: pipeline.Notifications{
+						Slack: []pipeline.SlackNotification{
+							{
+								Name:       "name",
+								Connection: "connect",
+							},
+						},
+					},
+				},
+			},
+			want: noIssues,
+		},
+		{
+			name: "empty slack name field",
+			args: args{
+				p: &pipeline.Pipeline{
+					Notifications: pipeline.Notifications{
+						Slack: []pipeline.SlackNotification{
+							{
+								Name:       "",
+								Connection: "connect",
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Description: pipelineSlackFieldEmptyName,
+				},
+			},
+		},
+		{
+			name: "empty slack connection field",
+			args: args{
+				p: &pipeline.Pipeline{
+					Notifications: pipeline.Notifications{
+						Slack: []pipeline.SlackNotification{
+							{
+								Name:       "name",
+								Connection: "",
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Description: pipelineSlackFieldEmptyConnection,
+				},
+			},
+		},
+
+		{
+			name: "no slack name field",
+			args: args{
+				p: &pipeline.Pipeline{
+					Notifications: pipeline.Notifications{
+						Slack: []pipeline.SlackNotification{
+							{
+								Connection: "connect",
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Description: pipelineSlackFieldEmptyName,
+				},
+			},
+		},
+		{
+			name: "no slack connection field",
+			args: args{
+				p: &pipeline.Pipeline{
+					Notifications: pipeline.Notifications{
+						Slack: []pipeline.SlackNotification{
+							{
+								Name: "name",
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Description: pipelineSlackFieldEmptyConnection,
+				},
+			},
+		},
+
+		{
+			name: "empty slack name and connection field",
+			args: args{
+				p: &pipeline.Pipeline{
+					Notifications: pipeline.Notifications{
+						Slack: []pipeline.SlackNotification{
+							{
+								Name:       "",
+								Connection: "",
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Description: pipelineSlackFieldEmptyName,
+				},
+				{
+					Description: pipelineSlackFieldEmptyConnection,
+				},
+			},
+		},
+
+		{
+			name: "no slack name and connection field",
+			args: args{
+				p: &pipeline.Pipeline{
+					Notifications: pipeline.Notifications{
+						Slack: []pipeline.SlackNotification{
+							{},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Description: pipelineSlackFieldEmptyName,
+				},
+				{
+					Description: pipelineSlackFieldEmptyConnection,
+				},
+			},
+		},
+
+		{
+			name: "non unique name field",
+			args: args{
+				p: &pipeline.Pipeline{
+					Notifications: pipeline.Notifications{
+						Slack: []pipeline.SlackNotification{
+							{
+								Name:       "name",
+								Connection: "connect1",
+							},
+							{
+								Name:       "name",
+								Connection: "connect",
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Description: pipelineSlackNameFieldNotUnique,
+				},
+			},
+		},
+
+		{
+			name: "non unique connection field",
+			args: args{
+				p: &pipeline.Pipeline{
+					Notifications: pipeline.Notifications{
+						Slack: []pipeline.SlackNotification{
+							{
+								Name:       "name1",
+								Connection: "connect",
+							},
+							{
+								Name:       "name",
+								Connection: "connect",
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Description: pipelineSlackConnectionFieldNotUnique,
+				},
+			},
+		},
+
+		{
+			name: "non unique connection and name field",
+			args: args{
+				p: &pipeline.Pipeline{
+					Notifications: pipeline.Notifications{
+						Slack: []pipeline.SlackNotification{
+							{
+								Name:       "name",
+								Connection: "connect",
+							},
+							{
+								Name:       "name",
+								Connection: "connect",
+							},
+							{
+								Name:       "name1",
+								Connection: "connect1",
+							},
+						},
+					},
+				},
+			},
+			want: []*Issue{
+				{
+					Description: pipelineSlackNameFieldNotUnique,
+				},
+				{
+					Description: pipelineSlackConnectionFieldNotUnique,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := EnsureSlackFieldInPipelineIsValid(tt.args.p)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equalf(t, tt.want, got, "EnsureSlackFieldInPipelineIsValid(%v)", tt.args.p)
+		})
+	}
+}

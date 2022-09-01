@@ -32,6 +32,11 @@ const (
 
 	taskScheduleDayDoesNotExist = "Task schedule day must be a valid weekday"
 
+	pipelineSlackFieldEmptyName           = "Slack notifications must have a `name` attribute"
+	pipelineSlackFieldEmptyConnection     = "Slack notifications must have a `connection` attribute"
+	pipelineSlackNameFieldNotUnique       = "The `name` attribute under the Slack notifications must be unique"
+	pipelineSlackConnectionFieldNotUnique = "The `connection` attribute under the Slack notifications must be unique"
+
 	athenaSQLEmptyDatabaseField       = "The `database` parameter cannot be empty"
 	athenaSQLInvalidS3FilePath        = "The `s3_file_path` parameter must start with `s3://`"
 	athenaSQLMissingDatabaseParameter = "The `database` parameter is required for Athena SQL tasks"
@@ -395,6 +400,46 @@ func EnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(p *pipeline.Pipeline) ([]*
 					Context:     []string{fmt.Sprintf("Given `s3_file_path` is: %s", s3FilePathVar)},
 				})
 			}
+		}
+	}
+
+	return issues, nil
+}
+
+func EnsureSlackFieldInPipelineIsValid(p *pipeline.Pipeline) ([]*Issue, error) {
+	issues := make([]*Issue, 0)
+
+	slackNames := make([]string, 0, len(p.Notifications.Slack))
+	slackConnections := make([]string, 0)
+	for _, slack := range p.Notifications.Slack {
+		if slack.Name == "" {
+			issues = append(issues, &Issue{
+				Description: pipelineSlackFieldEmptyName,
+			})
+		}
+
+		if slack.Connection == "" {
+			issues = append(issues, &Issue{
+				Description: pipelineSlackFieldEmptyConnection,
+			})
+		}
+
+		if isStringInArray(slackNames, slack.Name) {
+			issues = append(issues, &Issue{
+				Description: pipelineSlackNameFieldNotUnique,
+			})
+		}
+		if slack.Name != "" {
+			slackNames = append(slackNames, slack.Name)
+		}
+
+		if isStringInArray(slackConnections, slack.Connection) {
+			issues = append(issues, &Issue{
+				Description: pipelineSlackConnectionFieldNotUnique,
+			})
+		}
+		if slack.Connection != "" {
+			slackConnections = append(slackConnections, slack.Connection)
 		}
 	}
 

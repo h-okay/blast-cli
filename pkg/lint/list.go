@@ -72,6 +72,10 @@ func GetRules(logger *zap.SugaredLogger) ([]Rule, error) {
 			Identifier: "valid-athena-sql-task",
 			Validator:  EnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath,
 		},
+		&SimpleRule{
+			Identifier: "valid-slack-notification",
+			Validator:  EnsureSlackFieldInPipelineIsValid,
+		},
 	}
 
 	rules, err := appendSnowflakeValidatorIfExists(logger, rules)
