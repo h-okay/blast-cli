@@ -428,21 +428,18 @@ func EnsureSlackFieldInPipelineIsValid(p *pipeline.Pipeline) ([]*Issue, error) {
 			issues = append(issues, &Issue{
 				Description: pipelineSlackNameFieldNotUnique,
 			})
-		} else {
-			if slack.Name != "" {
-				slackNames = append(slackNames, slack.Name)
-			}
+		}
+		if slack.Name != "" {
+			slackNames = append(slackNames, slack.Name)
 		}
 
 		if isStringInArray(slackConnections, slack.Connection) {
 			issues = append(issues, &Issue{
 				Description: pipelineSlackConnectionFieldNotUnique,
 			})
-		} else {
-			if slack.Connection != "" {
-				slackConnections = append(slackConnections, slack.Connection)
-			}
-
+		}
+		if slack.Connection != "" {
+			slackConnections = append(slackConnections, slack.Connection)
 		}
 	}
 
