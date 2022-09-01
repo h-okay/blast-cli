@@ -8,6 +8,7 @@ import (
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/datablast-analytics/blast-cli/pkg/scheduler"
 	"github.com/stretchr/testify/mock"
+	"go.uber.org/zap"
 )
 
 func TestConcurrent_Start(t *testing.T) {
@@ -66,9 +67,10 @@ func TestConcurrent_Start(t *testing.T) {
 		Return(nil).
 		Once()
 
-	s := scheduler.NewScheduler(p)
+	logger := zap.NewNop().Sugar()
+	s := scheduler.NewScheduler(logger, p)
 
-	ex := NewConcurrent(map[string]Operator{"test": mockOperator}, 8)
+	ex := NewConcurrent(logger, map[string]Operator{"test": mockOperator}, 8)
 	ex.Start(s.WorkQueue, s.Results)
 
 	var wg sync.WaitGroup

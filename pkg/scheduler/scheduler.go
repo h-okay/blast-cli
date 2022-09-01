@@ -2,10 +2,10 @@ package scheduler
 
 import (
 	"context"
-	"go.uber.org/zap"
 	"sync"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"go.uber.org/zap"
 )
 
 type TaskInstanceStatus int

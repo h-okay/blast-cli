@@ -33,10 +33,10 @@ format: tools
 	@go vet ./...
 
 	@echo "$(OK_COLOR)>> [$@] gci: running$(NO_COLOR)"
-	@gci -w pkg main.go
+	@gci -w cmd pkg main.go
 
 	@echo "$(OK_COLOR)>> [$@] gofumpt: running$(NO_COLOR)"
-	@gofumpt -w pkg
+	@gofumpt -w cmd pkg
 
 	@echo "$(OK_COLOR)>> [$@] golangci-lint: running$(NO_COLOR)"
 	@golangci-lint run

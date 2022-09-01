@@ -3,13 +3,12 @@ package executor
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 
 	"github.com/datablast-analytics/blast-cli/pkg/scheduler"
+	"go.uber.org/zap"
 )
 
 type Concurrent struct {
-	logger      *zap.SugaredLogger
 	workerCount int
 	workers     []*worker
 }

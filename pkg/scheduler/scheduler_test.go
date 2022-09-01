@@ -5,6 +5,7 @@ import (
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestScheduler_getScheduleableTasks(t *testing.T) {
@@ -184,7 +185,7 @@ func TestScheduler_Run(t *testing.T) {
 		},
 	}
 
-	scheduler := NewScheduler(p)
+	scheduler := NewScheduler(&zap.SugaredLogger{}, p)
 
 	scheduler.Tick(&TaskExecutionResult{
 		Instance: &TaskInstance{
