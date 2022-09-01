@@ -48,6 +48,12 @@ type Scheduler struct {
 	Results   chan *TaskExecutionResult
 }
 
+func (s *Scheduler) MarkAll(status TaskInstanceStatus) {
+	for _, instance := range s.taskInstances {
+		instance.MarkAs(status)
+	}
+}
+
 func NewScheduler(logger *zap.SugaredLogger, p *pipeline.Pipeline) *Scheduler {
 	instances := make([]*TaskInstance, 0, len(p.Tasks))
 	for _, task := range p.Tasks {

@@ -3,6 +3,7 @@ package cmd
 import (
 	"time"
 
+	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/fatih/color"
 	"github.com/spf13/afero"
 )
@@ -21,4 +22,12 @@ var (
 	infoPrinter    = color.New(color.FgYellow)
 	errorPrinter   = color.New(color.FgRed, color.Bold)
 	successPrinter = color.New(color.FgGreen, color.Bold)
+
+	builderConfig = pipeline.BuilderConfig{
+		PipelineFileName:   pipelineDefinitionFile,
+		TasksDirectoryName: defaultTasksPath,
+		TasksFileName:      defaultTaskFileName,
+	}
+
+	builder = pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
 )

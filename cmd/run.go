@@ -7,7 +7,6 @@ import (
 	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
 	"github.com/datablast-analytics/blast-cli/pkg/executor"
 	"github.com/datablast-analytics/blast-cli/pkg/path"
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"github.com/datablast-analytics/blast-cli/pkg/scheduler"
 	"github.com/urfave/cli/v2"
@@ -26,13 +25,6 @@ func Run(isDebug *bool) *cli.Command {
 				errorPrinter.Printf("Please give a task or pipeline path: blast-cli run <path to the task definition>)\n")
 				return cli.Exit("", 1)
 			}
-
-			builderConfig := pipeline.BuilderConfig{
-				PipelineFileName:   pipelineDefinitionFile,
-				TasksDirectoryName: defaultTasksPath,
-				TasksFileSuffixes:  defaultTaskFileSuffixes,
-			}
-			builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
 
 			foundPipeline, err := builder.CreatePipelineFromPath(pipelinePath)
 			if err != nil {
@@ -86,13 +78,6 @@ func RunTask() *cli.Command {
 				errorPrinter.Printf("Please give a task path: blast-cli run-task <path to the task definition>)\n")
 				return cli.Exit("", 1)
 			}
-
-			builderConfig := pipeline.BuilderConfig{
-				PipelineFileName:   pipelineDefinitionFile,
-				TasksDirectoryName: defaultTasksPath,
-				TasksFileSuffixes:  defaultTaskFileSuffixes,
-			}
-			builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
 
 			task, err := builder.CreateTaskFromFile(taskPath)
 			if err != nil {
