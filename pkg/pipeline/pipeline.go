@@ -157,10 +157,10 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		pipeline.Tasks = append(pipeline.Tasks, task)
 
 		if _, ok := pipeline.tasksByType[task.Type]; !ok {
-			pipeline.tasksByType[task.Name] = make([]*Task, 0)
+			pipeline.tasksByType[task.Type] = make([]*Task, 0)
 		}
 
-		pipeline.tasksByType[task.Name] = append(pipeline.tasksByType[task.Name], task)
+		pipeline.tasksByType[task.Type] = append(pipeline.tasksByType[task.Type], task)
 	}
 
 	return &pipeline, nil
