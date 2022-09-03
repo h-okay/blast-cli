@@ -54,6 +54,10 @@ func (s *Scheduler) MarkAll(status TaskInstanceStatus) {
 	}
 }
 
+func (s *Scheduler) MarkTask(task *pipeline.Task, status TaskInstanceStatus) {
+	s.taskNameMap[task.Name].MarkAs(status)
+}
+
 func NewScheduler(logger *zap.SugaredLogger, p *pipeline.Pipeline) *Scheduler {
 	instances := make([]*TaskInstance, 0, len(p.Tasks))
 	for _, task := range p.Tasks {
@@ -64,13 +68,16 @@ func NewScheduler(logger *zap.SugaredLogger, p *pipeline.Pipeline) *Scheduler {
 		})
 	}
 
-	return &Scheduler{
+	s := &Scheduler{
 		logger:           logger,
 		taskInstances:    instances,
 		taskScheduleLock: sync.Mutex{},
 		WorkQueue:        make(chan *TaskInstance, 100),
 		Results:          make(chan *TaskExecutionResult),
 	}
+	s.constructTaskNameMap()
+
+	return s
 }
 
 func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
