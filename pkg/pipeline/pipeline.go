@@ -84,7 +84,7 @@ type TaskCreator func(path string) (*Task, error)
 type BuilderConfig struct {
 	PipelineFileName   string
 	TasksDirectoryName string
-	TasksFileName      string
+	TasksFileSuffixes  []string
 }
 
 type builder struct {
@@ -147,10 +147,20 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 	return &pipeline, nil
 }
 
+func fileHasSuffix(arr []string, str string) bool {
+	for _, a := range arr {
+		if strings.HasSuffix(str, a) {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *builder) CreateTaskFromFile(path string) (*Task, error) {
 	isSeparateDefinitionFile := false
 	creator := p.commentTaskCreator
-	if strings.HasSuffix(path, p.config.TasksFileName) {
+
+	if fileHasSuffix(p.config.TasksFileSuffixes, path) {
 		creator = p.yamlTaskCreator
 		isSeparateDefinitionFile = true
 	}
