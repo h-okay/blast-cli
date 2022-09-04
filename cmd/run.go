@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"os"
 	"strings"
 	"sync"
@@ -10,6 +9,7 @@ import (
 	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
 	"github.com/datablast-analytics/blast-cli/pkg/executor"
 	"github.com/datablast-analytics/blast-cli/pkg/path"
+	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"github.com/datablast-analytics/blast-cli/pkg/scheduler"
 	"github.com/urfave/cli/v2"
@@ -20,6 +20,12 @@ func Run(isDebug *bool) *cli.Command {
 		Name:      "run",
 		Usage:     "run a Blast pipeline",
 		ArgsUsage: "[path to the task file]",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:  "downstream",
+				Usage: "pass this flag if you'd like to run all the downstream tasks as well",
+			},
+		},
 		Action: func(c *cli.Context) error {
 			logger := makeLogger(*isDebug)
 

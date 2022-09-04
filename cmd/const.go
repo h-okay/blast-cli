@@ -26,7 +26,7 @@ var (
 	builderConfig = pipeline.BuilderConfig{
 		PipelineFileName:   pipelineDefinitionFile,
 		TasksDirectoryName: defaultTasksPath,
-		TasksFileName:      defaultTaskFileName,
+		TasksFileSuffixes:  defaultTaskFileSuffixes,
 	}
 
 	builder = pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)

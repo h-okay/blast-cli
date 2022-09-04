@@ -73,6 +73,7 @@ type Pipeline struct {
 	Notifications      Notifications `yaml:"notifications"`
 
 	tasksByType map[string][]*Task
+	tasksByName map[string]*Task
 }
 
 func (p *Pipeline) RelativeTaskPath(t *Task) string {
@@ -113,9 +114,9 @@ func NewBuilder(config BuilderConfig, yamlTaskCreator TaskCreator, commentTaskCr
 	}
 }
 
-func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, error) {
-	pipelineFilePath := filepath.Join(pathToPipeline, p.config.PipelineFileName)
-	tasksPath := filepath.Join(pathToPipeline, p.config.TasksDirectoryName)
+func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, error) {
+	pipelineFilePath := filepath.Join(pathToPipeline, b.config.PipelineFileName)
+	tasksPath := filepath.Join(pathToPipeline, b.config.TasksDirectoryName)
 
 	var pipeline Pipeline
 	err := path.ReadYaml(pipelineFilePath, &pipeline)
@@ -128,6 +129,7 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		pipeline.Name = pipeline.LegacyID
 	}
 	pipeline.tasksByType = make(map[string][]*Task)
+	pipeline.tasksByName = make(map[string]*Task)
 
 	absPipelineFilePath, err := filepath.Abs(pipelineFilePath)
 	if err != nil {
@@ -145,7 +147,7 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 	}
 
 	for _, file := range taskFiles {
-		task, err := p.CreateTaskFromFile(file)
+		task, err := b.CreateTaskFromFile(file)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error creating Task from file '%s'", file)
 		}
@@ -161,6 +163,7 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		}
 
 		pipeline.tasksByType[task.Type] = append(pipeline.tasksByType[task.Type], task)
+		pipeline.tasksByName[task.Name] = task
 	}
 
 	return &pipeline, nil

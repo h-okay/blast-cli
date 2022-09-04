@@ -243,3 +243,74 @@ func TestScheduler_Run(t *testing.T) {
 
 	assert.True(t, finished)
 }
+
+func TestScheduler_MarkTasksAndDownstream(t *testing.T) {
+	t.Parallel()
+
+	t12 := &pipeline.Task{
+		Name:      "task12",
+		DependsOn: []string{"task11"},
+	}
+
+	p := &pipeline.Pipeline{
+		Tasks: []*pipeline.Task{
+			{
+				Name: "task11",
+			},
+			{
+				Name: "task21",
+			},
+			t12,
+			{
+				Name:      "task13",
+				DependsOn: []string{"task12"},
+			},
+			{
+				Name:      "task22",
+				DependsOn: []string{"task21"},
+			},
+			{
+				Name:      "task3",
+				DependsOn: []string{"task12", "task22"},
+			},
+			{
+				Name:      "task4",
+				DependsOn: []string{"task13", "task3"},
+			},
+		},
+	}
+
+	s := NewScheduler(zap.NewNop().Sugar(), p)
+	s.MarkAll(Succeeded)
+	s.MarkTaskAndAllDownstream(t12, Pending)
+
+	s.Kickstart()
+
+	// ensure the first task is scheduled
+	ti12 := <-s.WorkQueue
+	assert.Equal(t, "task12", ti12.Task.Name)
+
+	// mark t12 as completed
+	s.Tick(&TaskExecutionResult{
+		Instance: ti12,
+	})
+
+	ti13 := <-s.WorkQueue
+	assert.Equal(t, "task13", ti13.Task.Name)
+	s.Tick(&TaskExecutionResult{
+		Instance: ti13,
+	})
+
+	ti3 := <-s.WorkQueue
+	assert.Equal(t, "task3", ti3.Task.Name)
+	s.Tick(&TaskExecutionResult{
+		Instance: ti3,
+	})
+
+	ti4 := <-s.WorkQueue
+	assert.Equal(t, "task4", ti4.Task.Name)
+	finished := s.Tick(&TaskExecutionResult{
+		Instance: ti4,
+	})
+	assert.True(t, finished)
+}

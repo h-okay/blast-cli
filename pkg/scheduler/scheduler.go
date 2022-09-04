@@ -22,6 +22,9 @@ type TaskInstance struct {
 	Pipeline *pipeline.Pipeline
 	Task     *pipeline.Task
 	status   TaskInstanceStatus
+
+	upstream   []*TaskInstance
+	downstream []*TaskInstance
 }
 
 func (t *TaskInstance) Completed() bool {
@@ -58,13 +61,28 @@ func (s *Scheduler) MarkTask(task *pipeline.Task, status TaskInstanceStatus) {
 	s.taskNameMap[task.Name].MarkAs(status)
 }
 
+func (s *Scheduler) MarkTaskAndAllDownstream(task *pipeline.Task, status TaskInstanceStatus) {
+	instance := s.taskNameMap[task.Name]
+	instance.MarkAs(status)
+
+	if len(instance.downstream) == 0 {
+		return
+	}
+
+	for _, d := range instance.downstream {
+		s.MarkTaskAndAllDownstream(d.Task, status)
+	}
+}
+
 func NewScheduler(logger *zap.SugaredLogger, p *pipeline.Pipeline) *Scheduler {
 	instances := make([]*TaskInstance, 0, len(p.Tasks))
 	for _, task := range p.Tasks {
 		instances = append(instances, &TaskInstance{
-			Pipeline: p,
-			Task:     task,
-			status:   Pending,
+			Pipeline:   p,
+			Task:       task,
+			status:     Pending,
+			upstream:   make([]*TaskInstance, 0),
+			downstream: make([]*TaskInstance, 0),
 		})
 	}
 
@@ -76,22 +94,34 @@ func NewScheduler(logger *zap.SugaredLogger, p *pipeline.Pipeline) *Scheduler {
 		Results:          make(chan *TaskExecutionResult),
 	}
 	s.constructTaskNameMap()
+	s.constructInstanceRelationships()
 
 	return s
 }
 
+func (s *Scheduler) constructTaskNameMap() {
+	s.taskNameMap = make(map[string]*TaskInstance)
+	for _, ti := range s.taskInstances {
+		s.taskNameMap[ti.Task.Name] = ti
+	}
+}
+
+func (s *Scheduler) constructInstanceRelationships() {
+	for _, ti := range s.taskInstances {
+		for _, dep := range ti.Task.DependsOn {
+			upstream, ok := s.taskNameMap[dep]
+			if !ok {
+				continue
+			}
+
+			ti.upstream = append(ti.upstream, upstream)
+			upstream.downstream = append(upstream.downstream, ti)
+		}
+	}
+}
+
 func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
-	go func() {
-		s.Tick(&TaskExecutionResult{
-			Instance: &TaskInstance{
-				Task: &pipeline.Task{
-					Name: "start",
-				},
-				status: Succeeded,
-			},
-		})
-		s.logger.Debug("initiated the scheduler start task")
-	}()
+	go s.Kickstart()
 
 	s.logger.Debug("started the scheduler loop")
 	for {
@@ -139,11 +169,16 @@ func (s *Scheduler) Tick(result *TaskExecutionResult) bool {
 	return false
 }
 
-func (s *Scheduler) constructTaskNameMap() {
-	s.taskNameMap = make(map[string]*TaskInstance)
-	for _, ti := range s.taskInstances {
-		s.taskNameMap[ti.Task.Name] = ti
-	}
+// Kickstart initiates the scheduler process by sending a "start" task for the processing.
+func (s *Scheduler) Kickstart() {
+	s.Tick(&TaskExecutionResult{
+		Instance: &TaskInstance{
+			Task: &pipeline.Task{
+				Name: "start",
+			},
+			status: Succeeded,
+		},
+	})
 }
 
 func (s *Scheduler) getScheduleableTasks() []*TaskInstance {
