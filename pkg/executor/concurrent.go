@@ -17,6 +17,9 @@ var (
 		color.FgMagenta,
 		color.FgCyan,
 		color.FgWhite,
+		color.FgHiBlue,
+		color.FgHiMagenta,
+		color.FgHiCyan,
 	}
 	faint = color.New(color.Faint).SprintFunc()
 )
