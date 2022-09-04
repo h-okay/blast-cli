@@ -57,20 +57,20 @@ func (s *Scheduler) MarkAll(status TaskInstanceStatus) {
 	}
 }
 
-func (s *Scheduler) MarkTask(task *pipeline.Task, status TaskInstanceStatus) {
-	s.taskNameMap[task.Name].MarkAs(status)
-}
-
-func (s *Scheduler) MarkTaskAndAllDownstream(task *pipeline.Task, status TaskInstanceStatus) {
+func (s *Scheduler) MarkTask(task *pipeline.Task, status TaskInstanceStatus, downstream bool) {
 	instance := s.taskNameMap[task.Name]
 	instance.MarkAs(status)
+
+	if !downstream {
+		return
+	}
 
 	if len(instance.downstream) == 0 {
 		return
 	}
 
 	for _, d := range instance.downstream {
-		s.MarkTaskAndAllDownstream(d.Task, status)
+		s.MarkTask(d.Task, status, downstream)
 	}
 }
 

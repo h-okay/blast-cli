@@ -282,7 +282,7 @@ func TestScheduler_MarkTasksAndDownstream(t *testing.T) {
 
 	s := NewScheduler(zap.NewNop().Sugar(), p)
 	s.MarkAll(Succeeded)
-	s.MarkTaskAndAllDownstream(t12, Pending)
+	s.MarkTask(t12, Pending, true)
 
 	s.Kickstart()
 

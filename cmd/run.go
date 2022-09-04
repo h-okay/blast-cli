@@ -41,6 +41,7 @@ func Run(isDebug *bool) *cli.Command {
 			var task *pipeline.Task
 			var err error
 
+			runDownstreamTasks := false
 			if runningForATask {
 				task, err = builder.CreateTaskFromFile(inputPath)
 				if err != nil {
@@ -58,6 +59,15 @@ func Run(isDebug *bool) *cli.Command {
 					errorPrinter.Printf("Failed to find the pipeline this task belongs to: '%s'\n", inputPath)
 					return cli.Exit("", 1)
 				}
+
+				if c.Bool("downstream") {
+					infoPrinter.Println("The downstream tasks will be executed as well.")
+					runDownstreamTasks = true
+				}
+			}
+
+			if !runningForATask && c.Bool("downstream") {
+				infoPrinter.Println("Ignoring the '--downstream' flag since you are running the whole pipeline")
 			}
 
 			foundPipeline, err := builder.CreatePipelineFromPath(pipelinePath)
@@ -92,7 +102,7 @@ func Run(isDebug *bool) *cli.Command {
 			if task != nil {
 				logger.Debug("marking single task to run: ", task.Name)
 				s.MarkAll(scheduler.Succeeded)
-				s.MarkTask(task, scheduler.Pending)
+				s.MarkTask(task, scheduler.Pending, runDownstreamTasks)
 			}
 
 			var wg sync.WaitGroup
