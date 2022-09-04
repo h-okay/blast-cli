@@ -178,12 +178,12 @@ func fileHasSuffix(arr []string, str string) bool {
 	return false
 }
 
-func (p *builder) CreateTaskFromFile(path string) (*Task, error) {
+func (b *builder) CreateTaskFromFile(path string) (*Task, error) {
 	isSeparateDefinitionFile := false
-	creator := p.commentTaskCreator
+	creator := b.commentTaskCreator
 
-	if fileHasSuffix(p.config.TasksFileSuffixes, path) {
-		creator = p.yamlTaskCreator
+	if fileHasSuffix(b.config.TasksFileSuffixes, path) {
+		creator = b.yamlTaskCreator
 		isSeparateDefinitionFile = true
 	}
 
