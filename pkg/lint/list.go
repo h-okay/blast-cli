@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
+	"github.com/datablast-analytics/blast-cli/pkg/executor"
 	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"github.com/datablast-analytics/blast-cli/pkg/snowflake"
 	"github.com/pkg/errors"
@@ -106,7 +107,7 @@ func appendSnowflakeValidatorIfExists(logger *zap.SugaredLogger, rules []Rule) (
 
 	snowflakeValidator := &QueryValidatorRule{
 		Identifier:  "snowflake-validator",
-		TaskType:    taskTypeSnowflakeQuery,
+		TaskType:    executor.TaskTypeSnowflakeQuery,
 		Validator:   sf,
 		Extractor:   &splitQueryExtractor,
 		WorkerCount: 32,
@@ -135,7 +136,7 @@ func appendBigqueryValidatorIfExists(logger *zap.SugaredLogger, rules []Rule) ([
 
 	bqValidator := &QueryValidatorRule{
 		Identifier:  "bigquery-validator",
-		TaskType:    taskTypeBigqueryQuery,
+		TaskType:    executor.TaskTypeBigqueryQuery,
 		Validator:   bq,
 		Extractor:   &wholeFileExtractor,
 		WorkerCount: 32,

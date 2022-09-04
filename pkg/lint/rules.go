@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/datablast-analytics/blast-cli/pkg/executor"
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
@@ -42,31 +43,6 @@ const (
 	athenaSQLMissingDatabaseParameter = "The `database` parameter is required for Athena SQL tasks"
 	athenaSQLEmptyS3FilePath          = "The `s3_file_path` parameter cannot be empty"
 )
-
-const (
-	taskTypePython         = "python"
-	taskTypeSnowflakeQuery = "sf.sql"
-	taskTypeBigqueryQuery  = "bq.sql"
-)
-
-var validTaskTypes = map[string]struct{}{
-	taskTypeBigqueryQuery:                  {},
-	"bq.sensor.table":                      {},
-	"bq.sensor.query":                      {},
-	"bq.cost_tracker":                      {},
-	"bash":                                 {},
-	"bq.transfer":                          {},
-	"bq.sensor.partition":                  {},
-	"gcs.from.s3":                          {},
-	"gcs.sensor.object_sensor_with_prefix": {},
-	"gcs.sensor.object":                    {},
-	"empty":                                {},
-	"athena.sql":                           {},
-	"athena.sensor.query":                  {},
-	taskTypePython:                         {},
-	"s3.sensor.key_sensor":                 {},
-	taskTypeSnowflakeQuery:                 {},
-}
 
 var validIDRegexCompiled = regexp.MustCompile(validIDRegex)
 
@@ -138,7 +114,7 @@ func EnsureExecutableFileIsValid(fs afero.Fs) PipelineValidator {
 			}
 
 			if task.ExecutableFile.Path == "" {
-				if task.Type == taskTypePython {
+				if task.Type == executor.TaskTypePython {
 					issues = append(issues, &Issue{
 						Task:        task,
 						Description: executableFileCannotBeEmpty,
@@ -255,7 +231,7 @@ func EnsureOnlyAcceptedTaskTypesAreThere(p *pipeline.Pipeline) ([]*Issue, error)
 			continue
 		}
 
-		if _, ok := validTaskTypes[task.Type]; !ok {
+		if _, ok := executor.DefaultExecutors[task.Type]; !ok {
 			issues = append(issues, &Issue{
 				Task:        task,
 				Description: fmt.Sprintf("Invalid task type '%s'", task.Type),

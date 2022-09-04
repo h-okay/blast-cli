@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 	"strings"
-	"sync"
+	"time"
 
 	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
 	"github.com/datablast-analytics/blast-cli/pkg/executor"
@@ -81,6 +81,8 @@ func Run(isDebug *bool) *cli.Command {
 				Renderer: query.DefaultRenderer,
 			}
 
+			executors := executor.DefaultExecutors
+
 			var bqOperator *bigquery.BasicOperator
 			if foundPipeline.HasTaskType("bq.sql") {
 				bqOperator, err = bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor)
@@ -88,16 +90,16 @@ func Run(isDebug *bool) *cli.Command {
 					errorPrinter.Printf(err.Error())
 					return cli.Exit("", 1)
 				}
+
+				executors[executor.TaskTypeBigqueryQuery] = bqOperator
 			}
 
 			s := scheduler.NewScheduler(logger, foundPipeline)
-			ex := executor.NewConcurrent(logger, map[string]executor.Operator{
-				"empty":  executor.EmptyOperator{},
-				"bq.sql": bqOperator,
-			}, 8)
+			ex := executor.NewConcurrent(logger, executors, 8)
+
 			ex.Start(s.WorkQueue, s.Results)
 
-			infoPrinter.Println("Starting the pipeline execution...")
+			infoPrinter.Printf("\nStarting the pipeline execution...\n\n")
 
 			if task != nil {
 				logger.Debug("marking single task to run: ", task.Name)
@@ -105,12 +107,33 @@ func Run(isDebug *bool) *cli.Command {
 				s.MarkTask(task, scheduler.Pending, runDownstreamTasks)
 			}
 
-			var wg sync.WaitGroup
-			wg.Add(1)
-			s.Run(context.Background(), &wg)
-			wg.Wait()
+			start := time.Now()
+			results := s.Run(context.Background())
+			duration := time.Since(start)
 
-			successPrinter.Println("Pipeline has been completed successfully")
+			successPrinter.Printf("\n\nExecuted %d tasks in %s\n", len(results), duration.Truncate(time.Millisecond).String())
+			errors := make([]*scheduler.TaskExecutionResult, 0)
+			for _, res := range results {
+				if res.Error != nil {
+					errors = append(errors, res)
+				}
+			}
+
+			if len(errors) > 0 {
+				errorPrinter.Printf("\nFailed tasks: %d\n", len(errors))
+				for _, t := range errors {
+					errorPrinter.Printf("  - %s\n", t.Instance.Task.Name)
+					errorPrinter.Printf("    └── %s\n\n", t.Error.Error())
+				}
+
+				upstreamFailedTasks := s.GetTaskInstancesByStatus(scheduler.UpstreamFailed)
+				if len(upstreamFailedTasks) > 0 {
+					errorPrinter.Printf("The following tasks are skipped due to their upstream failing:\n")
+					for _, t := range upstreamFailedTasks {
+						errorPrinter.Printf("  - %s\n", t.Task.Name)
+					}
+				}
+			}
 
 			return nil
 		},

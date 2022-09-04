@@ -2,11 +2,11 @@ package executor
 
 import (
 	"context"
-	"sync"
 	"testing"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/datablast-analytics/blast-cli/pkg/scheduler"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
 )
@@ -73,10 +73,8 @@ func TestConcurrent_Start(t *testing.T) {
 	ex := NewConcurrent(logger, map[string]Operator{"test": mockOperator}, 8)
 	ex.Start(s.WorkQueue, s.Results)
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	s.Run(context.Background(), &wg)
-	wg.Wait()
+	results := s.Run(context.Background())
+	assert.Len(t, results, len(p.Tasks))
 
 	mockOperator.AssertExpectations(t)
 }

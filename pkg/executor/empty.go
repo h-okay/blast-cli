@@ -6,8 +6,8 @@ import (
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 )
 
-type EmptyOperator struct{}
+type NoOpOperator struct{}
 
-func (e EmptyOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pipeline.Task) error {
+func (e NoOpOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pipeline.Task) error {
 	return nil
 }

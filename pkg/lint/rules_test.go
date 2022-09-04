@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/datablast-analytics/blast-cli/pkg/executor"
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -146,7 +147,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 				pipeline: pipeline.Pipeline{
 					Tasks: []*pipeline.Task{
 						{
-							Type: taskTypePython,
+							Type: executor.TaskTypePython,
 							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.YamlTask,
 							},
@@ -157,7 +158,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			want: []*Issue{
 				{
 					Task: &pipeline.Task{
-						Type: taskTypePython,
+						Type: executor.TaskTypePython,
 						DefinitionFile: pipeline.TaskDefinitionFile{
 							Type: pipeline.YamlTask,
 						},
