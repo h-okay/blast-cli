@@ -92,12 +92,13 @@ func Run(isDebug *bool) *cli.Command {
 
 			s := scheduler.NewScheduler(logger, foundPipeline)
 			ex := executor.NewConcurrent(logger, map[string]executor.Operator{
-				"empty":  executor.EmptyOperator{},
+				"empty":  executor.NoOpOperator{},
+				"python": executor.NoOpOperator{},
 				"bq.sql": bqOperator,
 			}, 8)
 			ex.Start(s.WorkQueue, s.Results)
 
-			infoPrinter.Println("Starting the pipeline execution...")
+			infoPrinter.Println("\nStarting the pipeline execution...\n\n")
 
 			if task != nil {
 				logger.Debug("marking single task to run: ", task.Name)
@@ -110,7 +111,7 @@ func Run(isDebug *bool) *cli.Command {
 			s.Run(context.Background(), &wg)
 			wg.Wait()
 
-			successPrinter.Println("Pipeline has been completed successfully")
+			successPrinter.Println("\n\nPipeline has been completed successfully\n")
 
 			return nil
 		},

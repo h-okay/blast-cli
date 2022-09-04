@@ -3,9 +3,22 @@ package executor
 import (
 	"context"
 	"fmt"
+	"github.com/fatih/color"
+	"sync"
+	"time"
 
 	"github.com/datablast-analytics/blast-cli/pkg/scheduler"
 	"go.uber.org/zap"
+)
+
+var (
+	randomColors = []color.Attribute{
+		color.FgBlue,
+		color.FgMagenta,
+		color.FgCyan,
+		color.FgWhite,
+	}
+	faint = color.New(color.Faint).SprintFunc()
 )
 
 type Concurrent struct {
@@ -22,12 +35,16 @@ func NewConcurrent(
 		TaskTypeMap: taskTypeMap,
 	}
 
+	var printLock sync.Mutex
+
 	workers := make([]*worker, workerCount)
 	for i := 0; i < workerCount; i++ {
 		workers[i] = &worker{
-			id:       fmt.Sprintf("worker-%d", i),
-			executor: executor,
-			logger:   logger,
+			id:        fmt.Sprintf("worker-%d", i),
+			executor:  executor,
+			logger:    logger,
+			printer:   color.New(randomColors[i%len(randomColors)]),
+			printLock: &printLock,
 		}
 	}
 
@@ -44,16 +61,25 @@ func (c Concurrent) Start(input chan *scheduler.TaskInstance, result chan<- *sch
 }
 
 type worker struct {
-	id       string
-	executor *Sequential
-	logger   *zap.SugaredLogger
+	id        string
+	executor  *Sequential
+	logger    *zap.SugaredLogger
+	printer   *color.Color
+	printLock *sync.Mutex
 }
 
 func (w worker) run(taskChannel <-chan *scheduler.TaskInstance, results chan<- *scheduler.TaskExecutionResult) {
 	for task := range taskChannel {
-		w.logger.Infof("[%s] Running task: %s", w.id, task.Task.Name)
+		w.printer.Printf("[%s] Running: %s\n", w.id, task.Task.Name)
+		start := time.Now()
 		err := w.executor.RunSingleTask(context.Background(), task.Pipeline, task.Task)
-		w.logger.Infof("[%s] Completed task: %s", w.id, task.Task.Name)
+
+		duration := time.Since(start)
+		durationString := fmt.Sprintf("(%s)", duration.String())
+		w.printLock.Lock()
+		w.printer.Printf("[%s] Completed: %s %s\n", w.id, task.Task.Name, faint(durationString))
+		w.printLock.Unlock()
+
 		results <- &scheduler.TaskExecutionResult{
 			Instance: task,
 			Error:    err,
