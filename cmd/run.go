@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
 	"github.com/datablast-analytics/blast-cli/pkg/executor"
@@ -98,7 +97,7 @@ func Run(isDebug *bool) *cli.Command {
 			}, 8)
 			ex.Start(s.WorkQueue, s.Results)
 
-			infoPrinter.Println("\nStarting the pipeline execution...\n\n")
+			infoPrinter.Printf("\nStarting the pipeline execution...\n\n")
 
 			if task != nil {
 				logger.Debug("marking single task to run: ", task.Name)
@@ -106,12 +105,9 @@ func Run(isDebug *bool) *cli.Command {
 				s.MarkTask(task, scheduler.Pending, runDownstreamTasks)
 			}
 
-			var wg sync.WaitGroup
-			wg.Add(1)
-			s.Run(context.Background(), &wg)
-			wg.Wait()
+			s.Run(context.Background())
 
-			successPrinter.Println("\n\nPipeline has been completed successfully\n")
+			successPrinter.Printf("\n\nPipeline has been completed successfully\n")
 
 			return nil
 		},

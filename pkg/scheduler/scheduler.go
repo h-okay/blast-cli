@@ -120,14 +120,13 @@ func (s *Scheduler) constructInstanceRelationships() {
 	}
 }
 
-func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
+func (s *Scheduler) Run(ctx context.Context) {
 	go s.Kickstart()
 
 	s.logger.Debug("started the scheduler loop")
 	for {
 		select {
 		case <-ctx.Done():
-			wg.Done()
 			close(s.WorkQueue)
 			return
 		case result := <-s.Results:
@@ -135,7 +134,6 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 			finished := s.Tick(result)
 			if finished {
 				s.logger.Debug("pipeline has completed, finishing the scheduler loop")
-				wg.Done()
 				return
 			}
 		}

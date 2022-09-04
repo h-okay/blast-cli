@@ -2,7 +2,6 @@ package executor
 
 import (
 	"context"
-	"sync"
 	"testing"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
@@ -73,10 +72,7 @@ func TestConcurrent_Start(t *testing.T) {
 	ex := NewConcurrent(logger, map[string]Operator{"test": mockOperator}, 8)
 	ex.Start(s.WorkQueue, s.Results)
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	s.Run(context.Background(), &wg)
-	wg.Wait()
+	s.Run(context.Background())
 
 	mockOperator.AssertExpectations(t)
 }

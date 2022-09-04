@@ -3,11 +3,11 @@ package executor
 import (
 	"context"
 	"fmt"
-	"github.com/fatih/color"
 	"sync"
 	"time"
 
 	"github.com/datablast-analytics/blast-cli/pkg/scheduler"
+	"github.com/fatih/color"
 	"go.uber.org/zap"
 )
 
