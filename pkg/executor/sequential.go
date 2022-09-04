@@ -15,11 +15,11 @@ type Sequential struct {
 	TaskTypeMap map[string]Operator
 }
 
-func (l Sequential) RunSingleTask(ctx context.Context, pipeline *pipeline.Pipeline, task *pipeline.Task) error {
+func (s Sequential) RunSingleTask(ctx context.Context, pipeline *pipeline.Pipeline, task *pipeline.Task) error {
 	// check if task type exists in map
-	if _, ok := l.TaskTypeMap[task.Type]; !ok {
+	if _, ok := s.TaskTypeMap[task.Type]; !ok {
 		return errors.New("there is no executor configured for the task type, task cannot be run: " + task.Type)
 	}
 
-	return l.TaskTypeMap[task.Type].RunTask(ctx, pipeline, task)
+	return s.TaskTypeMap[task.Type].RunTask(ctx, pipeline, task)
 }

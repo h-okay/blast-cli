@@ -23,10 +23,15 @@ type ExecutableFile struct {
 	Path string
 }
 
-type DefinitionFile struct {
+type TaskDefinitionFile struct {
 	Name string
 	Path string
 	Type TaskDefinitionType
+}
+
+type DefinitionFile struct {
+	Name string
+	Path string
 }
 
 type TaskSchedule struct {
@@ -49,7 +54,7 @@ type Task struct {
 	Description    string
 	Type           string
 	ExecutableFile ExecutableFile
-	DefinitionFile DefinitionFile
+	DefinitionFile TaskDefinitionFile
 	Parameters     map[string]string
 	Connections    map[string]string
 	DependsOn      []string
@@ -66,6 +71,9 @@ type Pipeline struct {
 	DefaultConnections map[string]string `yaml:"defaultConnections"`
 	Tasks              []*Task
 	Notifications      Notifications `yaml:"notifications"`
+
+	tasksByType map[string][]*Task
+	tasksByName map[string]*Task
 }
 
 func (p *Pipeline) RelativeTaskPath(t *Task) string {
@@ -77,6 +85,11 @@ func (p *Pipeline) RelativeTaskPath(t *Task) string {
 	}
 
 	return pipelineDirectory
+}
+
+func (p Pipeline) HasTaskType(taskType string) bool {
+	_, ok := p.tasksByType[taskType]
+	return ok
 }
 
 type TaskCreator func(path string) (*Task, error)
@@ -101,9 +114,9 @@ func NewBuilder(config BuilderConfig, yamlTaskCreator TaskCreator, commentTaskCr
 	}
 }
 
-func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, error) {
-	pipelineFilePath := filepath.Join(pathToPipeline, p.config.PipelineFileName)
-	tasksPath := filepath.Join(pathToPipeline, p.config.TasksDirectoryName)
+func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, error) {
+	pipelineFilePath := filepath.Join(pathToPipeline, b.config.PipelineFileName)
+	tasksPath := filepath.Join(pathToPipeline, b.config.TasksDirectoryName)
 
 	var pipeline Pipeline
 	err := path.ReadYaml(pipelineFilePath, &pipeline)
@@ -115,6 +128,8 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 	if pipeline.Name == "" {
 		pipeline.Name = pipeline.LegacyID
 	}
+	pipeline.tasksByType = make(map[string][]*Task)
+	pipeline.tasksByName = make(map[string]*Task)
 
 	absPipelineFilePath, err := filepath.Abs(pipelineFilePath)
 	if err != nil {
@@ -132,7 +147,7 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 	}
 
 	for _, file := range taskFiles {
-		task, err := p.CreateTaskFromFile(file)
+		task, err := b.CreateTaskFromFile(file)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error creating Task from file '%s'", file)
 		}
@@ -142,6 +157,13 @@ func (p *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		}
 
 		pipeline.Tasks = append(pipeline.Tasks, task)
+
+		if _, ok := pipeline.tasksByType[task.Type]; !ok {
+			pipeline.tasksByType[task.Type] = make([]*Task, 0)
+		}
+
+		pipeline.tasksByType[task.Type] = append(pipeline.tasksByType[task.Type], task)
+		pipeline.tasksByName[task.Name] = task
 	}
 
 	return &pipeline, nil
@@ -156,12 +178,12 @@ func fileHasSuffix(arr []string, str string) bool {
 	return false
 }
 
-func (p *builder) CreateTaskFromFile(path string) (*Task, error) {
+func (b *builder) CreateTaskFromFile(path string) (*Task, error) {
 	isSeparateDefinitionFile := false
-	creator := p.commentTaskCreator
+	creator := b.commentTaskCreator
 
-	if fileHasSuffix(p.config.TasksFileSuffixes, path) {
-		creator = p.yamlTaskCreator
+	if fileHasSuffix(b.config.TasksFileSuffixes, path) {
+		creator = b.yamlTaskCreator
 		isSeparateDefinitionFile = true
 	}
 

@@ -3,7 +3,16 @@ package query
 import (
 	"regexp"
 	"strings"
+	"time"
 )
+
+var DefaultRenderer = &Renderer{
+	Args: map[string]string{
+		"ds":                   time.Now().Format("2006-01-02"),
+		"ds_nodash":            time.Now().Format("20060102"),
+		"macros.ds_add(ds, 1)": time.Now().Add(24 * time.Hour).Format("2006-01-02"),
+	},
+}
 
 type Renderer struct {
 	Args map[string]string

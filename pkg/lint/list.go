@@ -12,21 +12,14 @@ import (
 )
 
 var (
-	renderer = &query.Renderer{
-		Args: map[string]string{
-			"ds":                   time.Now().Format("2006-01-02"),
-			"ds_nodash":            time.Now().Format("20060102"),
-			"macros.ds_add(ds, 1)": time.Now().Add(24 * time.Hour).Format("2006-01-02"),
-		},
-	}
 	fs                  = afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)
 	splitQueryExtractor = query.FileQuerySplitterExtractor{
 		Fs:       fs,
-		Renderer: renderer,
+		Renderer: query.DefaultRenderer,
 	}
 	wholeFileExtractor = query.WholeFileExtractor{
 		Fs:       fs,
-		Renderer: renderer,
+		Renderer: query.DefaultRenderer,
 	}
 )
 
