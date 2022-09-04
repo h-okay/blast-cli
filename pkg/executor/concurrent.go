@@ -75,7 +75,7 @@ func (w worker) run(taskChannel <-chan *scheduler.TaskInstance, results chan<- *
 		err := w.executor.RunSingleTask(context.Background(), task.Pipeline, task.Task)
 
 		duration := time.Since(start)
-		durationString := fmt.Sprintf("(%s)", duration.String())
+		durationString := fmt.Sprintf("(%s)", duration.Truncate(time.Millisecond).String())
 		w.printLock.Lock()
 		w.printer.Printf("[%s] Completed: %s %s\n", w.id, task.Task.Name, faint(durationString))
 		w.printLock.Unlock()

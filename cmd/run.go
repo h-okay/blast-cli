@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
 	"github.com/datablast-analytics/blast-cli/pkg/executor"
@@ -95,6 +96,7 @@ func Run(isDebug *bool) *cli.Command {
 				"python": executor.NoOpOperator{},
 				"bq.sql": bqOperator,
 			}, 8)
+
 			ex.Start(s.WorkQueue, s.Results)
 
 			infoPrinter.Printf("\nStarting the pipeline execution...\n\n")
@@ -105,9 +107,33 @@ func Run(isDebug *bool) *cli.Command {
 				s.MarkTask(task, scheduler.Pending, runDownstreamTasks)
 			}
 
-			s.Run(context.Background())
+			start := time.Now()
+			results := s.Run(context.Background())
+			duration := time.Since(start)
 
-			successPrinter.Printf("\n\nPipeline has been completed successfully\n")
+			successPrinter.Printf("\n\nExecuted %d tasks in %s\n", len(results), duration.Truncate(time.Millisecond).String())
+			errors := make([]*scheduler.TaskExecutionResult, 0)
+			for _, res := range results {
+				if res.Error != nil {
+					errors = append(errors, res)
+				}
+			}
+
+			if len(errors) > 0 {
+				errorPrinter.Printf("\nFailed tasks: %d\n", len(errors))
+				for _, t := range errors {
+					errorPrinter.Printf("  - %s\n", t.Instance.Task.Name)
+					errorPrinter.Printf("    └── %s\n\n", t.Error.Error())
+				}
+
+				upstreamFailedTasks := s.GetTaskInstancesByStatus(scheduler.UpstreamFailed)
+				if len(upstreamFailedTasks) > 0 {
+					errorPrinter.Printf("The following tasks are skipped due to their upstream failing:\n")
+					for _, t := range upstreamFailedTasks {
+						errorPrinter.Printf("  - %s\n", t.Task.Name)
+					}
+				}
+			}
 
 			return nil
 		},

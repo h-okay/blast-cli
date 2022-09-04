@@ -15,6 +15,7 @@ const (
 	Queued
 	Running
 	Failed
+	UpstreamFailed
 	Succeeded
 )
 
@@ -28,7 +29,7 @@ type TaskInstance struct {
 }
 
 func (t *TaskInstance) Completed() bool {
-	return t.status == Failed || t.status == Succeeded
+	return t.status == Failed || t.status == Succeeded || t.status == UpstreamFailed
 }
 
 func (t *TaskInstance) MarkAs(status TaskInstanceStatus) {
@@ -59,8 +60,11 @@ func (s *Scheduler) MarkAll(status TaskInstanceStatus) {
 
 func (s *Scheduler) MarkTask(task *pipeline.Task, status TaskInstanceStatus, downstream bool) {
 	instance := s.taskNameMap[task.Name]
-	instance.MarkAs(status)
+	s.MarkTaskInstance(instance, status, downstream)
+}
 
+func (s *Scheduler) MarkTaskInstance(instance *TaskInstance, status TaskInstanceStatus, downstream bool) {
+	instance.MarkAs(status)
 	if !downstream {
 		return
 	}
@@ -70,8 +74,26 @@ func (s *Scheduler) MarkTask(task *pipeline.Task, status TaskInstanceStatus, dow
 	}
 
 	for _, d := range instance.downstream {
-		s.MarkTask(d.Task, status, downstream)
+		s.MarkTaskInstance(d, status, downstream)
 	}
+}
+
+func (s *Scheduler) markTaskInstanceFailedWithDownstream(instance *TaskInstance) {
+	s.MarkTaskInstance(instance, UpstreamFailed, true)
+	s.MarkTaskInstance(instance, Failed, false)
+}
+
+func (s *Scheduler) GetTaskInstancesByStatus(status TaskInstanceStatus) []*TaskInstance {
+	instances := make([]*TaskInstance, 0)
+	for _, i := range s.taskInstances {
+		if i.status != status {
+			continue
+		}
+
+		instances = append(instances, i)
+	}
+
+	return instances
 }
 
 func NewScheduler(logger *zap.SugaredLogger, p *pipeline.Pipeline) *Scheduler {
@@ -120,21 +142,24 @@ func (s *Scheduler) constructInstanceRelationships() {
 	}
 }
 
-func (s *Scheduler) Run(ctx context.Context) {
+func (s *Scheduler) Run(ctx context.Context) []*TaskExecutionResult {
 	go s.Kickstart()
+
+	results := make([]*TaskExecutionResult, 0)
 
 	s.logger.Debug("started the scheduler loop")
 	for {
 		select {
 		case <-ctx.Done():
 			close(s.WorkQueue)
-			return
+			return results
 		case result := <-s.Results:
 			s.logger.Debug("received task result: ", result.Instance.Task.Name)
+			results = append(results, result)
 			finished := s.Tick(result)
 			if finished {
 				s.logger.Debug("pipeline has completed, finishing the scheduler loop")
-				return
+				return results
 			}
 		}
 	}
@@ -147,7 +172,10 @@ func (s *Scheduler) Tick(result *TaskExecutionResult) bool {
 	s.taskScheduleLock.Lock()
 	defer s.taskScheduleLock.Unlock()
 
-	result.Instance.MarkAs(Succeeded)
+	s.MarkTaskInstance(result.Instance, Succeeded, false)
+	if result.Error != nil {
+		s.markTaskInstanceFailedWithDownstream(result.Instance)
+	}
 
 	if s.hasPipelineFinished() {
 		close(s.WorkQueue)
