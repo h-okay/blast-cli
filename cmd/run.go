@@ -81,6 +81,8 @@ func Run(isDebug *bool) *cli.Command {
 				Renderer: query.DefaultRenderer,
 			}
 
+			executors := executor.DefaultExecutors
+
 			var bqOperator *bigquery.BasicOperator
 			if foundPipeline.HasTaskType("bq.sql") {
 				bqOperator, err = bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor)
@@ -88,14 +90,12 @@ func Run(isDebug *bool) *cli.Command {
 					errorPrinter.Printf(err.Error())
 					return cli.Exit("", 1)
 				}
+
+				executors[executor.TaskTypeBigqueryQuery] = bqOperator
 			}
 
 			s := scheduler.NewScheduler(logger, foundPipeline)
-			ex := executor.NewConcurrent(logger, map[string]executor.Operator{
-				"empty":  executor.NoOpOperator{},
-				"python": executor.NoOpOperator{},
-				"bq.sql": bqOperator,
-			}, 8)
+			ex := executor.NewConcurrent(logger, executors, 8)
 
 			ex.Start(s.WorkQueue, s.Results)
 
