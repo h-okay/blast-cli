@@ -73,13 +73,13 @@ func commentRowsToTask(commentRows []string) *Task {
 		Schedule:    TaskSchedule{},
 	}
 	for _, row := range commentRows {
-		keyValue := strings.Split(row, ":")
-		if len(keyValue) != 2 {
+		key, value, found := strings.Cut(row, ":")
+		if !found {
 			continue
 		}
 
-		key := strings.TrimSpace(keyValue[0])
-		value := strings.TrimSpace(keyValue[1])
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
 
 		switch key {
 		case "name":

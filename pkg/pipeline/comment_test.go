@@ -54,8 +54,9 @@ func Test_createTaskFromFile(t *testing.T) {
 					Path: absPath("testdata/comments/test.sql"),
 				},
 				Parameters: map[string]string{
-					"param1": "first-parameter",
-					"param2": "second-parameter",
+					"param1":       "first-parameter",
+					"param2":       "second-parameter",
+					"s3_file_path": "s3://bucket/path",
 				},
 				Connections: map[string]string{
 					"conn1": "first-connection",
