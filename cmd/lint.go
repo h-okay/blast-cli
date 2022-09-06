@@ -46,8 +46,29 @@ func Lint(isDebug *bool) *cli.Command {
 			}
 			printer.PrintIssues(result)
 
-			if result.HasErrors() {
+			// prepare the final message
+			errorCount := result.ErrorCount()
+			pipelineCount := len(result.Pipelines)
+			pipelineStr := "pipeline"
+			if pipelineCount > 1 {
+				pipelineStr += "s"
+			}
+
+			if errorCount > 0 {
+				issueStr := "issue"
+				if errorCount > 1 {
+					issueStr += "s"
+				}
+
+				errorPrinter.Printf("\n✘ Checked %d %s and found %d %s, please check above.\n", pipelineCount, pipelineStr, errorCount, issueStr)
 				return cli.Exit("", 1)
+			} else {
+				taskCount := 0
+				for _, p := range result.Pipelines {
+					taskCount += len(p.Pipeline.Tasks)
+				}
+
+				successPrinter.Printf("\n✓ Successfully validated %d tasks across %d %s, all good.\n", taskCount, pipelineCount, pipelineStr)
 			}
 
 			return nil
