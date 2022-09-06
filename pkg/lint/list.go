@@ -1,8 +1,6 @@
 package lint
 
 import (
-	"time"
-
 	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
 	"github.com/datablast-analytics/blast-cli/pkg/executor"
 	"github.com/datablast-analytics/blast-cli/pkg/query"
@@ -12,19 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	fs                  = afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 100*time.Second)
-	splitQueryExtractor = query.FileQuerySplitterExtractor{
-		Fs:       fs,
-		Renderer: query.DefaultRenderer,
-	}
-	wholeFileExtractor = query.WholeFileExtractor{
-		Fs:       fs,
-		Renderer: query.DefaultRenderer,
-	}
-)
-
-func GetRules(logger *zap.SugaredLogger) ([]Rule, error) {
+func GetRules(logger *zap.SugaredLogger, fs afero.Fs) ([]Rule, error) {
 	rules := []Rule{
 		&SimpleRule{
 			Identifier: "task-name-valid",
@@ -72,12 +58,12 @@ func GetRules(logger *zap.SugaredLogger) ([]Rule, error) {
 		},
 	}
 
-	rules, err := appendSnowflakeValidatorIfExists(logger, rules)
+	rules, err := appendSnowflakeValidatorIfExists(logger, fs, rules)
 	if err != nil {
 		return nil, err
 	}
 
-	rules, err = appendBigqueryValidatorIfExists(logger, rules)
+	rules, err = appendBigqueryValidatorIfExists(logger, fs, rules)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +73,7 @@ func GetRules(logger *zap.SugaredLogger) ([]Rule, error) {
 	return rules, nil
 }
 
-func appendSnowflakeValidatorIfExists(logger *zap.SugaredLogger, rules []Rule) ([]Rule, error) {
+func appendSnowflakeValidatorIfExists(logger *zap.SugaredLogger, fs afero.Fs, rules []Rule) ([]Rule, error) {
 	sfConfig, err := snowflake.LoadConfigFromEnv()
 	if err != nil {
 		return rules, err
@@ -106,10 +92,13 @@ func appendSnowflakeValidatorIfExists(logger *zap.SugaredLogger, rules []Rule) (
 	logger.Debug("snowflake ping is successful, adding the validator to the list of rules")
 
 	snowflakeValidator := &QueryValidatorRule{
-		Identifier:  "snowflake-validator",
-		TaskType:    executor.TaskTypeSnowflakeQuery,
-		Validator:   sf,
-		Extractor:   &splitQueryExtractor,
+		Identifier: "snowflake-validator",
+		TaskType:   executor.TaskTypeSnowflakeQuery,
+		Validator:  sf,
+		Extractor: &query.FileQuerySplitterExtractor{
+			Fs:       fs,
+			Renderer: query.DefaultRenderer,
+		},
 		WorkerCount: 32,
 		Logger:      logger,
 	}
@@ -117,7 +106,7 @@ func appendSnowflakeValidatorIfExists(logger *zap.SugaredLogger, rules []Rule) (
 	return append(rules, snowflakeValidator), nil
 }
 
-func appendBigqueryValidatorIfExists(logger *zap.SugaredLogger, rules []Rule) ([]Rule, error) {
+func appendBigqueryValidatorIfExists(logger *zap.SugaredLogger, fs afero.Fs, rules []Rule) ([]Rule, error) {
 	config, err := bigquery.LoadConfigFromEnv()
 	if err != nil {
 		return rules, errors.Wrap(err, "failed to load bigquery config from env")
@@ -135,10 +124,13 @@ func appendBigqueryValidatorIfExists(logger *zap.SugaredLogger, rules []Rule) ([
 	}
 
 	bqValidator := &QueryValidatorRule{
-		Identifier:  "bigquery-validator",
-		TaskType:    executor.TaskTypeBigqueryQuery,
-		Validator:   bq,
-		Extractor:   &wholeFileExtractor,
+		Identifier: "bigquery-validator",
+		TaskType:   executor.TaskTypeBigqueryQuery,
+		Validator:  bq,
+		Extractor: &query.WholeFileExtractor{
+			Fs:       fs,
+			Renderer: query.DefaultRenderer,
+		},
 		WorkerCount: 32,
 		Logger:      logger,
 	}

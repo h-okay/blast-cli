@@ -2,11 +2,11 @@ package pipeline
 
 import (
 	"bufio"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 )
 
 const configMarker = "@blast."
@@ -16,53 +16,55 @@ var commentMarkers = map[string]string{
 	".py":  "#",
 }
 
-func CreateTaskFromFileComments(filePath string) (*Task, error) {
-	extension := filepath.Ext(filePath)
-	commentMarker, ok := commentMarkers[extension]
-	if !ok {
-		return nil, nil
-	}
-
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to open file %s", filePath)
-	}
-	defer file.Close()
-
-	var commentRows []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		rowText := scanner.Text()
-		if !strings.HasPrefix(rowText, commentMarker) {
-			continue
+func CreateTaskFromFileComments(fs afero.Fs) TaskCreator {
+	return func(filePath string) (*Task, error) {
+		extension := filepath.Ext(filePath)
+		commentMarker, ok := commentMarkers[extension]
+		if !ok {
+			return nil, nil
 		}
 
-		commentValue := strings.TrimSpace(strings.TrimPrefix(rowText, commentMarker))
-		if strings.HasPrefix(commentValue, configMarker) {
-			commentRows = append(commentRows, strings.TrimPrefix(commentValue, configMarker))
+		file, err := fs.Open(filePath)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to open file %s", filePath)
 		}
-	}
+		defer file.Close()
 
-	if err := scanner.Err(); err != nil {
-		return nil, errors.Wrapf(err, "failed to read file %s", filePath)
-	}
+		var commentRows []string
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			rowText := scanner.Text()
+			if !strings.HasPrefix(rowText, commentMarker) {
+				continue
+			}
 
-	if len(commentRows) == 0 {
-		return nil, nil
-	}
+			commentValue := strings.TrimSpace(strings.TrimPrefix(rowText, commentMarker))
+			if strings.HasPrefix(commentValue, configMarker) {
+				commentRows = append(commentRows, strings.TrimPrefix(commentValue, configMarker))
+			}
+		}
 
-	absFilePath, err := filepath.Abs(filePath)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get absolute path for file %s", filePath)
-	}
+		if err := scanner.Err(); err != nil {
+			return nil, errors.Wrapf(err, "failed to read file %s", filePath)
+		}
 
-	task := commentRowsToTask(commentRows)
-	task.ExecutableFile = ExecutableFile{
-		Name: filepath.Base(filePath),
-		Path: absFilePath,
-	}
+		if len(commentRows) == 0 {
+			return nil, nil
+		}
 
-	return task, nil
+		absFilePath, err := filepath.Abs(filePath)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get absolute path for file %s", filePath)
+		}
+
+		task := commentRowsToTask(commentRows)
+		task.ExecutableFile = ExecutableFile{
+			Name: filepath.Base(filePath),
+			Path: absFilePath,
+		}
+
+		return task, nil
+	}
 }
 
 func commentRowsToTask(commentRows []string) *Task {

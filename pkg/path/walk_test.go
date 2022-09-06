@@ -135,13 +135,12 @@ func TestGetAllFilesRecursive(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "all files are found",
+			name: "all files with the correct extension are found",
 			args: args{
 				root: testPipelinePath,
 			},
 			want: []string{
 				mp("first-pipeline/pipeline.yml"),
-				mp("first-pipeline/tasks/helloworld/hello.sh"),
 				mp("first-pipeline/tasks/helloworld/task.yml"),
 				mp("first-pipeline/tasks/test1/task.yml"),
 				mp("first-pipeline/tasks/test2/task.yml"),
@@ -163,7 +162,7 @@ func TestGetAllFilesRecursive(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := GetAllFilesRecursive(tt.args.root)
+			got, err := GetAllFilesRecursive(tt.args.root, []string{".yml"})
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {

@@ -6,12 +6,15 @@ import (
 
 	"github.com/datablast-analytics/blast-cli/pkg/path"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 )
 
 const (
 	CommentTask TaskDefinitionType = "comment"
 	YamlTask    TaskDefinitionType = "yaml"
 )
+
+var supportedFileSuffixes = []string{".yml", ".yaml", ".sql", ".py"}
 
 type (
 	schedule           string
@@ -104,13 +107,15 @@ type builder struct {
 	config             BuilderConfig
 	yamlTaskCreator    TaskCreator
 	commentTaskCreator TaskCreator
+	fs                 afero.Fs
 }
 
-func NewBuilder(config BuilderConfig, yamlTaskCreator TaskCreator, commentTaskCreator TaskCreator) *builder {
+func NewBuilder(config BuilderConfig, yamlTaskCreator TaskCreator, commentTaskCreator TaskCreator, fs afero.Fs) *builder {
 	return &builder{
 		config:             config,
 		yamlTaskCreator:    yamlTaskCreator,
 		commentTaskCreator: commentTaskCreator,
+		fs:                 fs,
 	}
 }
 
@@ -119,7 +124,7 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 	tasksPath := filepath.Join(pathToPipeline, b.config.TasksDirectoryName)
 
 	var pipeline Pipeline
-	err := path.ReadYaml(pipelineFilePath, &pipeline)
+	err := path.ReadYaml(b.fs, pipelineFilePath, &pipeline)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading pipeline file at '%s'", pipelineFilePath)
 	}
@@ -141,7 +146,7 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		Path: absPipelineFilePath,
 	}
 
-	taskFiles, err := path.GetAllFilesRecursive(tasksPath)
+	taskFiles, err := path.GetAllFilesRecursive(tasksPath, supportedFileSuffixes)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error listing Task files at '%s'", tasksPath)
 	}

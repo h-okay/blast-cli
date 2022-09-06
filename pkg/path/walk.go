@@ -20,14 +20,16 @@ func GetPipelinePaths(root, pipelineDefinitionFile string) ([]string, error) {
 			return nil
 		}
 
-		if strings.HasSuffix(path, pipelineDefinitionFile) {
-			abs, err := filepath.Abs(path)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get absolute path for %s", path)
-			}
-
-			pipelinePaths = append(pipelinePaths, filepath.Dir(abs))
+		if !strings.HasSuffix(path, pipelineDefinitionFile) {
+			return nil
 		}
+
+		abs, err := filepath.Abs(path)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get absolute path for %s", path)
+		}
+
+		pipelinePaths = append(pipelinePaths, filepath.Dir(abs))
 
 		return nil
 	})
@@ -57,7 +59,7 @@ func GetPipelineRootFromTask(taskPath, pipelineDefinitionFile string) (string, e
 	return "", errors.New("cannot find a pipeline the given task belongs to, are you sure this task is in an actual pipeline?")
 }
 
-func GetAllFilesRecursive(root string) ([]string, error) {
+func GetAllFilesRecursive(root string, suffixes []string) ([]string, error) {
 	var paths []string
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -73,7 +75,11 @@ func GetAllFilesRecursive(root string) ([]string, error) {
 			return errors.Wrapf(err, "failed to get absolute path for %s", path)
 		}
 
-		paths = append(paths, abs)
+		for _, s := range suffixes {
+			if strings.HasSuffix(abs, s) {
+				paths = append(paths, abs)
+			}
+		}
 
 		return nil
 	})
