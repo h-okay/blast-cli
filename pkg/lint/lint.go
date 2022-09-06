@@ -103,15 +103,14 @@ type PipelineAnalysisResult struct {
 	Pipelines []*PipelineIssues
 }
 
-// HasErrors returns true if any of the pipelines has errors.
-func (p *PipelineAnalysisResult) HasErrors() bool {
+// ErrorCount returns the number of errors found in an analysis result.
+func (p *PipelineAnalysisResult) ErrorCount() int {
+	count := 0
 	for _, pipelineIssues := range p.Pipelines {
-		if len(pipelineIssues.Issues) > 0 {
-			return true
-		}
+		count += len(pipelineIssues.Issues)
 	}
 
-	return false
+	return count
 }
 
 type PipelineIssues struct {
