@@ -55,7 +55,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			name: "should create pipeline from path",
 			fields: fields{
 				tasksDirectoryName: "tasks",
-				commentTaskCreator: CreateTaskFromFileComments,
+				commentTaskCreator: CreateTaskFromFileComments(afero.NewOsFs()),
 				yamlTaskCreator:    CreateTaskFromYamlDefinition(afero.NewOsFs()),
 			},
 			args: args{

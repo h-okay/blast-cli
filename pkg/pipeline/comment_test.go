@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
 
@@ -97,7 +98,7 @@ func Test_createTaskFromFile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := pipeline.CreateTaskFromFileComments(tt.args.filePath)
+			got, err := pipeline.CreateTaskFromFileComments(afero.NewOsFs())(tt.args.filePath)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -116,7 +117,7 @@ func BenchmarkCreateTaskFromFileComments(b *testing.B) {
 	file := "testdata/comments/test.py"
 
 	for i := 0; i < b.N; i++ {
-		_, err := pipeline.CreateTaskFromFileComments(file)
+		_, err := pipeline.CreateTaskFromFileComments(afero.NewOsFs())(file)
 		require.NoError(b, err)
 	}
 }

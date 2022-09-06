@@ -27,5 +27,5 @@ var (
 		TasksFileSuffixes:  defaultTaskFileSuffixes,
 	}
 
-	builder = pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition(fs), pipeline.CreateTaskFromFileComments, fs)
+	builder = pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition(fs), pipeline.CreateTaskFromFileComments(fs), fs)
 )

@@ -26,7 +26,7 @@ func Lint(isDebug *bool) *cli.Command {
 				TasksDirectoryName: defaultTasksPath,
 				TasksFileSuffixes:  defaultTaskFileSuffixes,
 			}
-			builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition(fs), pipeline.CreateTaskFromFileComments, fs)
+			builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition(fs), pipeline.CreateTaskFromFileComments(fs), fs)
 			linter := lint.NewLinter(path.GetPipelinePaths, builder, rules, logger)
 
 			rootPath := c.Args().Get(0)
