@@ -6,6 +6,7 @@
 -- @blast.depends: task5, task3
 -- @blast.parameters.param1: first-parameter
 -- @blast.parameters.param2: second-parameter
+-- @blast.parameters.s3_file_path: s3://bucket/path
 -- @blast.connections.conn1: first-connection
 -- @blast.connections.conn2: second-connection
 
