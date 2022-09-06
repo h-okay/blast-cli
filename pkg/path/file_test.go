@@ -3,6 +3,7 @@ package path
 import (
 	"testing"
 
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
 
@@ -90,7 +91,7 @@ func Test_readYamlFileFromPath(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := ReadYaml(tt.args.path, tt.args.out)
+			err := ReadYaml(afero.NewOsFs(), tt.args.path, tt.args.out)
 
 			if tt.wantErr {
 				require.Error(t, err)

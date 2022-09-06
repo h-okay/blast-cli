@@ -1,17 +1,17 @@
 package path
 
 import (
-	"io/ioutil"
 	"path/filepath"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 	"gopkg.in/yaml.v3"
 )
 
-func ReadYaml(path string, out interface{}) error {
-	buf, err := ioutil.ReadFile(path)
+func ReadYaml(fs afero.Fs, path string, out interface{}) error {
+	buf, err := afero.ReadFile(fs, path)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read file %s", path)
 	}

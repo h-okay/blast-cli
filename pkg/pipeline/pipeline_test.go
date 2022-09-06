@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -55,7 +56,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			fields: fields{
 				tasksDirectoryName: "tasks",
 				commentTaskCreator: CreateTaskFromFileComments,
-				yamlTaskCreator:    CreateTaskFromYamlDefinition,
+				yamlTaskCreator:    CreateTaskFromYamlDefinition(afero.NewOsFs()),
 			},
 			args: args{
 				pathToPipeline: "testdata/pipeline/first-pipeline",
@@ -177,7 +178,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 				TasksFileSuffixes:  []string{"task.yml", "task.yaml"},
 			}
 
-			p := NewBuilder(builderConfig, tt.fields.yamlTaskCreator, tt.fields.commentTaskCreator)
+			p := NewBuilder(builderConfig, tt.fields.yamlTaskCreator, tt.fields.commentTaskCreator, afero.NewOsFs())
 
 			got, err := p.CreatePipelineFromPath(tt.args.pathToPipeline)
 			if tt.wantErr {

@@ -15,19 +15,18 @@ func Lint(isDebug *bool) *cli.Command {
 		Action: func(c *cli.Context) error {
 			logger := makeLogger(*isDebug)
 
-			builderConfig := pipeline.BuilderConfig{
-				PipelineFileName:   pipelineDefinitionFile,
-				TasksDirectoryName: defaultTasksPath,
-				TasksFileSuffixes:  defaultTaskFileSuffixes,
-			}
-			builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition, pipeline.CreateTaskFromFileComments)
-
-			rules, err := lint.GetRules(logger)
+			rules, err := lint.GetRules(logger, fs)
 			if err != nil {
 				errorPrinter.Printf("An error occurred while linting the pipelines: %v\n", err)
 				return cli.Exit("", 1)
 			}
 
+			builderConfig := pipeline.BuilderConfig{
+				PipelineFileName:   pipelineDefinitionFile,
+				TasksDirectoryName: defaultTasksPath,
+				TasksFileSuffixes:  defaultTaskFileSuffixes,
+			}
+			builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition(fs), pipeline.CreateTaskFromFileComments, fs)
 			linter := lint.NewLinter(path.GetPipelinePaths, builder, rules, logger)
 
 			rootPath := c.Args().Get(0)

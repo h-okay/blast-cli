@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
 
@@ -139,7 +140,8 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := pipeline.CreateTaskFromYamlDefinition(tt.args.filePath)
+			creator := pipeline.CreateTaskFromYamlDefinition(afero.NewOsFs())
+			got, err := creator(tt.args.filePath)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
