@@ -22,6 +22,8 @@ var DefaultExecutors = map[string]Operator{
 	"athena.sql":                           NoOpOperator{},
 	"athena.sensor.query":                  NoOpOperator{},
 	TaskTypePython:                         NoOpOperator{},
+	"python.beta":                          NoOpOperator{},
+	"python.legacy":                        NoOpOperator{},
 	"s3.sensor.key_sensor":                 NoOpOperator{},
 	TaskTypeSnowflakeQuery:                 NoOpOperator{},
 }

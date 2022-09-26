@@ -2,7 +2,7 @@ package snowflake
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"strings"
 
 	"github.com/datablast-analytics/blast-cli/pkg/query"
@@ -27,7 +27,7 @@ func NewDB(c *Config, logger *zap.SugaredLogger) (*DB, error) {
 		return nil, errors.Wrap(err, "failed to create DSN")
 	}
 
-	gosnowflake.GetLogger().SetOutput(ioutil.Discard)
+	gosnowflake.GetLogger().SetOutput(io.Discard)
 
 	db, err := sqlx.Connect("snowflake", dsn)
 	if err != nil {
