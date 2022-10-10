@@ -1457,3 +1457,66 @@ func TestEnsureSlackFieldInPipelineIsValid(t *testing.T) {
 		})
 	}
 }
+
+func TestEnsureStartDateIsValid(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		p *pipeline.Pipeline
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []*Issue
+		wantErr bool
+	}{
+		{
+			name: "no start date",
+			args: args{
+				p: &pipeline.Pipeline{},
+			},
+			want: []*Issue{
+				{
+					Description: pipelineStartDateCannotBeEmpty,
+				},
+			},
+		},
+		{
+			name: "malformed start date",
+			args: args{
+				p: &pipeline.Pipeline{
+					StartDate: "2022/09/01",
+				},
+			},
+			want: []*Issue{
+				{
+					Description: pipelineStartDateMustBeValidDate,
+				},
+			},
+		},
+		{
+			name: "valid start date",
+			args: args{
+				p: &pipeline.Pipeline{
+					StartDate: "2022-09-01",
+				},
+			},
+			want: noIssues,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
+			got, err := EnsureStartDateIsValid(tt.args.p)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

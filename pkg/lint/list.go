@@ -56,6 +56,10 @@ func GetRules(logger *zap.SugaredLogger, fs afero.Fs) ([]Rule, error) {
 			Identifier: "valid-slack-notification",
 			Validator:  EnsureSlackFieldInPipelineIsValid,
 		},
+		&SimpleRule{
+			Identifier: "valid-start-date",
+			Validator:  EnsureStartDateIsValid,
+		},
 	}
 
 	rules, err := appendSnowflakeValidatorIfExists(logger, fs, rules)

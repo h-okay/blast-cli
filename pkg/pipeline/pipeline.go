@@ -69,6 +69,7 @@ type Pipeline struct {
 	LegacyID           string   `yaml:"id"`
 	Name               string   `yaml:"name"`
 	Schedule           schedule `yaml:"schedule"`
+	StartDate          string   `yaml:"start_date"`
 	DefinitionFile     DefinitionFile
 	DefaultParameters  map[string]string `yaml:"defaultParameters"`
 	DefaultConnections map[string]string `yaml:"defaultConnections"`
