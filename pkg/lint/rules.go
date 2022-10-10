@@ -237,7 +237,12 @@ func EnsurePipelineScheduleIsValidCron(p *pipeline.Pipeline) ([]*Issue, error) {
 		return issues, nil
 	}
 
-	_, err := cron.ParseStandard(string(p.Schedule))
+	schedule := p.Schedule
+	if schedule == "daily" || schedule == "hourly" || schedule == "weekly" || schedule == "monthly" {
+		schedule = "@" + schedule
+	}
+
+	_, err := cron.ParseStandard(string(schedule))
 	if err != nil {
 		issues = append(issues, &Issue{
 			Description: fmt.Sprintf("Invalid cron schedule '%s'", p.Schedule),

@@ -549,6 +549,15 @@ func TestEnsurePipelineScheduleIsValidCron(t *testing.T) {
 			},
 			want: noIssues,
 		},
+		{
+			name: "valid descriptor passes the check even if it doesnt have the @ prefix",
+			args: args{
+				p: &pipeline.Pipeline{
+					Schedule: "daily",
+				},
+			},
+			want: noIssues,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
