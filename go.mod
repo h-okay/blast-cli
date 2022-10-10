@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/bigquery v1.38.0
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/fatih/color v1.13.0
+	github.com/flosch/pongo2/v6 v6.0.0
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/kelseyhightower/envconfig v1.4.0
