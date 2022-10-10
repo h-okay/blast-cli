@@ -20,6 +20,7 @@ const (
 
 	taskNameMustExist          = `A task must have a name`
 	taskNameMustBeAlphanumeric = `A task name must be made of alphanumeric characters, dashes, dots and underscores`
+	taskTypeMustExist          = `A task must have a type, e.g. 'bq.sql' for a BigQuery SQL task`
 
 	executableFileCannotBeEmpty   = `The 'run' option cannot be empty, make sure you have defined a file to run`
 	executableFileDoesNotExist    = `The executable file does not exist`
@@ -251,6 +252,10 @@ func EnsureOnlyAcceptedTaskTypesAreThere(p *pipeline.Pipeline) ([]*Issue, error)
 
 	for _, task := range p.Tasks {
 		if task.Type == "" {
+			issues = append(issues, &Issue{
+				Task:        task,
+				Description: taskTypeMustExist,
+			})
 			continue
 		}
 

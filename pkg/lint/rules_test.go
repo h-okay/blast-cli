@@ -580,7 +580,7 @@ func TestEnsureOnlyAcceptedTaskTypesAreThere(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "task with empty type is skipped",
+			name: "task with empty type is flagged",
 			args: args{
 				p: &pipeline.Pipeline{
 					Tasks: []*pipeline.Task{
@@ -590,7 +590,12 @@ func TestEnsureOnlyAcceptedTaskTypesAreThere(t *testing.T) {
 					},
 				},
 			},
-			want: noIssues,
+			want: []*Issue{
+				{
+					Task:        &pipeline.Task{},
+					Description: taskTypeMustExist,
+				},
+			},
 		},
 		{
 			name: "task invalid type is flagged",
