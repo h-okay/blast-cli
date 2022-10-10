@@ -5,6 +5,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/datablast-analytics/blast-cli/pkg/executor"
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
@@ -19,6 +20,7 @@ const (
 
 	taskNameMustExist          = `A task must have a name`
 	taskNameMustBeAlphanumeric = `A task name must be made of alphanumeric characters, dashes, dots and underscores`
+	taskTypeMustExist          = `A task must have a type, e.g. 'bq.sql' for a BigQuery SQL task`
 
 	executableFileCannotBeEmpty   = `The 'run' option cannot be empty, make sure you have defined a file to run`
 	executableFileDoesNotExist    = `The executable file does not exist`
@@ -26,8 +28,10 @@ const (
 	executableFileIsEmpty         = `The executable file is empty`
 	executableFileIsNotExecutable = "Executable file is not executable, give it the '644' or '755' permissions"
 
-	pipelineNameCannotBeEmpty      = "The pipeline name cannot be empty, it must be a valid name made of alphanumeric characters, dashes, dots and underscores"
-	pipelineNameMustBeAlphanumeric = "The pipeline name must be made of alphanumeric characters, dashes, dots and underscores"
+	pipelineNameCannotBeEmpty        = "The pipeline name cannot be empty, it must be a valid name made of alphanumeric characters, dashes, dots and underscores"
+	pipelineNameMustBeAlphanumeric   = "The pipeline name must be made of alphanumeric characters, dashes, dots and underscores"
+	pipelineStartDateCannotBeEmpty   = "The start_date in the pipeline.yml file cannot be empty, it must be a valid datetime in 'YYYY-MM-DD' format, e.g. 2021-01-01"
+	pipelineStartDateMustBeValidDate = "The start_date in the pipeline.yml file must be a valid datetime in 'YYYY-MM-DD' format, e.g. 2021-01-01"
 
 	pipelineContainsCycle = "The pipeline has a cycle with dependencies, make sure there are no cyclic dependencies"
 
@@ -178,6 +182,26 @@ func EnsurePipelineNameIsValid(pipeline *pipeline.Pipeline) ([]*Issue, error) {
 	return issues, nil
 }
 
+func EnsureStartDateIsValid(pipeline *pipeline.Pipeline) ([]*Issue, error) {
+	issues := make([]*Issue, 0)
+	if pipeline.StartDate == "" {
+		issues = append(issues, &Issue{
+			Description: pipelineStartDateCannotBeEmpty,
+		})
+
+		return issues, nil
+	}
+
+	_, err := time.Parse("2006-01-02", pipeline.StartDate)
+	if err != nil {
+		issues = append(issues, &Issue{
+			Description: pipelineStartDateMustBeValidDate,
+		})
+	}
+
+	return issues, nil
+}
+
 func isFileExecutable(mode os.FileMode) bool {
 	return mode&0o111 != 0
 }
@@ -228,6 +252,10 @@ func EnsureOnlyAcceptedTaskTypesAreThere(p *pipeline.Pipeline) ([]*Issue, error)
 
 	for _, task := range p.Tasks {
 		if task.Type == "" {
+			issues = append(issues, &Issue{
+				Task:        task,
+				Description: taskTypeMustExist,
+			})
 			continue
 		}
 

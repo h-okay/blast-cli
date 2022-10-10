@@ -21,6 +21,7 @@ linters:
     - forcetypeassert
     - exhaustruct
     - gocognit
+    - tagliatelle
   presets:
     - bugs
     - comment
