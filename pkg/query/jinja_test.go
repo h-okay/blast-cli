@@ -1,9 +1,9 @@
 package query
 
 import (
-	"github.com/flosch/pongo2/v6"
 	"testing"
 
+	"github.com/flosch/pongo2/v6"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,11 +19,14 @@ func TestJinjaRenderer_RenderQuery(t *testing.T) {
 	}{
 		{
 			name:  "simple render for ds",
-			query: "set analysis_end_date = '{{ ds }}'::date;",
+			query: "set analysis_end_date = '{{ ds }}'::date; select * from {{ ref('abc') }}",
 			args: pongo2.Context{
 				"ds": "2022-02-03",
+				"ref": func(str string) string {
+					return "some-ref-here"
+				},
 			},
-			want: "set analysis_end_date = '2022-02-03'::date;",
+			want: "set analysis_end_date = '2022-02-03'::date; select * from some-ref-here",
 		},
 		{
 			name:  "multiple variables",
@@ -32,7 +35,7 @@ func TestJinjaRenderer_RenderQuery(t *testing.T) {
 				"ds":      "2022-02-03",
 				"testVar": "testvar",
 			},
-			want: "set analysis_end_date = '2022-02-03'::date and 'testvar' == 'testvar' and another date 2022-02-03 - {{ someMissingVariable }};",
+			want: "set analysis_end_date = '2022-02-03'::date and 'testvar' == 'testvar' and another date 2022-02-03 - ;",
 		},
 		{
 			name: "jinja variables work as well",
@@ -94,9 +97,7 @@ group by 1
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			receiver := JinjaRenderer{
-				Context: tt.args,
-			}
+			receiver := NewJinjaRenderer(tt.args)
 			got := receiver.Render(tt.query)
 
 			require.Equal(t, tt.want, got)
