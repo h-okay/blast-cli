@@ -26,4 +26,5 @@ var DefaultExecutors = map[string]Operator{
 	"python.legacy":                        NoOpOperator{},
 	"s3.sensor.key_sensor":                 NoOpOperator{},
 	TaskTypeSnowflakeQuery:                 NoOpOperator{},
+	"adjust.export.bq":                     NoOpOperator{},
 }
