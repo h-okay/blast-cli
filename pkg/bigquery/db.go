@@ -47,16 +47,7 @@ func (d DB) IsValid(ctx context.Context, query *query.Query) (bool, error) {
 
 	job, err := q.Run(ctx)
 	if err != nil {
-		var googleError *googleapi.Error
-		if !errors.As(err, &googleError) {
-			return false, err
-		}
-
-		if googleError.Code == 404 {
-			return false, fmt.Errorf("%s", googleError.Message)
-		}
-
-		return false, googleError
+		return false, formatError(err)
 	}
 
 	status := job.LastStatus()
@@ -71,17 +62,21 @@ func (d DB) RunQueryWithoutResult(ctx context.Context, query *query.Query) error
 	q := d.client.Query(query.String())
 	_, err := q.Read(ctx)
 	if err != nil {
-		var googleError *googleapi.Error
-		if !errors.As(err, &googleError) {
-			return err
-		}
-
-		if googleError.Code == 404 {
-			return fmt.Errorf("%s", googleError.Message)
-		}
-
-		return googleError
+		return formatError(err)
 	}
 
 	return nil
+}
+
+func formatError(err error) error {
+	var googleError *googleapi.Error
+	if !errors.As(err, &googleError) {
+		return err
+	}
+
+	if googleError.Code == 404 || googleError.Code == 400 {
+		return fmt.Errorf("%s", googleError.Message)
+	}
+
+	return googleError
 }
