@@ -32,14 +32,16 @@ func TestDB_IsValid(t *testing.T) {
 		err        error
 	}{
 		{
-			name:       "bad request",
-			query:      "select * from users",
-			response:   &bigquery2.Job{},
-			statusCode: http.StatusBadRequest,
-			err: &googleapi.Error{
-				Code: 400,
-				Body: "{}",
+			name:  "bad request",
+			query: "select * from users",
+			response: map[string]interface{}{
+				"error": googleapi.Error{
+					Code:    400,
+					Message: `Syntax error: Expected "(" or keyword SELECT or keyword WITH but got identifier "sselect" at [3:1], invalidQuery`,
+				},
 			},
+			statusCode: http.StatusBadRequest,
+			err:        errors.New(`Syntax error: Expected "(" or keyword SELECT or keyword WITH but got identifier "sselect" at [3:1], invalidQuery`),
 		},
 		{
 			name:  "some validation errors returned",
@@ -74,12 +76,6 @@ func TestDB_IsValid(t *testing.T) {
 				"error": googleapi.Error{
 					Code:    404,
 					Message: "not found: Table project:schema.table was not found in location ABC",
-					Errors: []googleapi.ErrorItem{
-						{
-							Reason:  "notFound",
-							Message: "not found: Table project:schema.table was not found in location ABC",
-						},
-					},
 				},
 			},
 			statusCode: http.StatusNotFound,
@@ -171,13 +167,15 @@ func TestDB_RunQueryWithoutResult(t *testing.T) {
 			name:  "bad request",
 			query: "select * from users",
 			jobSubmitResponse: jobSubmitResponse{
-				response:   &bigquery2.Job{},
+				response: map[string]interface{}{
+					"error": googleapi.Error{
+						Code:    400,
+						Message: `Syntax error: Expected "(" or keyword SELECT or keyword WITH but got identifier "sselect" at [3:1], invalidQuery`,
+					},
+				},
 				statusCode: http.StatusBadRequest,
 			},
-			err: &googleapi.Error{
-				Code: 400,
-				Body: "{}",
-			},
+			err: errors.New(`Syntax error: Expected "(" or keyword SELECT or keyword WITH but got identifier "sselect" at [3:1], invalidQuery`),
 		},
 		{
 			name:  "Google API returns 404",
@@ -187,12 +185,6 @@ func TestDB_RunQueryWithoutResult(t *testing.T) {
 					"error": googleapi.Error{
 						Code:    404,
 						Message: "not found: Table project:schema.table was not found in location ABC",
-						Errors: []googleapi.ErrorItem{
-							{
-								Reason:  "notFound",
-								Message: "not found: Table project:schema.table was not found in location ABC",
-							},
-						},
 					},
 				},
 				statusCode: http.StatusNotFound,
