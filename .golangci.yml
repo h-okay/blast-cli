@@ -22,6 +22,7 @@ linters:
     - exhaustruct
     - gocognit
     - tagliatelle
+    - ifshort
   presets:
     - bugs
     - comment
