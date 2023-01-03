@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
@@ -26,6 +27,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 		args    args
 		want    *pipeline.Task
 		wantErr bool
+		err     error
 	}{
 		{
 			name: "fails for paths that do not exist",
@@ -134,6 +136,14 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 				DependsOn: []string{"gcs-to-bq"},
 			},
 		},
+		{
+			name: "depends must be an array of strings",
+			args: args{
+				filePath: "testdata/yaml/random-structure/task.yml",
+			},
+			wantErr: true,
+			err:     errors.New("`depends` field must be an array of strings"),
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -144,6 +154,9 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 			got, err := creator(tt.args.filePath)
 			if tt.wantErr {
 				require.Error(t, err)
+				if tt.err != nil {
+					require.EqualError(t, err, tt.err.Error())
+				}
 			} else {
 				require.NoError(t, err)
 			}
