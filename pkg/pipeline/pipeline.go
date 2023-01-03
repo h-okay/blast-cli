@@ -155,7 +155,7 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 	for _, file := range taskFiles {
 		task, err := b.CreateTaskFromFile(file)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error creating Task from file '%s'", file)
+			return nil, err
 		}
 
 		if task == nil {
