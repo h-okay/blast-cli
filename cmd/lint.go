@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"strings"
+
 	"github.com/datablast-analytics/blast-cli/pkg/lint"
 	"github.com/datablast-analytics/blast-cli/pkg/path"
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 )
 
@@ -36,7 +39,14 @@ func Lint(isDebug *bool) *cli.Command {
 
 			result, err := linter.Lint(rootPath, pipelineDefinitionFile)
 			if err != nil {
-				errorPrinter.Printf("An error occurred while linting the pipelines: %v\n", err)
+				errorPrinter.Println("\nAn error occurred while linting the pipelines:")
+
+				errorList := unwrapAllErrors(err)
+				for i, e := range errorList {
+					errorPrinter.Printf("%s└── %s\n", strings.Repeat("  ", i), e)
+				}
+
+				// errorPrinter.Printf(fmt.Errorf("An error occurred while linting the pipelines: %w\n", err).Error())
 				return cli.Exit("", 1)
 			}
 
@@ -73,4 +83,54 @@ func Lint(isDebug *bool) *cli.Command {
 			return nil
 		},
 	}
+}
+
+func unwrapAllErrors(err error) []string {
+	if err == nil {
+		return []string{}
+	}
+
+	errorItems := flattenErrors(err)
+	count := len(errorItems)
+	if count < 2 {
+		return errorItems
+	}
+
+	cleanErrors := make([]string, count)
+	cleanErrors[count-1] = errorItems[0]
+	for i := range errorItems {
+		if i == count-1 {
+			break
+		}
+
+		rev := count - i - 1
+		item := errorItems[rev]
+
+		cleanMessage := strings.ReplaceAll(item, ": "+errorItems[rev-1], "")
+		cleanErrors[i] = cleanMessage
+	}
+
+	return cleanErrors
+}
+
+func flattenErrors(err error) []string {
+	if err == nil {
+		return []string{}
+	}
+
+	unwrapped := errors.Unwrap(err)
+	if unwrapped == nil {
+		return []string{err.Error()}
+	}
+
+	for unwrapped != nil && err.Error() == unwrapped.Error() {
+		unwrapped = errors.Unwrap(unwrapped)
+	}
+
+	var foundErrors []string
+	allErrors := flattenErrors(unwrapped)
+	foundErrors = append(foundErrors, allErrors...)
+	foundErrors = append(foundErrors, err.Error())
+
+	return foundErrors
 }

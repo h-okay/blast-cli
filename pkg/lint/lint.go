@@ -67,7 +67,7 @@ func (l *Linter) Lint(rootPath, pipelineDefinitionFileName string) (*PipelineAna
 			return nil, errors.New("the given pipeline path does not exist, please make sure you gave the right path")
 		}
 
-		return nil, fmt.Errorf("error getting pipelinePath paths: %w", err)
+		return nil, errors.Wrap(err, "error getting pipeline paths")
 	}
 
 	if len(pipelinePaths) == 0 {

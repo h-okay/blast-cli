@@ -18,7 +18,7 @@ func ReadYaml(fs afero.Fs, path string, out interface{}) error {
 
 	err = yaml.Unmarshal(buf, out)
 	if err != nil {
-		return errors.Wrapf(err, "cannot read the pipeline definition at '%s'", path)
+		return err
 	}
 
 	validate := validator.New()
