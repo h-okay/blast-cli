@@ -23,6 +23,7 @@ linters:
     - gocognit
     - tagliatelle
     - ifshort
+    - forbidigo
   presets:
     - bugs
     - comment

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"github.com/urfave/cli/v2"
 )
@@ -44,7 +45,7 @@ func Render() *cli.Command {
 			successPrinter.Printf("================\n\n\n")
 
 			qq := queries[0]
-			fmt.Println(qq)
+			fmt.Printf("%s\n", qq)
 
 			return nil
 		},

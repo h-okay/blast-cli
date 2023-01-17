@@ -2,11 +2,11 @@ package lint
 
 import (
 	"errors"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -211,6 +211,8 @@ func TestLinter_Lint(t *testing.T) {
 }
 
 func TestPipelineAnalysisResult_ErrorCount(t *testing.T) {
+	t.Parallel()
+
 	rule1 := &SimpleRule{Identifier: "rule1"}
 	rule2 := &SimpleRule{Identifier: "rule2"}
 	tests := []struct {
@@ -263,7 +265,10 @@ func TestPipelineAnalysisResult_ErrorCount(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			p := &PipelineAnalysisResult{
 				Pipelines: tt.pipelines,
 			}
