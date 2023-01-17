@@ -2,12 +2,19 @@ package pipeline_test
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
+
+func mustRead(t *testing.T, file string) string {
+	content, err := afero.ReadFile(afero.NewOsFs(), file)
+	require.NoError(t, err)
+	return strings.TrimSpace(string(content))
+}
 
 func Test_createTaskFromFile(t *testing.T) {
 	t.Parallel()
@@ -51,8 +58,9 @@ func Test_createTaskFromFile(t *testing.T) {
 				Description: "some description goes here",
 				Type:        "bq.sql",
 				ExecutableFile: pipeline.ExecutableFile{
-					Name: "test.sql",
-					Path: absPath("testdata/comments/test.sql"),
+					Name:    "test.sql",
+					Path:    absPath("testdata/comments/test.sql"),
+					Content: mustRead(t, "testdata/comments/test.sql"),
 				},
 				Parameters: map[string]string{
 					"param1":       "first-parameter",
@@ -76,8 +84,9 @@ func Test_createTaskFromFile(t *testing.T) {
 				Description: "some description goes here",
 				Type:        "bq.sql",
 				ExecutableFile: pipeline.ExecutableFile{
-					Name: "test.py",
-					Path: absPath("testdata/comments/test.py"),
+					Name:    "test.py",
+					Path:    absPath("testdata/comments/test.py"),
+					Content: mustRead(t, "testdata/comments/test.py"),
 				},
 				Parameters: map[string]string{
 					"param1": "first-parameter",

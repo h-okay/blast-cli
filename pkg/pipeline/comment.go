@@ -30,10 +30,13 @@ func CreateTaskFromFileComments(fs afero.Fs) TaskCreator {
 		}
 		defer file.Close()
 
+		var allRows []string
 		var commentRows []string
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
 			rowText := scanner.Text()
+			allRows = append(allRows, rowText)
+
 			if !strings.HasPrefix(rowText, commentMarker) {
 				continue
 			}
@@ -59,8 +62,9 @@ func CreateTaskFromFileComments(fs afero.Fs) TaskCreator {
 
 		task := commentRowsToTask(commentRows)
 		task.ExecutableFile = ExecutableFile{
-			Name: filepath.Base(filePath),
-			Path: absFilePath,
+			Name:    filepath.Base(filePath),
+			Path:    absFilePath,
+			Content: strings.Join(allRows, "\n"),
 		}
 
 		return task, nil
