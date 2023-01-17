@@ -1,10 +1,8 @@
 package query
 
 import (
-	"testing"
-
-	"github.com/flosch/pongo2/v6"
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 func TestJinjaRenderer_RenderQuery(t *testing.T) {
@@ -13,14 +11,14 @@ func TestJinjaRenderer_RenderQuery(t *testing.T) {
 	tests := []struct {
 		name    string
 		query   string
-		args    pongo2.Context
+		args    JinjaContext
 		want    string
 		wantErr bool
 	}{
 		{
 			name:  "simple render for ds",
 			query: "set analysis_end_date = '{{ ds }}'::date; select * from {{ ref('abc') }} and {{ utils.date_add('some-other') }} and {{ utils.multiparam('val1', 'val2') }}",
-			args: pongo2.Context{
+			args: JinjaContext{
 				"ds": "2022-02-03",
 				"ref": func(str string) string {
 					return "some-ref-here"
@@ -39,7 +37,7 @@ func TestJinjaRenderer_RenderQuery(t *testing.T) {
 		{
 			name:  "multiple variables",
 			query: "set analysis_end_date = '{{ ds }}'::date and '{{testVar}}' == 'testvar' and another date {{    ds }} - {{ someMissingVariable }};",
-			args: pongo2.Context{
+			args: JinjaContext{
 				"ds":      "2022-02-03",
 				"testVar": "testvar",
 			},
@@ -57,7 +55,7 @@ select
 from app_data.payments
 group by 1
 `,
-			args: pongo2.Context{},
+			args: JinjaContext{},
 			want: `
 
 
@@ -66,8 +64,7 @@ select
     sum(case when payment_method = 'bank_transfer' then amount end) as bank_transfer_amount,
     sum(amount) as total_amount
 from app_data.payments
-group by 1
-`,
+group by 1`,
 		},
 		{
 			name: "given array from outside is rendered",
@@ -79,9 +76,8 @@ select
     {% endfor %}
     sum(amount) as total_amount
 from app_data.payments
-group by 1
-`,
-			args: pongo2.Context{
+group by 1`,
+			args: JinjaContext{
 				"payment_methods": []string{"bank_transfer", "credit_card", "gift_card"},
 			},
 			want: `
@@ -96,8 +92,7 @@ select
     
     sum(amount) as total_amount
 from app_data.payments
-group by 1
-`,
+group by 1`,
 		},
 	}
 	for _, tt := range tests {

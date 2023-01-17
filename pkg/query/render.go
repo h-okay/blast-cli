@@ -4,13 +4,16 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
-	"github.com/flosch/pongo2/v6"
 )
 
-var DefaultJinjaRenderer = NewJinjaRenderer(pongo2.Context{
+var DefaultJinjaRenderer = NewJinjaRenderer(JinjaContext{
 	"ds":        time.Now().Format("2006-01-02"),
 	"ds_nodash": time.Now().Format("20060102"),
+	"utils": map[string]interface{}{
+		"date_add": func(str string, days int) string {
+			return str
+		},
+	},
 })
 
 type Renderer struct {

@@ -3,7 +3,6 @@ package query
 import (
 	"testing"
 
-	"github.com/flosch/pongo2/v6"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -111,7 +110,7 @@ with dummy_dates as (
 
 	extractor := FileQuerySplitterExtractor{
 		Fs: fs,
-		Renderer: NewJinjaRenderer(pongo2.Context{
+		Renderer: NewJinjaRenderer(JinjaContext{
 			"ds": "2022-01-01",
 		}),
 	}

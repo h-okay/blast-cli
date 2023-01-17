@@ -3,42 +3,38 @@ package query
 import (
 	"sync"
 
-	"github.com/flosch/pongo2/v6"
+	"github.com/noirbizarre/gonja"
 )
 
 type JinjaRenderer struct {
-	Context pongo2.Context
-
-	set             *pongo2.TemplateSet
+	context         gonja.Context
 	queryRenderLock *sync.Mutex
 }
 
-func NewJinjaRenderer(context pongo2.Context) *JinjaRenderer {
-	sandboxedLoader, err := pongo2.NewSandboxedFilesystemLoader(".")
-	if err != nil {
-		panic(err)
-	}
+type JinjaContext map[string]any
 
+func NewJinjaRenderer(context JinjaContext) *JinjaRenderer {
 	return &JinjaRenderer{
-		Context: context,
-
-		set:             pongo2.NewSet("query", sandboxedLoader),
+		context:         gonja.Context(context),
 		queryRenderLock: &sync.Mutex{},
 	}
 }
 
 func (r *JinjaRenderer) Render(query string) string {
 	r.queryRenderLock.Lock()
-	tpl, err := r.set.FromString(query)
+
+	tpl, err := gonja.FromString(query)
+	if err != nil {
+		panic(err)
+	}
 	r.queryRenderLock.Unlock()
 
+	// Now you can render the template with the given
+	// gonja.context how often you want to.
+	out, err := tpl.Execute(r.context)
 	if err != nil {
 		panic(err)
 	}
 
-	out, err := tpl.Execute(r.Context)
-	if err != nil {
-		panic(err)
-	}
 	return out
 }
