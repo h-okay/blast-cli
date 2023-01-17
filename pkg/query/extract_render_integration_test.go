@@ -3,6 +3,7 @@ package query
 import (
 	"testing"
 
+	"github.com/flosch/pongo2/v6"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -110,11 +111,9 @@ with dummy_dates as (
 
 	extractor := FileQuerySplitterExtractor{
 		Fs: fs,
-		Renderer: Renderer{
-			Args: map[string]string{
-				"ds": "2022-01-01",
-			},
-		},
+		Renderer: NewJinjaRenderer(pongo2.Context{
+			"ds": "2022-01-01",
+		}),
 	}
 	res, err := extractor.ExtractQueriesFromFile("somefile.sql")
 	assert.NoError(t, err)

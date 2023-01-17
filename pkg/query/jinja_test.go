@@ -19,14 +19,22 @@ func TestJinjaRenderer_RenderQuery(t *testing.T) {
 	}{
 		{
 			name:  "simple render for ds",
-			query: "set analysis_end_date = '{{ ds }}'::date; select * from {{ ref('abc') }}",
+			query: "set analysis_end_date = '{{ ds }}'::date; select * from {{ ref('abc') }} and {{ utils.date_add('some-other') }} and {{ utils.multiparam('val1', 'val2') }}",
 			args: pongo2.Context{
 				"ds": "2022-02-03",
 				"ref": func(str string) string {
 					return "some-ref-here"
 				},
+				"utils": map[string]any{
+					"date_add": func(str string) string {
+						return "some-date-here"
+					},
+					"multiparam": func(str1, str2 string) string {
+						return str1 + "-" + str2
+					},
+				},
 			},
-			want: "set analysis_end_date = '2022-02-03'::date; select * from some-ref-here",
+			want: "set analysis_end_date = '2022-02-03'::date; select * from some-ref-here and some-date-here and val1-val2",
 		},
 		{
 			name:  "multiple variables",
