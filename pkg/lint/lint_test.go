@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -205,6 +206,73 @@ func TestLinter_Lint(t *testing.T) {
 			}
 
 			m.AssertExpectations(t)
+		})
+	}
+}
+
+func TestPipelineAnalysisResult_ErrorCount(t *testing.T) {
+	t.Parallel()
+
+	rule1 := &SimpleRule{Identifier: "rule1"}
+	rule2 := &SimpleRule{Identifier: "rule2"}
+	tests := []struct {
+		name      string
+		pipelines []*PipelineIssues
+		want      int
+	}{
+		{
+			pipelines: []*PipelineIssues{
+				{
+					Pipeline: &pipeline.Pipeline{
+						Name: "pipeline1",
+					},
+					Issues: map[Rule][]*Issue{
+						rule1: {
+							{
+								Description: "issue1",
+							},
+							{
+								Description: "issue2",
+							},
+						},
+						rule2: {
+							{
+								Description: "issue1",
+							},
+							{
+								Description: "issue2",
+							},
+						},
+					},
+				},
+				{
+					Pipeline: &pipeline.Pipeline{
+						Name: "pipeline2",
+					},
+					Issues: map[Rule][]*Issue{
+						rule1: {
+							{
+								Description: "issue1",
+							},
+							{
+								Description: "issue2",
+							},
+						},
+					},
+				},
+			},
+			want: 6,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			p := &PipelineAnalysisResult{
+				Pipelines: tt.pipelines,
+			}
+			assert.Equal(t, tt.want, p.ErrorCount())
 		})
 	}
 }

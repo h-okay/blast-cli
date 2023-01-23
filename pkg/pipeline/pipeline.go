@@ -22,8 +22,9 @@ type (
 )
 
 type ExecutableFile struct {
-	Name string
-	Path string
+	Name    string
+	Path    string
+	Content string
 }
 
 type TaskDefinitionFile struct {
@@ -76,7 +77,7 @@ type Pipeline struct {
 	Tasks              []*Task
 	Notifications      Notifications `yaml:"notifications"`
 
-	tasksByType map[string][]*Task
+	TasksByType map[string][]*Task
 	tasksByName map[string]*Task
 }
 
@@ -92,7 +93,7 @@ func (p *Pipeline) RelativeTaskPath(t *Task) string {
 }
 
 func (p Pipeline) HasTaskType(taskType string) bool {
-	_, ok := p.tasksByType[taskType]
+	_, ok := p.TasksByType[taskType]
 	return ok
 }
 
@@ -134,7 +135,7 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 	if pipeline.Name == "" {
 		pipeline.Name = pipeline.LegacyID
 	}
-	pipeline.tasksByType = make(map[string][]*Task)
+	pipeline.TasksByType = make(map[string][]*Task)
 	pipeline.tasksByName = make(map[string]*Task)
 
 	absPipelineFilePath, err := filepath.Abs(pipelineFilePath)
@@ -164,11 +165,11 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 
 		pipeline.Tasks = append(pipeline.Tasks, task)
 
-		if _, ok := pipeline.tasksByType[task.Type]; !ok {
-			pipeline.tasksByType[task.Type] = make([]*Task, 0)
+		if _, ok := pipeline.TasksByType[task.Type]; !ok {
+			pipeline.TasksByType[task.Type] = make([]*Task, 0)
 		}
 
-		pipeline.tasksByType[task.Type] = append(pipeline.tasksByType[task.Type], task)
+		pipeline.TasksByType[task.Type] = append(pipeline.TasksByType[task.Type], task)
 		pipeline.tasksByName[task.Name] = task
 	}
 

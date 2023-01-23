@@ -53,8 +53,9 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 				Description: "This is a hello world task",
 				Type:        "bash",
 				ExecutableFile: pipeline.ExecutableFile{
-					Name: "hello.sh",
-					Path: absPath("testdata/yaml/task1/hello.sh"),
+					Name:    "hello.sh",
+					Path:    absPath("testdata/yaml/task1/hello.sh"),
+					Content: mustRead(t, "testdata/yaml/task1/hello.sh"),
 				},
 				Parameters: map[string]string{
 					"param1": "value1",
@@ -77,8 +78,9 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 				Description: "This is a hello world task",
 				Type:        "bash",
 				ExecutableFile: pipeline.ExecutableFile{
-					Name: "hello.sh",
-					Path: absPath("testdata/yaml/task-with-nested/some/dir/hello.sh"),
+					Name:    "hello.sh",
+					Path:    absPath("testdata/yaml/task-with-nested/some/dir/hello.sh"),
+					Content: mustRead(t, "testdata/yaml/task-with-nested/some/dir/hello.sh"),
 				},
 				Parameters: map[string]string{
 					"param1": "value1",
@@ -101,8 +103,9 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 				Description: "This is a hello world task",
 				Type:        "bash",
 				ExecutableFile: pipeline.ExecutableFile{
-					Name: "hello.sh",
-					Path: absPath("testdata/yaml/task-with-toplevel-runfile/hello.sh"),
+					Name:    "hello.sh",
+					Path:    absPath("testdata/yaml/task-with-toplevel-runfile/hello.sh"),
+					Content: mustRead(t, "testdata/yaml/task-with-toplevel-runfile/hello.sh"),
 				},
 				Parameters: map[string]string{
 					"param1": "value1",

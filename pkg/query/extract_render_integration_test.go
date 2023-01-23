@@ -110,11 +110,9 @@ with dummy_dates as (
 
 	extractor := FileQuerySplitterExtractor{
 		Fs: fs,
-		Renderer: Renderer{
-			Args: map[string]string{
-				"ds": "2022-01-01",
-			},
-		},
+		Renderer: NewJinjaRenderer(JinjaContext{
+			"ds": "2022-01-01",
+		}),
 	}
 	res, err := extractor.ExtractQueriesFromFile("somefile.sql")
 	assert.NoError(t, err)

@@ -101,7 +101,7 @@ func appendSnowflakeValidatorIfExists(logger *zap.SugaredLogger, fs afero.Fs, ru
 		Validator:  sf,
 		Extractor: &query.FileQuerySplitterExtractor{
 			Fs:       fs,
-			Renderer: query.DefaultRenderer,
+			Renderer: query.DefaultJinjaRenderer,
 		},
 		WorkerCount: 32,
 		Logger:      logger,
@@ -133,7 +133,7 @@ func appendBigqueryValidatorIfExists(logger *zap.SugaredLogger, fs afero.Fs, rul
 		Validator:  bq,
 		Extractor: &query.WholeFileExtractor{
 			Fs:       fs,
-			Renderer: query.DefaultRenderer,
+			Renderer: query.DefaultJinjaRenderer,
 		},
 		WorkerCount: 32,
 		Logger:      logger,

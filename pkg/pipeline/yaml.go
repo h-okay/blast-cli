@@ -64,6 +64,12 @@ func CreateTaskFromYamlDefinition(fs afero.Fs) TaskCreator {
 
 			executableFile.Name = filepath.Base(definition.RunFile)
 			executableFile.Path = absRunFile
+
+			content, err := afero.ReadFile(fs, absRunFile)
+			if err != nil {
+				return nil, errors.Wrapf(err, "unable to read the run file: %s", absRunFile)
+			}
+			executableFile.Content = string(content)
 		}
 
 		task := Task{

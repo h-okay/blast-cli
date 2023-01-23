@@ -9,6 +9,7 @@ require (
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/noirbizarre/gonja v0.0.0-20200629003239-4d051fd0be61
 	github.com/pkg/errors v0.9.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/snowflakedb/gosnowflake v1.6.7
@@ -53,6 +54,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.1.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.5.1 // indirect
+	github.com/goph/emperror v0.17.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
@@ -65,7 +67,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
-	github.com/stretchr/objx v0.1.0 // indirect
+	github.com/stretchr/objx v0.1.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect

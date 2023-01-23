@@ -107,7 +107,9 @@ type PipelineAnalysisResult struct {
 func (p *PipelineAnalysisResult) ErrorCount() int {
 	count := 0
 	for _, pipelineIssues := range p.Pipelines {
-		count += len(pipelineIssues.Issues)
+		for _, issues := range pipelineIssues.Issues {
+			count += len(issues)
+		}
 	}
 
 	return count

@@ -78,7 +78,7 @@ func Run(isDebug *bool) *cli.Command {
 
 			wholeFileExtractor := &query.WholeFileExtractor{
 				Fs:       fs,
-				Renderer: query.DefaultRenderer,
+				Renderer: query.DefaultJinjaRenderer,
 			}
 
 			executors := executor.DefaultExecutors
@@ -198,7 +198,7 @@ func RunTask() *cli.Command {
 
 			wholeFileExtractor := &query.WholeFileExtractor{
 				Fs:       fs,
-				Renderer: query.DefaultRenderer,
+				Renderer: query.DefaultJinjaRenderer,
 			}
 
 			bqOperator, err := bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor)

@@ -1,9 +1,10 @@
-package pipeline
+package pipeline_test
 
 import (
 	"path/filepath"
 	"testing"
 
+	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,8 +19,8 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 
 	type fields struct {
 		tasksDirectoryName string
-		yamlTaskCreator    TaskCreator
-		commentTaskCreator TaskCreator
+		yamlTaskCreator    pipeline.TaskCreator
+		commentTaskCreator pipeline.TaskCreator
 	}
 	type args struct {
 		pathToPipeline string
@@ -28,7 +29,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *Pipeline
+		want    *pipeline.Pipeline
 		wantErr bool
 	}{
 		{
@@ -55,17 +56,17 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			name: "should create pipeline from path",
 			fields: fields{
 				tasksDirectoryName: "tasks",
-				commentTaskCreator: CreateTaskFromFileComments(afero.NewOsFs()),
-				yamlTaskCreator:    CreateTaskFromYamlDefinition(afero.NewOsFs()),
+				commentTaskCreator: pipeline.CreateTaskFromFileComments(afero.NewOsFs()),
+				yamlTaskCreator:    pipeline.CreateTaskFromYamlDefinition(afero.NewOsFs()),
 			},
 			args: args{
 				pathToPipeline: "testdata/pipeline/first-pipeline",
 			},
-			want: &Pipeline{
+			want: &pipeline.Pipeline{
 				Name:     "first-pipeline",
 				LegacyID: "first-pipeline",
 				Schedule: "",
-				DefinitionFile: DefinitionFile{
+				DefinitionFile: pipeline.DefinitionFile{
 					Name: "pipeline.yml",
 					Path: absPath("testdata/pipeline/first-pipeline/pipeline.yml"),
 				},
@@ -77,19 +78,20 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 					"slack":           "slack-connection",
 					"gcpConnectionId": "gcp-connection-id-here",
 				},
-				Tasks: []*Task{
+				Tasks: []*pipeline.Task{
 					{
 						Name:        "hello-world",
 						Description: "This is a hello world task",
 						Type:        "bash",
-						ExecutableFile: ExecutableFile{
-							Name: "hello.sh",
-							Path: absPath("testdata/pipeline/first-pipeline/tasks/task1/hello.sh"),
+						ExecutableFile: pipeline.ExecutableFile{
+							Name:    "hello.sh",
+							Path:    absPath("testdata/pipeline/first-pipeline/tasks/task1/hello.sh"),
+							Content: mustRead(t, "testdata/pipeline/first-pipeline/tasks/task1/hello.sh"),
 						},
-						DefinitionFile: TaskDefinitionFile{
+						DefinitionFile: pipeline.TaskDefinitionFile{
 							Name: "task.yml",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/task1/task.yml"),
-							Type: YamlTask,
+							Type: pipeline.YamlTask,
 						},
 						Parameters: map[string]string{
 							"param1": "value1",
@@ -109,24 +111,25 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 							"project_id":         "a-new-project-id",
 							"location":           "europe-west1",
 						},
-						DefinitionFile: TaskDefinitionFile{
+						DefinitionFile: pipeline.TaskDefinitionFile{
 							Name: "task.yaml",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/task2/task.yaml"),
-							Type: YamlTask,
+							Type: pipeline.YamlTask,
 						},
 					},
 					{
 						Name:        "some-python-task",
 						Description: "some description goes here",
 						Type:        "python",
-						ExecutableFile: ExecutableFile{
-							Name: "test.py",
-							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
+						ExecutableFile: pipeline.ExecutableFile{
+							Name:    "test.py",
+							Path:    absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
+							Content: mustRead(t, "testdata/pipeline/first-pipeline/tasks/test.py"),
 						},
-						DefinitionFile: TaskDefinitionFile{
+						DefinitionFile: pipeline.TaskDefinitionFile{
 							Name: "test.py",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
-							Type: CommentTask,
+							Type: pipeline.CommentTask,
 						},
 						Parameters: map[string]string{
 							"param1": "first-parameter",
@@ -143,14 +146,15 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 						Name:        "some-sql-task",
 						Description: "some description goes here",
 						Type:        "bq.sql",
-						ExecutableFile: ExecutableFile{
-							Name: "test.sql",
-							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
+						ExecutableFile: pipeline.ExecutableFile{
+							Name:    "test.sql",
+							Path:    absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
+							Content: mustRead(t, "testdata/pipeline/first-pipeline/tasks/test.sql"),
 						},
-						DefinitionFile: TaskDefinitionFile{
+						DefinitionFile: pipeline.TaskDefinitionFile{
 							Name: "test.sql",
 							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
-							Type: CommentTask,
+							Type: pipeline.CommentTask,
 						},
 						Parameters: map[string]string{
 							"param1": "first-parameter",
@@ -172,13 +176,13 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			builderConfig := BuilderConfig{
+			builderConfig := pipeline.BuilderConfig{
 				PipelineFileName:   "pipeline.yml",
 				TasksDirectoryName: tt.fields.tasksDirectoryName,
 				TasksFileSuffixes:  []string{"task.yml", "task.yaml"},
 			}
 
-			p := NewBuilder(builderConfig, tt.fields.yamlTaskCreator, tt.fields.commentTaskCreator, afero.NewOsFs())
+			p := pipeline.NewBuilder(builderConfig, tt.fields.yamlTaskCreator, tt.fields.commentTaskCreator, afero.NewOsFs())
 
 			got, err := p.CreatePipelineFromPath(tt.args.pathToPipeline)
 			if tt.wantErr {
@@ -207,20 +211,20 @@ func TestTask_RelativePathToPipelineRoot(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		pipeline *Pipeline
-		task     *Task
+		pipeline *pipeline.Pipeline
+		task     *pipeline.Task
 		want     string
 	}{
 		{
 			name: "simple relative path returned",
-			pipeline: &Pipeline{
-				DefinitionFile: DefinitionFile{
+			pipeline: &pipeline.Pipeline{
+				DefinitionFile: pipeline.DefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
 			},
-			task: &Task{
+			task: &pipeline.Task{
 				Name: "test-task",
-				DefinitionFile: TaskDefinitionFile{
+				DefinitionFile: pipeline.TaskDefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/tasks/task-folder/task1.sql",
 				},
 			},
@@ -228,14 +232,14 @@ func TestTask_RelativePathToPipelineRoot(t *testing.T) {
 		},
 		{
 			name: "relative path is calculated even if the tasks are on a parent folder",
-			pipeline: &Pipeline{
-				DefinitionFile: DefinitionFile{
+			pipeline: &pipeline.Pipeline{
+				DefinitionFile: pipeline.DefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
 			},
-			task: &Task{
+			task: &pipeline.Task{
 				Name: "test-task",
-				DefinitionFile: TaskDefinitionFile{
+				DefinitionFile: pipeline.TaskDefinitionFile{
 					Path: "/users/user1/pipelines/task-folder/task1.sql",
 				},
 			},
@@ -256,17 +260,17 @@ func TestPipeline_HasTaskType(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		pipeline *Pipeline
+		pipeline *pipeline.Pipeline
 		taskType string
 		want     bool
 	}{
 		{
 			name: "existing task type is found",
-			pipeline: &Pipeline{
-				DefinitionFile: DefinitionFile{
+			pipeline: &pipeline.Pipeline{
+				DefinitionFile: pipeline.DefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
-				tasksByType: map[string][]*Task{
+				TasksByType: map[string][]*pipeline.Task{
 					"type1": {},
 					"type2": {},
 					"type3": {},
@@ -277,11 +281,11 @@ func TestPipeline_HasTaskType(t *testing.T) {
 		},
 		{
 			name: "missing task type is returned as false",
-			pipeline: &Pipeline{
-				DefinitionFile: DefinitionFile{
+			pipeline: &pipeline.Pipeline{
+				DefinitionFile: pipeline.DefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
-				tasksByType: map[string][]*Task{
+				TasksByType: map[string][]*pipeline.Task{
 					"type1": {},
 					"type2": {},
 					"type3": {},
