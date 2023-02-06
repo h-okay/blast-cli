@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
+	"github.com/datablast-analytics/blast-cli/pkg/executor"
 	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"github.com/urfave/cli/v2"
 )
@@ -35,7 +37,7 @@ func Render() *cli.Command {
 				Renderer: query.DefaultJinjaRenderer,
 			}
 
-			queries, err := wholeFileExtractor.ExtractQueriesFromFile(taskPath)
+			queries, err := wholeFileExtractor.ExtractQueriesFromFile(task.ExecutableFile.Path)
 			if err != nil {
 				errorPrinter.Printf("Failed to extract queries from file: %v\n", err.Error())
 				return cli.Exit("", 1)
@@ -45,6 +47,18 @@ func Render() *cli.Command {
 			successPrinter.Printf("================\n\n\n")
 
 			qq := queries[0]
+
+			if task.Type == executor.TaskTypeBigqueryQuery {
+				materializer := bigquery.Materializer{}
+				materialized, err := materializer.Render(task, qq.Query)
+				if err != nil {
+					errorPrinter.Printf("Failed to materialize the query: %v\n", err.Error())
+					return cli.Exit("", 1)
+				}
+
+				qq.Query = materialized
+			}
+
 			fmt.Printf("%s\n", qq)
 
 			return nil
