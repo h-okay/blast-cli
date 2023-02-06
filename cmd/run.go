@@ -85,7 +85,7 @@ func Run(isDebug *bool) *cli.Command {
 
 			var bqOperator *bigquery.BasicOperator
 			if foundPipeline.HasTaskType("bq.sql") {
-				bqOperator, err = bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor)
+				bqOperator, err = bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor, bigquery.Materializer{})
 				if err != nil {
 					errorPrinter.Printf(err.Error())
 					return cli.Exit("", 1)
@@ -201,7 +201,7 @@ func RunTask() *cli.Command {
 				Renderer: query.DefaultJinjaRenderer,
 			}
 
-			bqOperator, err := bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor)
+			bqOperator, err := bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor, bigquery.Materializer{})
 			if err != nil {
 				errorPrinter.Printf(err.Error())
 				return cli.Exit("", 1)

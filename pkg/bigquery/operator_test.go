@@ -29,6 +29,15 @@ func (m *mockExtractor) ExtractQueriesFromFile(filepath string) ([]*query.Query,
 	return res.Get(0).([]*query.Query), res.Error(1)
 }
 
+type mockMaterializer struct {
+	mock.Mock
+}
+
+func (m *mockMaterializer) Render(t *pipeline.Task, query string) (string, error) {
+	res := m.Called(t, query)
+	return res.Get(0).(string), res.Error(1)
+}
+
 func TestBasicOperator_RunTask(t *testing.T) {
 	t.Parallel()
 
@@ -37,11 +46,12 @@ func TestBasicOperator_RunTask(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		setupQueries   func(m *mockQuerier)
-		setupExtractor func(m *mockExtractor)
-		args           args
-		wantErr        bool
+		name              string
+		setupQueries      func(m *mockQuerier)
+		setupExtractor    func(m *mockExtractor)
+		setupMaterializer func(m *mockMaterializer)
+		args              args
+		wantErr           bool
 	}{
 		{
 			name: "failed to extract queries",
@@ -74,12 +84,37 @@ func TestBasicOperator_RunTask(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "multiple queries found but materialization is enabled, should fail",
+			setupExtractor: func(m *mockExtractor) {
+				m.On("ExtractQueriesFromFile", "test-file.sql").
+					Return([]*query.Query{
+						{Query: "query 1"},
+						{Query: "query 2"},
+					}, nil)
+			},
+			args: args{
+				t: &pipeline.Task{
+					ExecutableFile: pipeline.ExecutableFile{
+						Path: "test-file.sql",
+					},
+					Materialization: pipeline.Materialization{
+						Type: pipeline.MaterializationTypeTable,
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "query returned an error",
 			setupExtractor: func(m *mockExtractor) {
 				m.On("ExtractQueriesFromFile", "test-file.sql").
 					Return([]*query.Query{
 						{Query: "select * from users"},
 					}, nil)
+			},
+			setupMaterializer: func(m *mockMaterializer) {
+				m.On("Render", mock.Anything, "select * from users").
+					Return("select * from users", nil)
 			},
 			setupQueries: func(m *mockQuerier) {
 				m.On("RunQueryWithoutResult", mock.Anything, &query.Query{Query: "select * from users"}).
@@ -102,8 +137,37 @@ func TestBasicOperator_RunTask(t *testing.T) {
 						{Query: "select * from users"},
 					}, nil)
 			},
+			setupMaterializer: func(m *mockMaterializer) {
+				m.On("Render", mock.Anything, "select * from users").
+					Return("select * from users", nil)
+			},
 			setupQueries: func(m *mockQuerier) {
 				m.On("RunQueryWithoutResult", mock.Anything, &query.Query{Query: "select * from users"}).
+					Return(nil)
+			},
+			args: args{
+				t: &pipeline.Task{
+					ExecutableFile: pipeline.ExecutableFile{
+						Path: "test-file.sql",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "query successfully executed with materialization",
+			setupExtractor: func(m *mockExtractor) {
+				m.On("ExtractQueriesFromFile", "test-file.sql").
+					Return([]*query.Query{
+						{Query: "select * from users"},
+					}, nil)
+			},
+			setupMaterializer: func(m *mockMaterializer) {
+				m.On("Render", mock.Anything, "select * from users").
+					Return("CREATE TABLE x AS select * from users", nil)
+			},
+			setupQueries: func(m *mockQuerier) {
+				m.On("RunQueryWithoutResult", mock.Anything, &query.Query{Query: "CREATE TABLE x AS select * from users"}).
 					Return(nil)
 			},
 			args: args{
@@ -131,9 +195,15 @@ func TestBasicOperator_RunTask(t *testing.T) {
 				tt.setupExtractor(extractor)
 			}
 
+			mat := new(mockMaterializer)
+			if tt.setupMaterializer != nil {
+				tt.setupMaterializer(mat)
+			}
+
 			o := BasicOperator{
-				client:    client,
-				extractor: extractor,
+				client:       client,
+				extractor:    extractor,
+				materializer: mat,
 			}
 
 			err := o.RunTask(context.Background(), &pipeline.Pipeline{}, tt.args.t)

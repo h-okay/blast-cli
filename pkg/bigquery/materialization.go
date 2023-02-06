@@ -15,10 +15,6 @@ func (m Materializer) Render(task *pipeline.Task, query string) (string, error) 
 		return query, nil
 	}
 
-	if mat.Type == pipeline.MaterializationTypeNone {
-		return query, nil
-	}
-
 	if mat.Type == pipeline.MaterializationTypeView {
 		return fmt.Sprintf("CREATE OR REPLACE VIEW `%s` AS %s", task.Name, query), nil
 	}
@@ -42,7 +38,7 @@ func (m Materializer) Render(task *pipeline.Task, query string) (string, error) 
 		}
 	}
 
-	return "", nil
+	return "", fmt.Errorf("unsupported materialization type `%s`", mat.Type)
 }
 
 func buildIncrementalQuery(task *pipeline.Task, query string, mat pipeline.Materialization, strategy pipeline.MaterializationStrategy) (string, error) {
