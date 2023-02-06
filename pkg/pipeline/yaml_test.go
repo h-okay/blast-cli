@@ -66,6 +66,13 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 					"conn2": "second connection",
 				},
 				DependsOn: []string{"gcs-to-bq"},
+				Materialization: pipeline.Materialization{
+					Type:           pipeline.MaterializationTypeTable,
+					Strategy:       pipeline.MaterializationStrategyCreateReplace,
+					ClusterBy:      []string{"key1", "key2"},
+					PartitionBy:    "dt",
+					IncrementalKey: "dt",
+				},
 			},
 		},
 		{

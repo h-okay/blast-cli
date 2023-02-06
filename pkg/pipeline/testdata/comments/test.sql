@@ -9,6 +9,11 @@
 -- @blast.parameters.s3_file_path: s3://bucket/path
 -- @blast.connections.conn1: first-connection
 -- @blast.connections.conn2: second-connection
+-- @blast.materialization.type: table
+-- @blast.materialization.partition_by: dt
+-- @blast.materialization.cluster_by: event_name
+-- @blast.materialization.strategy: delete+insert
+-- @blast.materialization.incremental_key: dt
 
 select *
 from foo;

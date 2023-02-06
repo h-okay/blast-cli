@@ -10,3 +10,11 @@ parameters:
 connections:
   conn1: first connection
   conn2: second connection
+materialization:
+  type: "table"
+  strategy: "create+replace"
+  partition_by: dt
+  incremental_key: dt
+  cluster_by:
+    - key1
+    - key2
