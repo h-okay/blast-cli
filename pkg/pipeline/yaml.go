@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/datablast-analytics/blast-cli/pkg/path"
 	"github.com/pkg/errors"
@@ -89,22 +90,24 @@ func CreateTaskFromYamlDefinition(fs afero.Fs) TaskCreator {
 			executableFile.Content = string(content)
 		}
 
+		mat := Materialization{
+			Type:           MaterializationType(strings.ToLower(definition.Materialization.Type)),
+			Strategy:       MaterializationStrategy(strings.ToLower(definition.Materialization.Strategy)),
+			ClusterBy:      definition.Materialization.ClusterBy,
+			PartitionBy:    definition.Materialization.PartitionBy,
+			IncrementalKey: definition.Materialization.IncrementalKey,
+		}
+
 		task := Task{
-			Name:           definition.Name,
-			Description:    definition.Description,
-			Type:           definition.Type,
-			Parameters:     definition.Parameters,
-			Connections:    definition.Connections,
-			DependsOn:      definition.Depends,
-			ExecutableFile: executableFile,
-			Schedule:       TaskSchedule{Days: definition.Schedule.Days},
-			Materialization: Materialization{
-				Type:           MaterializationType(definition.Materialization.Type),
-				Strategy:       MaterializationStrategy(definition.Materialization.Strategy),
-				ClusterBy:      definition.Materialization.ClusterBy,
-				PartitionBy:    definition.Materialization.PartitionBy,
-				IncrementalKey: definition.Materialization.IncrementalKey,
-			},
+			Name:            definition.Name,
+			Description:     definition.Description,
+			Type:            definition.Type,
+			Parameters:      definition.Parameters,
+			Connections:     definition.Connections,
+			DependsOn:       definition.Depends,
+			ExecutableFile:  executableFile,
+			Schedule:        TaskSchedule{Days: definition.Schedule.Days},
+			Materialization: mat,
 		}
 
 		return &task, nil

@@ -56,7 +56,7 @@ type SlackNotification struct {
 type MaterializationType string
 
 const (
-	MaterializationTypeNone  MaterializationType = "none"
+	MaterializationTypeNone  MaterializationType = ""
 	MaterializationTypeView  MaterializationType = "view"
 	MaterializationTypeTable MaterializationType = "table"
 )
@@ -64,6 +64,7 @@ const (
 type MaterializationStrategy string
 
 const (
+	MaterializationStrategyNone          MaterializationStrategy = ""
 	MaterializationStrategyCreateReplace MaterializationStrategy = "create+replace"
 	MaterializationStrategyDeleteInsert  MaterializationStrategy = "delete+insert"
 	MaterializationStrategyAppend        MaterializationStrategy = "append"

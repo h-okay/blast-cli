@@ -52,5 +52,8 @@ func (o BasicOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pip
 		return nil
 	}
 
+	// q := queries[0]
+	// if t.Materialization
+
 	return o.client.RunQueryWithoutResult(ctx, queries[0])
 }
