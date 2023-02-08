@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
+	"github.com/alecthomas/chroma/v2/quick"
 	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
 	"github.com/datablast-analytics/blast-cli/pkg/executor"
 	"github.com/datablast-analytics/blast-cli/pkg/query"
@@ -43,9 +46,6 @@ func Render() *cli.Command {
 				return cli.Exit("", 1)
 			}
 
-			successPrinter.Println("\n\nRendered output")
-			successPrinter.Printf("================\n\n\n")
-
 			qq := queries[0]
 
 			if task.Type == executor.TaskTypeBigqueryQuery {
@@ -57,6 +57,7 @@ func Render() *cli.Command {
 				}
 
 				qq.Query = materialized
+				qq.Query = highlightCode(qq.Query, "sql")
 			}
 
 			fmt.Printf("%s\n", qq)
@@ -64,4 +65,19 @@ func Render() *cli.Command {
 			return nil
 		},
 	}
+}
+
+func highlightCode(code string, language string) string {
+	o, _ := os.Stdout.Stat()
+	if (o.Mode() & os.ModeCharDevice) != os.ModeCharDevice {
+		return code
+	}
+	b := new(strings.Builder)
+	err := quick.Highlight(b, code, language, "terminal16m", "monokai")
+	if err != nil {
+		errorPrinter.Printf("Failed to highlight the query: %v\n", err.Error())
+		return code
+	}
+
+	return b.String()
 }

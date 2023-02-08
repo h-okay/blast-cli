@@ -31,7 +31,7 @@ func TestMaterializer_Render(t *testing.T) {
 				},
 			},
 			query: "SELECT 1",
-			want:  "CREATE OR REPLACE VIEW `my.asset` AS SELECT 1",
+			want:  "CREATE OR REPLACE VIEW `my.asset` AS\nSELECT 1",
 		},
 		{
 			name: "materialize to a table, no partition or cluster, default to create+replace",
@@ -42,7 +42,7 @@ func TestMaterializer_Render(t *testing.T) {
 				},
 			},
 			query: "SELECT 1",
-			want:  "CREATE OR REPLACE TABLE `my.asset`   AS SELECT 1",
+			want:  "CREATE OR REPLACE TABLE `my.asset`   AS\nSELECT 1",
 		},
 		{
 			name: "materialize to a table with partition, no cluster",
@@ -55,7 +55,7 @@ func TestMaterializer_Render(t *testing.T) {
 				},
 			},
 			query: "SELECT 1",
-			want:  "CREATE OR REPLACE TABLE `my.asset` PARTITION BY `dt`  AS SELECT 1",
+			want:  "CREATE OR REPLACE TABLE `my.asset` PARTITION BY `dt`  AS\nSELECT 1",
 		},
 		{
 			name: "materialize to a table with partition and cluster, single field to cluster",
@@ -69,7 +69,7 @@ func TestMaterializer_Render(t *testing.T) {
 				},
 			},
 			query: "SELECT 1",
-			want:  "CREATE OR REPLACE TABLE `my.asset` PARTITION BY `dt` CLUSTER BY `event_type` AS SELECT 1",
+			want:  "CREATE OR REPLACE TABLE `my.asset` PARTITION BY `dt` CLUSTER BY `event_type` AS\nSELECT 1",
 		},
 		{
 			name: "materialize to a table with partition and cluster, multiple fields to cluster",
@@ -83,7 +83,7 @@ func TestMaterializer_Render(t *testing.T) {
 				},
 			},
 			query: "SELECT 1",
-			want:  "CREATE OR REPLACE TABLE `my.asset` PARTITION BY `dt` CLUSTER BY `event_type`, `event_name` AS SELECT 1",
+			want:  "CREATE OR REPLACE TABLE `my.asset` PARTITION BY `dt` CLUSTER BY `event_type`, `event_name` AS\nSELECT 1",
 		},
 		{
 			name: "materialize to a table with append",

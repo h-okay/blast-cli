@@ -5,6 +5,7 @@ go 1.18
 require (
 	cloud.google.com/go/bigquery v1.38.0
 	github.com/DATA-DOG/go-sqlmock v1.5.0
+	github.com/alecthomas/chroma/v2 v2.5.0
 	github.com/fatih/color v1.13.0
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/jmoiron/sqlx v1.3.4
@@ -43,6 +44,7 @@ require (
 	github.com/aws/smithy-go v1.9.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/gabriel-vasile/mimetype v1.4.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect

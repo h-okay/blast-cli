@@ -16,7 +16,7 @@ func (m Materializer) Render(task *pipeline.Task, query string) (string, error) 
 	}
 
 	if mat.Type == pipeline.MaterializationTypeView {
-		return fmt.Sprintf("CREATE OR REPLACE VIEW `%s` AS %s", task.Name, query), nil
+		return fmt.Sprintf("CREATE OR REPLACE VIEW `%s` AS\n%s", task.Name, query), nil
 	}
 
 	if mat.Type == pipeline.MaterializationTypeTable {
@@ -68,5 +68,5 @@ func buildCreateReplaceQuery(task *pipeline.Task, query string, mat pipeline.Mat
 		clusterByClause = fmt.Sprintf("CLUSTER BY `%s`", strings.Join(mat.ClusterBy, "`, `"))
 	}
 
-	return fmt.Sprintf("CREATE OR REPLACE TABLE `%s` %s %s AS %s", task.Name, partitionClause, clusterByClause, query), nil
+	return fmt.Sprintf("CREATE OR REPLACE TABLE `%s` %s %s AS\n%s", task.Name, partitionClause, clusterByClause, query), nil
 }
