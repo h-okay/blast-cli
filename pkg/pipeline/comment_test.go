@@ -72,6 +72,13 @@ func Test_createTaskFromFile(t *testing.T) {
 					"conn2": "second-connection",
 				},
 				DependsOn: []string{"task1", "task2", "task3", "task4", "task5", "task3"},
+				Materialization: pipeline.Materialization{
+					Type:           pipeline.MaterializationTypeTable,
+					Strategy:       pipeline.MaterializationStrategyDeleteInsert,
+					PartitionBy:    "dt",
+					IncrementalKey: "dt",
+					ClusterBy:      []string{"event_name"},
+				},
 			},
 		},
 		{

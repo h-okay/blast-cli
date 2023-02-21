@@ -139,6 +139,35 @@ func commentRowsToTask(commentRows []string) *Task {
 				task.Schedule.Days = append(task.Schedule.Days, strings.TrimSpace(a))
 			}
 		}
+
+		if strings.HasPrefix(key, "materialization.") {
+			materializationKeys := strings.Split(key, ".")
+			if len(materializationKeys) != 2 {
+				continue
+			}
+
+			materializationConfigKey := strings.ToLower(materializationKeys[1])
+			switch materializationConfigKey {
+			case "type":
+				task.Materialization.Type = MaterializationType(strings.ToLower(value))
+				continue
+			case "strategy":
+				task.Materialization.Strategy = MaterializationStrategy(strings.ToLower(value))
+				continue
+			case "partition_by":
+				task.Materialization.PartitionBy = value
+				continue
+			case "incremental_key":
+				task.Materialization.IncrementalKey = value
+				continue
+			case "cluster_by":
+				values := strings.Split(value, ",")
+				for _, v := range values {
+					task.Materialization.ClusterBy = append(task.Materialization.ClusterBy, strings.TrimSpace(v))
+				}
+				continue
+			}
+		}
 	}
 
 	return &task

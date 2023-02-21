@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/datablast-analytics/blast-cli/pkg/path"
 	"github.com/pkg/errors"
@@ -30,15 +31,32 @@ func (a *depends) UnmarshalYAML(value *yaml.Node) error {
 	return err
 }
 
+type clusterBy []string
+
+func (a *clusterBy) UnmarshalYAML(value *yaml.Node) error {
+	multi, err := mustBeStringArray("cluster_by", value)
+	*a = multi
+	return err
+}
+
+type materialization struct {
+	Type           string    `yaml:"type"`
+	Strategy       string    `yaml:"strategy"`
+	PartitionBy    string    `yaml:"partition_by"`
+	ClusterBy      clusterBy `yaml:"cluster_by"`
+	IncrementalKey string    `yaml:"incremental_key"`
+}
+
 type taskDefinition struct {
-	Name        string            `yaml:"name"`
-	Description string            `yaml:"description"`
-	Type        string            `yaml:"type"`
-	RunFile     string            `yaml:"run"`
-	Depends     depends           `yaml:"depends"`
-	Parameters  map[string]string `yaml:"parameters"`
-	Connections map[string]string `yaml:"connections"`
-	Schedule    taskSchedule      `yaml:"schedule"`
+	Name            string            `yaml:"name"`
+	Description     string            `yaml:"description"`
+	Type            string            `yaml:"type"`
+	RunFile         string            `yaml:"run"`
+	Depends         depends           `yaml:"depends"`
+	Parameters      map[string]string `yaml:"parameters"`
+	Connections     map[string]string `yaml:"connections"`
+	Schedule        taskSchedule      `yaml:"schedule"`
+	Materialization materialization   `yaml:"materialization"`
 }
 
 func CreateTaskFromYamlDefinition(fs afero.Fs) TaskCreator {
@@ -72,15 +90,24 @@ func CreateTaskFromYamlDefinition(fs afero.Fs) TaskCreator {
 			executableFile.Content = string(content)
 		}
 
+		mat := Materialization{
+			Type:           MaterializationType(strings.ToLower(definition.Materialization.Type)),
+			Strategy:       MaterializationStrategy(strings.ToLower(definition.Materialization.Strategy)),
+			ClusterBy:      definition.Materialization.ClusterBy,
+			PartitionBy:    definition.Materialization.PartitionBy,
+			IncrementalKey: definition.Materialization.IncrementalKey,
+		}
+
 		task := Task{
-			Name:           definition.Name,
-			Description:    definition.Description,
-			Type:           definition.Type,
-			Parameters:     definition.Parameters,
-			Connections:    definition.Connections,
-			DependsOn:      definition.Depends,
-			ExecutableFile: executableFile,
-			Schedule:       TaskSchedule{Days: definition.Schedule.Days},
+			Name:            definition.Name,
+			Description:     definition.Description,
+			Type:            definition.Type,
+			Parameters:      definition.Parameters,
+			Connections:     definition.Connections,
+			DependsOn:       definition.Depends,
+			ExecutableFile:  executableFile,
+			Schedule:        TaskSchedule{Days: definition.Schedule.Days},
+			Materialization: mat,
 		}
 
 		return &task, nil

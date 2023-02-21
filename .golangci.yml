@@ -24,6 +24,7 @@ linters:
     - tagliatelle
     - ifshort
     - forbidigo
+    - musttag
   presets:
     - bugs
     - comment

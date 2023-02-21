@@ -7,10 +7,15 @@ import (
 )
 
 var DefaultJinjaRenderer = NewJinjaRenderer(JinjaContext{
-	"ds":        time.Now().Format("2006-01-02"),
-	"ds_nodash": time.Now().Format("20060102"),
+	"ds":                  time.Now().Format("2006-01-02"),
+	"ds_nodash":           time.Now().Format("20060102"),
+	"data_interval_start": time.Now().AddDate(0, 0, -1).Format(time.RFC3339),
+	"data_interval_end":   time.Now().Format(time.RFC3339),
 	"utils": map[string]interface{}{
 		"date_add": func(str string, days int) string {
+			return str
+		},
+		"date_format": func(str, inputFormat, outputFormat string) string {
 			return str
 		},
 	},

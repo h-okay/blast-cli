@@ -53,17 +53,43 @@ type SlackNotification struct {
 	Failure    string
 }
 
+type MaterializationType string
+
+const (
+	MaterializationTypeNone  MaterializationType = ""
+	MaterializationTypeView  MaterializationType = "view"
+	MaterializationTypeTable MaterializationType = "table"
+)
+
+type MaterializationStrategy string
+
+const (
+	MaterializationStrategyNone          MaterializationStrategy = ""
+	MaterializationStrategyCreateReplace MaterializationStrategy = "create+replace"
+	MaterializationStrategyDeleteInsert  MaterializationStrategy = "delete+insert"
+	MaterializationStrategyAppend        MaterializationStrategy = "append"
+)
+
+type Materialization struct {
+	Type           MaterializationType
+	Strategy       MaterializationStrategy
+	PartitionBy    string
+	ClusterBy      []string
+	IncrementalKey string
+}
+
 type Task struct {
-	Name           string
-	Description    string
-	Type           string
-	ExecutableFile ExecutableFile
-	DefinitionFile TaskDefinitionFile
-	Parameters     map[string]string
-	Connections    map[string]string
-	DependsOn      []string
-	Pipeline       *Pipeline
-	Schedule       TaskSchedule
+	Name            string
+	Description     string
+	Type            string
+	ExecutableFile  ExecutableFile
+	DefinitionFile  TaskDefinitionFile
+	Parameters      map[string]string
+	Connections     map[string]string
+	DependsOn       []string
+	Pipeline        *Pipeline
+	Schedule        TaskSchedule
+	Materialization Materialization
 }
 
 type Pipeline struct {

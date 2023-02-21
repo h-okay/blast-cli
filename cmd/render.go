@@ -2,7 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
+	"github.com/alecthomas/chroma/v2/quick"
+	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
+	"github.com/datablast-analytics/blast-cli/pkg/executor"
 	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"github.com/urfave/cli/v2"
 )
@@ -35,19 +40,44 @@ func Render() *cli.Command {
 				Renderer: query.DefaultJinjaRenderer,
 			}
 
-			queries, err := wholeFileExtractor.ExtractQueriesFromFile(taskPath)
+			queries, err := wholeFileExtractor.ExtractQueriesFromFile(task.ExecutableFile.Path)
 			if err != nil {
 				errorPrinter.Printf("Failed to extract queries from file: %v\n", err.Error())
 				return cli.Exit("", 1)
 			}
 
-			successPrinter.Println("\n\nRendered output")
-			successPrinter.Printf("================\n\n\n")
-
 			qq := queries[0]
+
+			if task.Type == executor.TaskTypeBigqueryQuery {
+				materializer := bigquery.Materializer{}
+				materialized, err := materializer.Render(task, qq.Query)
+				if err != nil {
+					errorPrinter.Printf("Failed to materialize the query: %v\n", err.Error())
+					return cli.Exit("", 1)
+				}
+
+				qq.Query = materialized
+				qq.Query = highlightCode(qq.Query, "sql")
+			}
+
 			fmt.Printf("%s\n", qq)
 
 			return nil
 		},
 	}
+}
+
+func highlightCode(code string, language string) string {
+	o, _ := os.Stdout.Stat()
+	if (o.Mode() & os.ModeCharDevice) != os.ModeCharDevice {
+		return code
+	}
+	b := new(strings.Builder)
+	err := quick.Highlight(b, code, language, "terminal16m", "monokai")
+	if err != nil {
+		errorPrinter.Printf("Failed to highlight the query: %v\n", err.Error())
+		return code
+	}
+
+	return b.String()
 }
