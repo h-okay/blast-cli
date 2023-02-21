@@ -8,7 +8,7 @@ OK_COLOR=\033[32;01m
 ERROR_COLOR=\033[31;01m
 WARN_COLOR=\033[33;01m
 
-.PHONY: all clean test build tools format pre-commit
+.PHONY: all clean test build tools format pre-commit tools-update
 all: clean deps test build
 
 deps: tools
@@ -56,3 +56,8 @@ tools:
 		echo ">> [$@]: golangci-lint not found: installing"; \
 		go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest; \
 	fi
+
+tools-update:
+	go install github.com/daixiang0/gci@latest; \
+	go install mvdan.cc/gofumpt@latest; \
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest;
