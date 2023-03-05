@@ -96,6 +96,17 @@ func (s *Scheduler) GetTaskInstancesByStatus(status TaskInstanceStatus) []*TaskI
 	return instances
 }
 
+func (s *Scheduler) WillRunTaskOfType(taskType string) bool {
+	instances := s.GetTaskInstancesByStatus(Pending)
+	for _, instance := range instances {
+		if instance.Task.Type == taskType {
+			return true
+		}
+	}
+
+	return false
+}
+
 func NewScheduler(logger *zap.SugaredLogger, p *pipeline.Pipeline) *Scheduler {
 	instances := make([]*TaskInstance, 0, len(p.Tasks))
 	for _, task := range p.Tasks {

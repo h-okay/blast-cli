@@ -28,7 +28,6 @@ func main() {
 		Commands: []*cli.Command{
 			cmd.Lint(&isDebug),
 			cmd.Run(&isDebug),
-			cmd.RunTask(),
 			cmd.Render(),
 		},
 	}

@@ -10,6 +10,7 @@ import (
 	"github.com/datablast-analytics/blast-cli/pkg/executor"
 	"github.com/datablast-analytics/blast-cli/pkg/path"
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/datablast-analytics/blast-cli/pkg/python"
 	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"github.com/datablast-analytics/blast-cli/pkg/scheduler"
 	"github.com/urfave/cli/v2"
@@ -24,6 +25,11 @@ func Run(isDebug *bool) *cli.Command {
 			&cli.BoolFlag{
 				Name:  "downstream",
 				Usage: "pass this flag if you'd like to run all the downstream tasks as well",
+			},
+			&cli.IntFlag{
+				Name:  "workers",
+				Usage: "number of workers to run the tasks in parallel",
+				Value: 8,
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -76,28 +82,7 @@ func Run(isDebug *bool) *cli.Command {
 				return cli.Exit("", 1)
 			}
 
-			wholeFileExtractor := &query.WholeFileExtractor{
-				Fs:       fs,
-				Renderer: query.DefaultJinjaRenderer,
-			}
-
-			executors := executor.DefaultExecutors
-
-			var bqOperator *bigquery.BasicOperator
-			if foundPipeline.HasTaskType("bq.sql") {
-				bqOperator, err = bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor, bigquery.Materializer{})
-				if err != nil {
-					errorPrinter.Printf(err.Error())
-					return cli.Exit("", 1)
-				}
-
-				executors[executor.TaskTypeBigqueryQuery] = bqOperator
-			}
-
 			s := scheduler.NewScheduler(logger, foundPipeline)
-			ex := executor.NewConcurrent(logger, executors, 8)
-
-			ex.Start(s.WorkQueue, s.Results)
 
 			infoPrinter.Printf("\nStarting the pipeline execution...\n\n")
 
@@ -106,6 +91,27 @@ func Run(isDebug *bool) *cli.Command {
 				s.MarkAll(scheduler.Succeeded)
 				s.MarkTask(task, scheduler.Pending, runDownstreamTasks)
 			}
+
+			executors := executor.DefaultExecutors
+			executors[executor.TaskTypePython] = python.NewLocalOperator()
+
+			if s.WillRunTaskOfType(executor.TaskTypeBigqueryQuery) {
+				wholeFileExtractor := &query.WholeFileExtractor{
+					Fs:       fs,
+					Renderer: query.DefaultJinjaRenderer,
+				}
+
+				bqOperator, err := bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor, bigquery.Materializer{})
+				if err != nil {
+					errorPrinter.Printf(err.Error())
+					return cli.Exit("", 1)
+				}
+
+				executors[executor.TaskTypeBigqueryQuery] = bqOperator
+			}
+
+			ex := executor.NewConcurrent(logger, executors, c.Int("workers"))
+			ex.Start(s.WorkQueue, s.Results)
 
 			start := time.Now()
 			results := s.Run(context.Background())
