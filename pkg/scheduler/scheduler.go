@@ -177,7 +177,7 @@ func (s *Scheduler) Run(ctx context.Context) []*TaskExecutionResult {
 }
 
 // Tick marks an iteration of the scheduler loop. It is called when a result is received.
-// Mainly, the results are fed from a channel, but Tick allows implementing additional methods of passing
+// The results are mainly fed from a channel, but Tick allows implementing additional methods of passing
 // Task results and simulating scheduler loops, e.g. time travel. It is also useful for testing purposes.
 func (s *Scheduler) Tick(result *TaskExecutionResult) bool {
 	s.taskScheduleLock.Lock()

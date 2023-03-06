@@ -25,6 +25,112 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 	type args struct {
 		pathToPipeline string
 	}
+	expectedPipeline := &pipeline.Pipeline{
+		Name:     "first-pipeline",
+		LegacyID: "first-pipeline",
+		Schedule: "",
+		DefinitionFile: pipeline.DefinitionFile{
+			Name: "pipeline.yml",
+			Path: absPath("testdata/pipeline/first-pipeline/pipeline.yml"),
+		},
+		DefaultParameters: map[string]string{
+			"param1": "value1",
+			"param2": "value2",
+		},
+		DefaultConnections: map[string]string{
+			"slack":           "slack-connection",
+			"gcpConnectionId": "gcp-connection-id-here",
+		},
+		Tasks: []*pipeline.Task{
+			{
+				Name:        "hello-world",
+				Description: "This is a hello world task",
+				Type:        "bash",
+				ExecutableFile: pipeline.ExecutableFile{
+					Name:    "hello.sh",
+					Path:    absPath("testdata/pipeline/first-pipeline/tasks/task1/hello.sh"),
+					Content: mustRead(t, "testdata/pipeline/first-pipeline/tasks/task1/hello.sh"),
+				},
+				DefinitionFile: pipeline.TaskDefinitionFile{
+					Name: "task.yml",
+					Path: absPath("testdata/pipeline/first-pipeline/tasks/task1/task.yml"),
+					Type: pipeline.YamlTask,
+				},
+				Parameters: map[string]string{
+					"param1": "value1",
+					"param2": "value2",
+				},
+				Connections: map[string]string{
+					"conn1": "first connection",
+					"conn2": "second connection",
+				},
+				DependsOn: []string{"gcs-to-bq"},
+			},
+			{
+				Name: "second-task",
+				Type: "bq.transfer",
+				Parameters: map[string]string{
+					"transfer_config_id": "some-uuid",
+					"project_id":         "a-new-project-id",
+					"location":           "europe-west1",
+				},
+				DefinitionFile: pipeline.TaskDefinitionFile{
+					Name: "task.yaml",
+					Path: absPath("testdata/pipeline/first-pipeline/tasks/task2/task.yaml"),
+					Type: pipeline.YamlTask,
+				},
+			},
+			{
+				Name:        "some-python-task",
+				Description: "some description goes here",
+				Type:        "python",
+				ExecutableFile: pipeline.ExecutableFile{
+					Name:    "test.py",
+					Path:    absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
+					Content: mustRead(t, "testdata/pipeline/first-pipeline/tasks/test.py"),
+				},
+				DefinitionFile: pipeline.TaskDefinitionFile{
+					Name: "test.py",
+					Path: absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
+					Type: pipeline.CommentTask,
+				},
+				Parameters: map[string]string{
+					"param1": "first-parameter",
+					"param2": "second-parameter",
+					"param3": "third-parameter",
+				},
+				Connections: map[string]string{
+					"conn1": "first-connection",
+					"conn2": "second-connection",
+				},
+				DependsOn: []string{"task1", "task2", "task3", "task4", "task5", "task3"},
+			},
+			{
+				Name:        "some-sql-task",
+				Description: "some description goes here",
+				Type:        "bq.sql",
+				ExecutableFile: pipeline.ExecutableFile{
+					Name:    "test.sql",
+					Path:    absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
+					Content: mustRead(t, "testdata/pipeline/first-pipeline/tasks/test.sql"),
+				},
+				DefinitionFile: pipeline.TaskDefinitionFile{
+					Name: "test.sql",
+					Path: absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
+					Type: pipeline.CommentTask,
+				},
+				Parameters: map[string]string{
+					"param1": "first-parameter",
+					"param2": "second-parameter",
+				},
+				Connections: map[string]string{
+					"conn1": "first-connection",
+					"conn2": "second-connection",
+				},
+				DependsOn: []string{"task1", "task2", "task3", "task4", "task5", "task3"},
+			},
+		},
+	}
 	tests := []struct {
 		name    string
 		fields  fields
@@ -62,112 +168,20 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			args: args{
 				pathToPipeline: "testdata/pipeline/first-pipeline",
 			},
-			want: &pipeline.Pipeline{
-				Name:     "first-pipeline",
-				LegacyID: "first-pipeline",
-				Schedule: "",
-				DefinitionFile: pipeline.DefinitionFile{
-					Name: "pipeline.yml",
-					Path: absPath("testdata/pipeline/first-pipeline/pipeline.yml"),
-				},
-				DefaultParameters: map[string]string{
-					"param1": "value1",
-					"param2": "value2",
-				},
-				DefaultConnections: map[string]string{
-					"slack":           "slack-connection",
-					"gcpConnectionId": "gcp-connection-id-here",
-				},
-				Tasks: []*pipeline.Task{
-					{
-						Name:        "hello-world",
-						Description: "This is a hello world task",
-						Type:        "bash",
-						ExecutableFile: pipeline.ExecutableFile{
-							Name:    "hello.sh",
-							Path:    absPath("testdata/pipeline/first-pipeline/tasks/task1/hello.sh"),
-							Content: mustRead(t, "testdata/pipeline/first-pipeline/tasks/task1/hello.sh"),
-						},
-						DefinitionFile: pipeline.TaskDefinitionFile{
-							Name: "task.yml",
-							Path: absPath("testdata/pipeline/first-pipeline/tasks/task1/task.yml"),
-							Type: pipeline.YamlTask,
-						},
-						Parameters: map[string]string{
-							"param1": "value1",
-							"param2": "value2",
-						},
-						Connections: map[string]string{
-							"conn1": "first connection",
-							"conn2": "second connection",
-						},
-						DependsOn: []string{"gcs-to-bq"},
-					},
-					{
-						Name: "second-task",
-						Type: "bq.transfer",
-						Parameters: map[string]string{
-							"transfer_config_id": "some-uuid",
-							"project_id":         "a-new-project-id",
-							"location":           "europe-west1",
-						},
-						DefinitionFile: pipeline.TaskDefinitionFile{
-							Name: "task.yaml",
-							Path: absPath("testdata/pipeline/first-pipeline/tasks/task2/task.yaml"),
-							Type: pipeline.YamlTask,
-						},
-					},
-					{
-						Name:        "some-python-task",
-						Description: "some description goes here",
-						Type:        "python",
-						ExecutableFile: pipeline.ExecutableFile{
-							Name:    "test.py",
-							Path:    absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
-							Content: mustRead(t, "testdata/pipeline/first-pipeline/tasks/test.py"),
-						},
-						DefinitionFile: pipeline.TaskDefinitionFile{
-							Name: "test.py",
-							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
-							Type: pipeline.CommentTask,
-						},
-						Parameters: map[string]string{
-							"param1": "first-parameter",
-							"param2": "second-parameter",
-							"param3": "third-parameter",
-						},
-						Connections: map[string]string{
-							"conn1": "first-connection",
-							"conn2": "second-connection",
-						},
-						DependsOn: []string{"task1", "task2", "task3", "task4", "task5", "task3"},
-					},
-					{
-						Name:        "some-sql-task",
-						Description: "some description goes here",
-						Type:        "bq.sql",
-						ExecutableFile: pipeline.ExecutableFile{
-							Name:    "test.sql",
-							Path:    absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
-							Content: mustRead(t, "testdata/pipeline/first-pipeline/tasks/test.sql"),
-						},
-						DefinitionFile: pipeline.TaskDefinitionFile{
-							Name: "test.sql",
-							Path: absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
-							Type: pipeline.CommentTask,
-						},
-						Parameters: map[string]string{
-							"param1": "first-parameter",
-							"param2": "second-parameter",
-						},
-						Connections: map[string]string{
-							"conn1": "first-connection",
-							"conn2": "second-connection",
-						},
-						DependsOn: []string{"task1", "task2", "task3", "task4", "task5", "task3"},
-					},
-				},
+			want:    expectedPipeline,
+			wantErr: false,
+		},
+		{
+			name: "should create pipeline from path even if pipeline.yml is given as a path",
+			fields: fields{
+				tasksDirectoryName: "tasks",
+				commentTaskCreator: pipeline.CreateTaskFromFileComments(afero.NewOsFs()),
+				yamlTaskCreator:    pipeline.CreateTaskFromYamlDefinition(afero.NewOsFs()),
 			},
+			args: args{
+				pathToPipeline: "testdata/pipeline/first-pipeline/pipeline.yml",
+			},
+			want:    expectedPipeline,
 			wantErr: false,
 		},
 	}

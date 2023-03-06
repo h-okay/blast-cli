@@ -10,6 +10,7 @@ import (
 	"github.com/datablast-analytics/blast-cli/pkg/executor"
 	"github.com/datablast-analytics/blast-cli/pkg/git"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 )
 
 type localCmdRunner struct {
@@ -39,20 +40,36 @@ func (l *localCmdRunner) Run(ctx context.Context, repo *git.Repo, module string)
 		return errors.Wrap(err, "failed to get stdout")
 	}
 
-	go consumePipe(stdout, output)
-	go consumePipe(stderr, output)
+	wg := new(errgroup.Group)
+	wg.Go(func() error { return consumePipe(stdout, output) })
+	wg.Go(func() error { return consumePipe(stderr, output) })
 
 	err = cmd.Start()
 	if err != nil {
 		return errors.Wrap(err, "failed to start command")
 	}
 
-	return cmd.Wait()
+	res := cmd.Wait()
+	if res != nil {
+		return res
+	}
+
+	err = wg.Wait()
+	if err != nil {
+		return errors.Wrap(err, "failed to consume pipe")
+	}
+
+	return nil
 }
 
-func consumePipe(pipe io.Reader, output io.Writer) {
+func consumePipe(pipe io.Reader, output io.Writer) error {
 	scanner := bufio.NewScanner(pipe)
 	for scanner.Scan() {
-		output.Write(append(scanner.Bytes(), '\n'))
+		_, err := output.Write(append(scanner.Bytes(), '\n'))
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }

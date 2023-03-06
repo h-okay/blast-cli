@@ -1,6 +1,6 @@
 # @blast.name: python-test
 # @blast.type: python
-from random import randrange
+
 import time
 
 import requests
