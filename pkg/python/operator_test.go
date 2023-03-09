@@ -28,12 +28,17 @@ func (m *mockModuleFinder) FindModulePath(repo *git.Repo, executable *pipeline.E
 	return args.Get(0).(string), args.Error(1)
 }
 
+func (m *mockModuleFinder) FindRequirementsTxt(repo *git.Repo, executable *pipeline.ExecutableFile) (string, error) {
+	args := m.Called(repo, executable)
+	return args.Get(0).(string), args.Error(1)
+}
+
 type mockRunner struct {
 	mock.Mock
 }
 
-func (m *mockRunner) Run(ctx context.Context, repo *git.Repo, module string) error {
-	args := m.Called(ctx, repo, module)
+func (m *mockRunner) Run(ctx context.Context, repo *git.Repo, module, requirementsTxt string) error {
+	args := m.Called(ctx, repo, module, requirementsTxt)
 	return args.Error(0)
 }
 
@@ -66,7 +71,7 @@ func TestLocalOperator_RunTask(t *testing.T) {
 			wantErr: assert.Error,
 		},
 		{
-			name: "should call runner if the module is found as well",
+			name: "should fail if requirement finding fails",
 			setup: func(rf *mockRepoFinder, mf *mockModuleFinder, runner *mockRunner) {
 				repo := &git.Repo{Path: "/path/to/repo"}
 				rf.On("Repo", "/path/to/file.py").
@@ -75,13 +80,31 @@ func TestLocalOperator_RunTask(t *testing.T) {
 				mf.On("FindModulePath", repo, mock.Anything).
 					Return("path.to.module", nil)
 
-				runner.On("Run", mock.Anything, repo, "path.to.module").
+				mf.On("FindRequirementsTxt", repo, mock.Anything).
+					Return("", assert.AnError)
+			},
+			wantErr: assert.Error,
+		},
+		{
+			name: "should call runner if there is no requirements.txt file",
+			setup: func(rf *mockRepoFinder, mf *mockModuleFinder, runner *mockRunner) {
+				repo := &git.Repo{Path: "/path/to/repo"}
+				rf.On("Repo", "/path/to/file.py").
+					Return(repo, nil)
+
+				mf.On("FindModulePath", repo, mock.Anything).
+					Return("path.to.module", nil)
+
+				mf.On("FindRequirementsTxt", repo, mock.Anything).
+					Return("", &NoRequirementsFoundError{})
+
+				runner.On("Run", mock.Anything, repo, "path.to.module", "").
 					Return(assert.AnError)
 			},
 			wantErr: assert.Error,
 		},
 		{
-			name: "should call runner if the module is found as well",
+			name: "should call runner with the found requirements.txt file",
 			setup: func(rf *mockRepoFinder, mf *mockModuleFinder, runner *mockRunner) {
 				repo := &git.Repo{Path: "/path/to/repo"}
 				rf.On("Repo", "/path/to/file.py").
@@ -90,10 +113,13 @@ func TestLocalOperator_RunTask(t *testing.T) {
 				mf.On("FindModulePath", repo, mock.Anything).
 					Return("path.to.module", nil)
 
-				runner.On("Run", mock.Anything, repo, "path.to.module").
-					Return(nil)
+				mf.On("FindRequirementsTxt", repo, mock.Anything).
+					Return("/path/to/requirements.txt", nil)
+
+				runner.On("Run", mock.Anything, repo, "path.to.module", "/path/to/requirements.txt").
+					Return(assert.AnError)
 			},
-			wantErr: assert.NoError,
+			wantErr: assert.Error,
 		},
 	}
 	for _, tt := range tests {

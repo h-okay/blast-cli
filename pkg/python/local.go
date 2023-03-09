@@ -3,26 +3,128 @@ package python
 import (
 	"bufio"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"sync"
 
 	"github.com/datablast-analytics/blast-cli/pkg/executor"
 	"github.com/datablast-analytics/blast-cli/pkg/git"
+	"github.com/datablast-analytics/blast-cli/pkg/path"
+	"github.com/datablast-analytics/blast-cli/pkg/user"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 	"golang.org/x/sync/errgroup"
 )
 
-type localCmdRunner struct {
-	PythonExecutable string
+type cmd interface {
+	Run(ctx context.Context, repo *git.Repo, command *command) error
 }
 
-func (l *localCmdRunner) Run(ctx context.Context, repo *git.Repo, module string) error {
-	// TODO: support changing the python executable path //nolint:godox
-	// TODO: support secrets / env variables //nolint:godox
-	// TODO: support dependencies //nolint:godox
+type installReqsToHomeDir struct {
+	fs     afero.Fs
+	config *user.ConfigManager
+	cmd    cmd
 
-	cmd := exec.Command(l.PythonExecutable, "-u", "-m", module) //nolint:gosec
+	lock sync.Mutex
+}
+
+func (i *installReqsToHomeDir) EnsureVirtualEnvExists(ctx context.Context, repo *git.Repo, requirementsTxt string) (string, error) {
+	relPath, err := filepath.Rel(repo.Path, requirementsTxt)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get relative path to the repo for requirements.txt")
+	}
+
+	err = i.config.EnsureVirtualenvDirExists()
+	if err != nil {
+		return "", err
+	}
+
+	sum := sha256.Sum256([]byte(relPath))
+	venvPath := i.config.MakeVirtualenvPath(hex.EncodeToString(sum[:]))
+
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
+	reqsPathExists := path.DirExists(i.fs, venvPath)
+	if reqsPathExists {
+		return venvPath, nil
+	}
+
+	err = i.cmd.Run(ctx, repo, &command{
+		Name: "python3",
+		Args: []string{"-m", "venv", venvPath},
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return venvPath, nil
+}
+
+type requirementsInstaller interface {
+	EnsureVirtualEnvExists(ctx context.Context, repo *git.Repo, requirementsTxt string) (string, error)
+}
+
+type localPythonRunner struct {
+	cmd cmd
+
+	requirementsInstaller requirementsInstaller
+	fs                    afero.Fs
+}
+
+func (l *localPythonRunner) Run(ctx context.Context, repo *git.Repo, module, requirementsTxt string) error {
+	var output io.Writer = os.Stdout
+	if ctx.Value(executor.KeyPrinter) != nil {
+		output = ctx.Value(executor.KeyPrinter).(io.Writer)
+	}
+
+	if requirementsTxt == "" {
+		return l.cmd.Run(ctx, repo, &command{
+			Name: "python3",
+			Args: []string{"-u", "-m", module},
+		})
+	}
+
+	_, err := output.Write([]byte("asset has dependencies, installing the packages to an isolated environment...\n"))
+	if err != nil {
+		return err
+	}
+
+	depsPath, err := l.requirementsInstaller.EnsureVirtualEnvExists(ctx, repo, requirementsTxt)
+	if err != nil {
+		return err
+	}
+
+	_, err = output.Write([]byte("asset dependencies are successfully installed, starting execution...\n"))
+	if err != nil {
+		return err
+	}
+
+	fullCommand := fmt.Sprintf("source %s/bin/activate && echo 'activated virtualenv' && pip3 install -r %s --quiet --quiet && echo 'installed all the dependencies' && python3 -u -m %s", depsPath, requirementsTxt, module)
+
+	return l.cmd.Run(ctx, repo, &command{
+		Name: "/bin/sh",
+		Args: []string{"-c", fullCommand},
+	})
+}
+
+type commandRunner struct{}
+
+type command struct {
+	Name string
+	Args []string
+}
+
+func (l *commandRunner) Run(ctx context.Context, repo *git.Repo, command *command) error {
+	// TODO: support secrets / env variables //nolint:godox
+
+	cmd := exec.Command(command.Name, command.Args...) //nolint:gosec
 	cmd.Dir = repo.Path
 
 	var output io.Writer = os.Stdout
@@ -65,7 +167,13 @@ func (l *localCmdRunner) Run(ctx context.Context, repo *git.Repo, module string)
 func consumePipe(pipe io.Reader, output io.Writer) error {
 	scanner := bufio.NewScanner(pipe)
 	for scanner.Scan() {
-		_, err := output.Write(append(scanner.Bytes(), '\n'))
+		// the size of the slice here is important, the added 4 at the end includes the 3 bytes for the prefix and the 1 byte for the newline
+		msg := make([]byte, len(scanner.Bytes())+4)
+		copy(msg, ">> ")
+		copy(msg[3:], scanner.Bytes())
+		msg[len(msg)-1] = '\n'
+
+		_, err := output.Write(msg)
 		if err != nil {
 			return err
 		}

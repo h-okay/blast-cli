@@ -1,5 +1,6 @@
-# @blast.name: asset2
+# @blast.name: asset3
 # @blast.type: python
+# @blast.depends: asset1
 
 import requests
 print("imported requests library")

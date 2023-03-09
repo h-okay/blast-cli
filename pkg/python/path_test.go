@@ -1,6 +1,7 @@
 package python
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/datablast-analytics/blast-cli/pkg/git"
@@ -71,14 +72,97 @@ func TestFindModulePath(t *testing.T) {
 				assert.NoError(t, err)
 			}
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("FindModulePath() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("FindModulePath() got = %v, want %v", got, tt.want)
-			}
+func TestFindRequirementsTxt(t *testing.T) {
+	t.Parallel()
+
+	abs := func(path string) string {
+		absPath, err := filepath.Abs(path)
+		assert.NoError(t, err)
+		return absPath
+	}
+
+	repoPath := abs("./testdata/reqfinder")
+
+	type args struct {
+		repo       *git.Repo
+		executable *pipeline.ExecutableFile
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "the reqs file is next to the script",
+			args: args{
+				repo: &git.Repo{
+					Path: repoPath,
+				},
+				executable: &pipeline.ExecutableFile{
+					Path: abs("./testdata/reqfinder/dir1/dir2/dir3/main.py"),
+				},
+			},
+			want:    abs("./testdata/reqfinder/dir1/dir2/dir3/requirements.txt"),
+			wantErr: assert.NoError,
+		},
+		{
+			name: "the reqs file is in the parent folder",
+			args: args{
+				repo: &git.Repo{
+					Path: repoPath,
+				},
+				executable: &pipeline.ExecutableFile{
+					Path: abs("./testdata/reqfinder/dir1/dir2/task2.py"),
+				},
+			},
+			want:    abs("./testdata/reqfinder/dir1/requirements.txt"),
+			wantErr: assert.NoError,
+		},
+		{
+			name: "deeper nested files go up the tree as well",
+			args: args{
+				repo: &git.Repo{
+					Path: repoPath,
+				},
+				executable: &pipeline.ExecutableFile{
+					Path: abs("./testdata/reqfinder/dir1/dir22/dir11/dir11/main.py"),
+				},
+			},
+			want:    abs("./testdata/reqfinder/dir1/requirements.txt"),
+			wantErr: assert.NoError,
+		},
+		{
+			name: "no requirements.txt file found",
+			args: args{
+				repo: &git.Repo{
+					Path: repoPath,
+				},
+				executable: &pipeline.ExecutableFile{
+					Path: abs("./testdata/reqfinder/main.py"),
+				},
+			},
+			want: "",
+			wantErr: func(t assert.TestingT, err error, msgAndArgs ...interface{}) bool {
+				_, ok := err.(*NoRequirementsFoundError) //nolint:errorlint
+				return ok
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			finder := &ModulePathFinder{}
+			got, err := finder.FindRequirementsTxt(tt.args.repo, tt.args.executable)
+
+			tt.wantErr(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
