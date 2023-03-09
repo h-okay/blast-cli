@@ -116,7 +116,7 @@ type workerWriter struct {
 }
 
 func (w *workerWriter) Write(p []byte) (int, error) {
-	formatted := w.sprintfFunc("[%s] [%s] [%s] >> %s", time.Now().Format(time.RFC3339), w.worker, w.task.Name, string(p))
+	formatted := w.sprintfFunc("[%s] [%s] [%s] %s", time.Now().Format(time.RFC3339), w.worker, w.task.Name, string(p))
 
 	n, err := w.w.Write([]byte(formatted))
 	if err != nil {
