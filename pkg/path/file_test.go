@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -193,5 +194,42 @@ func BenchmarkExcludeItemsInDirectoryContainingFile(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		ExcludeSubItemsInDirectoryContainingFile(filePaths, file)
+	}
+}
+
+func TestDirExists(t *testing.T) {
+	t.Parallel()
+
+	fs := afero.NewMemMapFs()
+	err := fs.MkdirAll("/path1/path2/path3", 0o644)
+	assert.NoError(t, err, "failed to create the in-memory directory")
+
+	err = fs.MkdirAll("/path1/path2/venv", 0o644)
+	require.NoError(t, err, "failed to create the in-memory directory")
+
+	tests := []struct {
+		name      string
+		searchDir string
+		want      bool
+	}{
+		{
+			name:      "directory doesn't exists",
+			searchDir: "/path1/path2/path3/venv",
+			want:      false,
+		},
+		{
+			name:      "directory exists",
+			searchDir: "/path1/path2/venv",
+			want:      true,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := DirExists(fs, tt.searchDir)
+			assert.Equal(t, tt.want, got)
+		})
 	}
 }
