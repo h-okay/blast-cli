@@ -3,25 +3,34 @@ package executor
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
 	"sync"
 	"time"
 
+	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
 	"github.com/datablast-analytics/blast-cli/pkg/scheduler"
 	"github.com/fatih/color"
 	"go.uber.org/zap"
 )
 
 var (
-	randomColors = []color.Attribute{
+	colors = []color.Attribute{
 		color.FgBlue,
 		color.FgMagenta,
 		color.FgCyan,
 		color.FgWhite,
-		color.FgHiBlue,
 		color.FgHiMagenta,
+		color.FgHiBlue,
 		color.FgHiCyan,
 	}
 	faint = color.New(color.Faint).SprintFunc()
+)
+
+type contextKey int
+
+const (
+	KeyPrinter contextKey = iota
 )
 
 type Concurrent struct {
@@ -46,7 +55,7 @@ func NewConcurrent(
 			id:        fmt.Sprintf("worker-%d", i),
 			executor:  executor,
 			logger:    logger,
-			printer:   color.New(randomColors[i%len(randomColors)]),
+			printer:   color.New(colors[i%len(colors)]),
 			printLock: &printLock,
 		}
 	}
@@ -73,14 +82,23 @@ type worker struct {
 
 func (w worker) run(taskChannel <-chan *scheduler.TaskInstance, results chan<- *scheduler.TaskExecutionResult) {
 	for task := range taskChannel {
-		w.printer.Printf("[%s] Running: %s\n", w.id, task.Task.Name)
+		w.printer.Printf("[%s] [%s] Running: %s\n", time.Now().Format(time.RFC3339), w.id, task.Task.Name)
 		start := time.Now()
-		err := w.executor.RunSingleTask(context.Background(), task.Pipeline, task.Task)
+
+		printer := &workerWriter{
+			w:           os.Stdout,
+			task:        task.Task,
+			sprintfFunc: w.printer.SprintfFunc(),
+			worker:      w.id,
+		}
+
+		ctx := context.WithValue(context.Background(), KeyPrinter, printer)
+		err := w.executor.RunSingleTask(ctx, task.Pipeline, task.Task)
 
 		duration := time.Since(start)
 		durationString := fmt.Sprintf("(%s)", duration.Truncate(time.Millisecond).String())
 		w.printLock.Lock()
-		w.printer.Printf("[%s] Completed: %s %s\n", w.id, task.Task.Name, faint(durationString))
+		w.printer.Printf("[%s] [%s] Completed: %s %s\n", time.Now().Format(time.RFC3339), w.id, task.Task.Name, faint(durationString))
 		w.printLock.Unlock()
 
 		results <- &scheduler.TaskExecutionResult{
@@ -88,4 +106,24 @@ func (w worker) run(taskChannel <-chan *scheduler.TaskInstance, results chan<- *
 			Error:    err,
 		}
 	}
+}
+
+type workerWriter struct {
+	w           io.Writer
+	task        *pipeline.Task
+	sprintfFunc func(format string, a ...interface{}) string
+	worker      string
+}
+
+func (w *workerWriter) Write(p []byte) (int, error) {
+	formatted := w.sprintfFunc("[%s] [%s] [%s] %s", time.Now().Format(time.RFC3339), w.worker, w.task.Name, string(p))
+
+	n, err := w.w.Write([]byte(formatted))
+	if err != nil {
+		return n, err
+	}
+	if n != len(formatted) {
+		return n, io.ErrShortWrite
+	}
+	return len(p), nil
 }

@@ -96,6 +96,17 @@ func (s *Scheduler) GetTaskInstancesByStatus(status TaskInstanceStatus) []*TaskI
 	return instances
 }
 
+func (s *Scheduler) WillRunTaskOfType(taskType string) bool {
+	instances := s.GetTaskInstancesByStatus(Pending)
+	for _, instance := range instances {
+		if instance.Task.Type == taskType {
+			return true
+		}
+	}
+
+	return false
+}
+
 func NewScheduler(logger *zap.SugaredLogger, p *pipeline.Pipeline) *Scheduler {
 	instances := make([]*TaskInstance, 0, len(p.Tasks))
 	for _, task := range p.Tasks {
@@ -166,7 +177,7 @@ func (s *Scheduler) Run(ctx context.Context) []*TaskExecutionResult {
 }
 
 // Tick marks an iteration of the scheduler loop. It is called when a result is received.
-// Mainly, the results are fed from a channel, but Tick allows implementing additional methods of passing
+// The results are mainly fed from a channel, but Tick allows implementing additional methods of passing
 // Task results and simulating scheduler loops, e.g. time travel. It is also useful for testing purposes.
 func (s *Scheduler) Tick(result *TaskExecutionResult) bool {
 	s.taskScheduleLock.Lock()

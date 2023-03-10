@@ -4,6 +4,7 @@ const (
 	TaskTypePython         = "python"
 	TaskTypeSnowflakeQuery = "sf.sql"
 	TaskTypeBigqueryQuery  = "bq.sql"
+	TaskTypeEmpty          = "empty"
 )
 
 // DefaultExecutors are set to NoOp executors by default. It serves both as a safe default and a list of supported task types.
@@ -12,13 +13,12 @@ var DefaultExecutors = map[string]Operator{
 	"bq.sensor.table":                      NoOpOperator{},
 	"bq.sensor.query":                      NoOpOperator{},
 	"bq.cost_tracker":                      NoOpOperator{},
-	"bash":                                 NoOpOperator{},
 	"bq.transfer":                          NoOpOperator{},
 	"bq.sensor.partition":                  NoOpOperator{},
 	"gcs.from.s3":                          NoOpOperator{},
 	"gcs.sensor.object_sensor_with_prefix": NoOpOperator{},
 	"gcs.sensor.object":                    NoOpOperator{},
-	"empty":                                NoOpOperator{},
+	TaskTypeEmpty:                          NoOpOperator{},
 	"athena.sql":                           NoOpOperator{},
 	"athena.sensor.query":                  NoOpOperator{},
 	TaskTypePython:                         NoOpOperator{},

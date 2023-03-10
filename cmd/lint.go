@@ -38,51 +38,56 @@ func Lint(isDebug *bool) *cli.Command {
 			}
 
 			result, err := linter.Lint(rootPath, pipelineDefinitionFile)
+
+			printer := lint.Printer{RootCheckPath: rootPath}
+			err = reportLintErrors(result, err, printer)
 			if err != nil {
-				errorPrinter.Println("\nAn error occurred while linting the pipelines:")
-
-				errorList := unwrapAllErrors(err)
-				for i, e := range errorList {
-					errorPrinter.Printf("%s└── %s\n", strings.Repeat("  ", i), e)
-				}
-
-				// errorPrinter.Printf(fmt.Errorf("An error occurred while linting the pipelines: %w\n", err).Error())
 				return cli.Exit("", 1)
 			}
-
-			printer := lint.Printer{
-				RootCheckPath: rootPath,
-			}
-			printer.PrintIssues(result)
-
-			// prepare the final message
-			errorCount := result.ErrorCount()
-			pipelineCount := len(result.Pipelines)
-			pipelineStr := "pipeline"
-			if pipelineCount > 1 {
-				pipelineStr += "s"
-			}
-
-			if errorCount > 0 {
-				issueStr := "issue"
-				if errorCount > 1 {
-					issueStr += "s"
-				}
-
-				errorPrinter.Printf("\n✘ Checked %d %s and found %d %s, please check above.\n", pipelineCount, pipelineStr, errorCount, issueStr)
-				return cli.Exit("", 1)
-			} else {
-				taskCount := 0
-				for _, p := range result.Pipelines {
-					taskCount += len(p.Pipeline.Tasks)
-				}
-
-				successPrinter.Printf("\n✓ Successfully validated %d tasks across %d %s, all good.\n", taskCount, pipelineCount, pipelineStr)
-			}
-
 			return nil
 		},
 	}
+}
+
+func reportLintErrors(result *lint.PipelineAnalysisResult, err error, printer lint.Printer) error {
+	if err != nil {
+		errorPrinter.Println("\nAn error occurred while linting the pipelines:")
+
+		errorList := unwrapAllErrors(err)
+		for i, e := range errorList {
+			errorPrinter.Printf("%s└── %s\n", strings.Repeat("  ", i), e)
+		}
+
+		return err
+	}
+
+	printer.PrintIssues(result)
+
+	// prepare the final message
+	errorCount := result.ErrorCount()
+	pipelineCount := len(result.Pipelines)
+	pipelineStr := "pipeline"
+	if pipelineCount > 1 {
+		pipelineStr += "s"
+	}
+
+	if errorCount > 0 {
+		issueStr := "issue"
+		if errorCount > 1 {
+			issueStr += "s"
+		}
+
+		errorPrinter.Printf("\n✘ Checked %d %s and found %d %s, please check above.\n", pipelineCount, pipelineStr, errorCount, issueStr)
+		return errors.New("validation failed")
+	}
+
+	taskCount := 0
+	for _, p := range result.Pipelines {
+		taskCount += len(p.Pipeline.Tasks)
+	}
+
+	successPrinter.Printf("\n✓ Successfully validated %d tasks across %d %s, all good.\n", taskCount, pipelineCount, pipelineStr)
+	return nil
 }
 
 func unwrapAllErrors(err error) []string {

@@ -96,7 +96,7 @@ func (l *Linter) Lint(rootPath, pipelineDefinitionFileName string) (*PipelineAna
 
 	l.logger.Debugf("constructed %d pipelines", len(pipelines))
 
-	return l.lint(pipelines)
+	return l.LintPipelines(pipelines)
 }
 
 type PipelineAnalysisResult struct {
@@ -120,32 +120,40 @@ type PipelineIssues struct {
 	Issues   map[Rule][]*Issue
 }
 
-func (l *Linter) lint(pipelines []*pipeline.Pipeline) (*PipelineAnalysisResult, error) {
+func (l *Linter) LintPipelines(pipelines []*pipeline.Pipeline) (*PipelineAnalysisResult, error) {
 	result := &PipelineAnalysisResult{}
 
 	for _, p := range pipelines {
-		pipelineResult := &PipelineIssues{
-			Pipeline: p,
-			Issues:   make(map[Rule][]*Issue),
+		pipelineResult, err := l.lintPipeline(p)
+		if err != nil {
+			return nil, err
 		}
-
-		for _, rule := range l.rules {
-			l.logger.Debugf("checking rule '%s' for pipeline '%s'", rule.Name(), p.Name)
-
-			issues, err := rule.Validate(p)
-			if err != nil {
-				return nil, err
-			}
-
-			if len(issues) > 0 {
-				pipelineResult.Issues[rule] = issues
-			}
-		}
-
 		result.Pipelines = append(result.Pipelines, pipelineResult)
 	}
 
 	return result, nil
+}
+
+func (l *Linter) lintPipeline(p *pipeline.Pipeline) (*PipelineIssues, error) {
+	pipelineResult := &PipelineIssues{
+		Pipeline: p,
+		Issues:   make(map[Rule][]*Issue),
+	}
+
+	for _, rule := range l.rules {
+		l.logger.Debugf("checking rule '%s' for pipeline '%s'", rule.Name(), p.Name)
+
+		issues, err := rule.Validate(p)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(issues) > 0 {
+			pipelineResult.Issues[rule] = issues
+		}
+	}
+
+	return pipelineResult, nil
 }
 
 func ensureNoNestedPipelines(pipelinePaths []string) error {

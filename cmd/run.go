@@ -8,8 +8,10 @@ import (
 
 	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
 	"github.com/datablast-analytics/blast-cli/pkg/executor"
+	"github.com/datablast-analytics/blast-cli/pkg/lint"
 	"github.com/datablast-analytics/blast-cli/pkg/path"
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/datablast-analytics/blast-cli/pkg/python"
 	"github.com/datablast-analytics/blast-cli/pkg/query"
 	"github.com/datablast-analytics/blast-cli/pkg/scheduler"
 	"github.com/urfave/cli/v2"
@@ -24,6 +26,11 @@ func Run(isDebug *bool) *cli.Command {
 			&cli.BoolFlag{
 				Name:  "downstream",
 				Usage: "pass this flag if you'd like to run all the downstream tasks as well",
+			},
+			&cli.IntFlag{
+				Name:  "workers",
+				Usage: "number of workers to run the tasks in parallel",
+				Value: 8,
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -72,32 +79,28 @@ func Run(isDebug *bool) *cli.Command {
 
 			foundPipeline, err := builder.CreatePipelineFromPath(pipelinePath)
 			if err != nil {
-				errorPrinter.Printf("Failed to build pipeline: %v\n", err.Error())
+				errorPrinter.Println("failed to build pipeline, are you sure you have referred the right path?")
+				errorPrinter.Println("\nHint: You need to run this command with a path to either the pipeline directory or the asset file itself directly.")
+
 				return cli.Exit("", 1)
 			}
 
-			wholeFileExtractor := &query.WholeFileExtractor{
-				Fs:       fs,
-				Renderer: query.DefaultJinjaRenderer,
-			}
-
-			executors := executor.DefaultExecutors
-
-			var bqOperator *bigquery.BasicOperator
-			if foundPipeline.HasTaskType("bq.sql") {
-				bqOperator, err = bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor, bigquery.Materializer{})
+			if !runningForATask {
+				rules, err := lint.GetRules(logger, fs)
 				if err != nil {
-					errorPrinter.Printf(err.Error())
+					errorPrinter.Printf("An error occurred while linting the pipelines: %v\n", err)
 					return cli.Exit("", 1)
 				}
 
-				executors[executor.TaskTypeBigqueryQuery] = bqOperator
+				linter := lint.NewLinter(path.GetPipelinePaths, builder, rules, logger)
+				res, err := linter.LintPipelines([]*pipeline.Pipeline{foundPipeline})
+				err = reportLintErrors(res, err, lint.Printer{RootCheckPath: pipelinePath})
+				if err != nil {
+					return cli.Exit("", 1)
+				}
 			}
 
 			s := scheduler.NewScheduler(logger, foundPipeline)
-			ex := executor.NewConcurrent(logger, executors, 8)
-
-			ex.Start(s.WorkQueue, s.Results)
 
 			infoPrinter.Printf("\nStarting the pipeline execution...\n\n")
 
@@ -106,6 +109,29 @@ func Run(isDebug *bool) *cli.Command {
 				s.MarkAll(scheduler.Succeeded)
 				s.MarkTask(task, scheduler.Pending, runDownstreamTasks)
 			}
+
+			executors := executor.DefaultExecutors
+			if s.WillRunTaskOfType(executor.TaskTypePython) {
+				executors[executor.TaskTypePython] = python.NewLocalOperator(map[string]string{})
+			}
+
+			if s.WillRunTaskOfType(executor.TaskTypeBigqueryQuery) {
+				wholeFileExtractor := &query.WholeFileExtractor{
+					Fs:       fs,
+					Renderer: query.DefaultJinjaRenderer,
+				}
+
+				bqOperator, err := bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor, bigquery.Materializer{})
+				if err != nil {
+					errorPrinter.Printf(err.Error())
+					return cli.Exit("", 1)
+				}
+
+				executors[executor.TaskTypeBigqueryQuery] = bqOperator
+			}
+
+			ex := executor.NewConcurrent(logger, executors, c.Int("workers"))
+			ex.Start(s.WorkQueue, s.Results)
 
 			start := time.Now()
 			results := s.Run(context.Background())
@@ -159,69 +185,4 @@ func isDir(path string) bool {
 	}
 
 	return fileInfo.IsDir()
-}
-
-func RunTask() *cli.Command {
-	return &cli.Command{
-		Name:      "run-task",
-		Usage:     "run a single Blast task",
-		ArgsUsage: "[path to the task file]",
-		Action: func(c *cli.Context) error {
-			taskPath := c.Args().Get(0)
-			if taskPath == "" {
-				errorPrinter.Printf("Please give a task path: blast-cli run-task <path to the task definition>)\n")
-				return cli.Exit("", 1)
-			}
-
-			task, err := builder.CreateTaskFromFile(taskPath)
-			if err != nil {
-				errorPrinter.Printf("Failed to build task: %v\n", err.Error())
-				return cli.Exit("", 1)
-			}
-
-			if task == nil {
-				errorPrinter.Printf("The given file path doesn't seem to be a Blast task definition: '%s'\n", taskPath)
-				return cli.Exit("", 1)
-			}
-
-			pathToPipeline, err := path.GetPipelineRootFromTask(taskPath, pipelineDefinitionFile)
-			if err != nil {
-				errorPrinter.Printf("Failed to find the pipeline this task belongs to: '%s'\n", taskPath)
-				return cli.Exit("", 1)
-			}
-
-			foundPipeline, err := builder.CreatePipelineFromPath(pathToPipeline)
-			if err != nil {
-				errorPrinter.Printf("Failed to build pipeline: %v\n", err.Error())
-				return cli.Exit("", 1)
-			}
-
-			wholeFileExtractor := &query.WholeFileExtractor{
-				Fs:       fs,
-				Renderer: query.DefaultJinjaRenderer,
-			}
-
-			bqOperator, err := bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor, bigquery.Materializer{})
-			if err != nil {
-				errorPrinter.Printf(err.Error())
-				return cli.Exit("", 1)
-			}
-
-			e := executor.Sequential{
-				TaskTypeMap: map[string]executor.Operator{
-					"bq.sql": bqOperator,
-				},
-			}
-
-			err = e.RunSingleTask(context.Background(), foundPipeline, task)
-			if err != nil {
-				errorPrinter.Printf("Failed to run task: %v\n", err.Error())
-				return cli.Exit("", 1)
-			}
-
-			successPrinter.Printf("Task '%s' successfully executed.\n", task.Name)
-
-			return nil
-		},
-	}
 }

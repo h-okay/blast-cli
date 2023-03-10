@@ -59,3 +59,8 @@ func ExcludeSubItemsInDirectoryContainingFile(filePaths []string, file string) [
 
 	return result
 }
+
+func DirExists(fs afero.Fs, searchDir string) bool {
+	res, err := afero.DirExists(fs, searchDir)
+	return err == nil && res
+}

@@ -148,7 +148,13 @@ func NewBuilder(config BuilderConfig, yamlTaskCreator TaskCreator, commentTaskCr
 }
 
 func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, error) {
-	pipelineFilePath := filepath.Join(pathToPipeline, b.config.PipelineFileName)
+	pipelineFilePath := pathToPipeline
+	if !strings.HasSuffix(pipelineFilePath, b.config.PipelineFileName) {
+		pipelineFilePath = filepath.Join(pathToPipeline, b.config.PipelineFileName)
+	} else {
+		pathToPipeline = filepath.Dir(pathToPipeline)
+	}
+
 	tasksPath := filepath.Join(pathToPipeline, b.config.TasksDirectoryName)
 
 	var pipeline Pipeline

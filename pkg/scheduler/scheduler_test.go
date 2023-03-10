@@ -314,3 +314,61 @@ func TestScheduler_MarkTasksAndDownstream(t *testing.T) {
 	})
 	assert.True(t, finished)
 }
+
+func TestScheduler_WillRunTaskOfType(t *testing.T) {
+	t.Parallel()
+
+	t12 := &pipeline.Task{
+		Name:      "task12",
+		DependsOn: []string{"task11"},
+		Type:      "bq.sql",
+	}
+
+	p := &pipeline.Pipeline{
+		Tasks: []*pipeline.Task{
+			{
+				Name: "task11",
+				Type: "bq.sql",
+			},
+			{
+				Name: "task21",
+				Type: "sf.sql",
+			},
+			{
+				Name: "random-asset",
+				Type: "random",
+			},
+			t12,
+			{
+				Name:      "task13",
+				DependsOn: []string{"task12"},
+				Type:      "bq.sql",
+			},
+			{
+				Name:      "task22",
+				DependsOn: []string{"task21"},
+				Type:      "python",
+			},
+			{
+				Name:      "task3",
+				DependsOn: []string{"task12", "task22"},
+				Type:      "python",
+			},
+			{
+				Name:      "task4",
+				DependsOn: []string{"task13", "task3"},
+				Type:      "empty",
+			},
+		},
+	}
+
+	s := NewScheduler(zap.NewNop().Sugar(), p)
+	s.MarkAll(Succeeded)
+	s.MarkTask(t12, Pending, true)
+
+	assert.False(t, s.WillRunTaskOfType("sf.sql"))
+	assert.False(t, s.WillRunTaskOfType("random"))
+	assert.True(t, s.WillRunTaskOfType("bq.sql"))
+	assert.True(t, s.WillRunTaskOfType("python"))
+	assert.True(t, s.WillRunTaskOfType("empty"))
+}
