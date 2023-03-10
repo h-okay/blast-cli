@@ -10,6 +10,16 @@ import (
 	"github.com/spf13/afero"
 )
 
+type executionContext struct {
+	repo            *git.Repo
+	module          string
+	requirementsTxt string
+
+	envVariables map[string]string
+	pipeline     *pipeline.Pipeline
+	task         *pipeline.Task
+}
+
 type modulePathFinder interface {
 	FindModulePath(repo *git.Repo, executable *pipeline.ExecutableFile) (string, error)
 	FindRequirementsTxt(repo *git.Repo, executable *pipeline.ExecutableFile) (string, error)
@@ -20,16 +30,17 @@ type repoFinder interface {
 }
 
 type localRunner interface {
-	Run(ctx context.Context, repo *git.Repo, module, requirementsTxt string) error
+	Run(ctx context.Context, execution *executionContext) error
 }
 
 type LocalOperator struct {
-	repoFinder repoFinder
-	module     modulePathFinder
-	runner     localRunner
+	repoFinder   repoFinder
+	module       modulePathFinder
+	runner       localRunner
+	envVariables map[string]string
 }
 
-func NewLocalOperator() *LocalOperator {
+func NewLocalOperator(envVariables map[string]string) *LocalOperator {
 	cmdRunner := &commandRunner{}
 	fs := afero.NewOsFs()
 
@@ -43,8 +54,8 @@ func NewLocalOperator() *LocalOperator {
 				cmd:    cmdRunner,
 				config: user.NewConfigManager(fs),
 			},
-			fs: fs,
 		},
+		envVariables: envVariables,
 	}
 }
 
@@ -70,7 +81,14 @@ func (o *LocalOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pi
 		}
 	}
 
-	err = o.runner.Run(ctx, repo, module, requirementsTxt)
+	err = o.runner.Run(ctx, &executionContext{
+		repo:            repo,
+		module:          module,
+		requirementsTxt: requirementsTxt,
+		pipeline:        p,
+		task:            t,
+		envVariables:    o.envVariables,
+	})
 	if err != nil {
 		return errors.Wrap(err, "failed to execute Python script")
 	}

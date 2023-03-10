@@ -37,13 +37,19 @@ type mockRunner struct {
 	mock.Mock
 }
 
-func (m *mockRunner) Run(ctx context.Context, repo *git.Repo, module, requirementsTxt string) error {
-	args := m.Called(ctx, repo, module, requirementsTxt)
+func (m *mockRunner) Run(ctx context.Context, ec *executionContext) error {
+	args := m.Called(ctx, ec)
 	return args.Error(0)
 }
 
 func TestLocalOperator_RunTask(t *testing.T) {
 	t.Parallel()
+
+	task := &pipeline.Task{
+		ExecutableFile: pipeline.ExecutableFile{
+			Path: "/path/to/file.py",
+		},
+	}
 
 	tests := []struct {
 		name    string
@@ -98,7 +104,12 @@ func TestLocalOperator_RunTask(t *testing.T) {
 				mf.On("FindRequirementsTxt", repo, mock.Anything).
 					Return("", &NoRequirementsFoundError{})
 
-				runner.On("Run", mock.Anything, repo, "path.to.module", "").
+				runner.On("Run", mock.Anything, &executionContext{
+					repo:            repo,
+					module:          "path.to.module",
+					requirementsTxt: "",
+					task:            task,
+				}).
 					Return(assert.AnError)
 			},
 			wantErr: assert.Error,
@@ -116,8 +127,12 @@ func TestLocalOperator_RunTask(t *testing.T) {
 				mf.On("FindRequirementsTxt", repo, mock.Anything).
 					Return("/path/to/requirements.txt", nil)
 
-				runner.On("Run", mock.Anything, repo, "path.to.module", "/path/to/requirements.txt").
-					Return(assert.AnError)
+				runner.On("Run", mock.Anything, &executionContext{
+					repo:            repo,
+					module:          "path.to.module",
+					requirementsTxt: "/path/to/requirements.txt",
+					task:            task,
+				}).Return(assert.AnError)
 			},
 			wantErr: assert.Error,
 		},
@@ -138,12 +153,6 @@ func TestLocalOperator_RunTask(t *testing.T) {
 				repoFinder: repo,
 				module:     module,
 				runner:     runner,
-			}
-
-			task := &pipeline.Task{
-				ExecutableFile: pipeline.ExecutableFile{
-					Path: "/path/to/file.py",
-				},
 			}
 
 			tt.wantErr(t, o.RunTask(context.Background(), nil, task))

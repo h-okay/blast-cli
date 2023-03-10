@@ -112,7 +112,7 @@ func Run(isDebug *bool) *cli.Command {
 
 			executors := executor.DefaultExecutors
 			if s.WillRunTaskOfType(executor.TaskTypePython) {
-				executors[executor.TaskTypePython] = python.NewLocalOperator()
+				executors[executor.TaskTypePython] = python.NewLocalOperator(map[string]string{})
 			}
 
 			if s.WillRunTaskOfType(executor.TaskTypeBigqueryQuery) {

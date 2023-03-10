@@ -3,21 +3,15 @@ package python
 import (
 	"bufio"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"sync"
+	"strings"
 
 	"github.com/datablast-analytics/blast-cli/pkg/executor"
 	"github.com/datablast-analytics/blast-cli/pkg/git"
-	"github.com/datablast-analytics/blast-cli/pkg/path"
-	"github.com/datablast-analytics/blast-cli/pkg/user"
 	"github.com/pkg/errors"
-	"github.com/spf13/afero"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -25,107 +19,73 @@ type cmd interface {
 	Run(ctx context.Context, repo *git.Repo, command *command) error
 }
 
-type installReqsToHomeDir struct {
-	fs     afero.Fs
-	config *user.ConfigManager
-	cmd    cmd
-
-	lock sync.Mutex
-}
-
-func (i *installReqsToHomeDir) EnsureVirtualEnvExists(ctx context.Context, repo *git.Repo, requirementsTxt string) (string, error) {
-	relPath, err := filepath.Rel(repo.Path, requirementsTxt)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get relative path to the repo for requirements.txt")
-	}
-
-	err = i.config.EnsureVirtualenvDirExists()
-	if err != nil {
-		return "", err
-	}
-
-	sum := sha256.Sum256([]byte(relPath))
-	venvPath := i.config.MakeVirtualenvPath(hex.EncodeToString(sum[:]))
-
-	i.lock.Lock()
-	defer i.lock.Unlock()
-
-	reqsPathExists := path.DirExists(i.fs, venvPath)
-	if reqsPathExists {
-		return venvPath, nil
-	}
-
-	err = i.cmd.Run(ctx, repo, &command{
-		Name: "python3",
-		Args: []string{"-m", "venv", venvPath},
-	})
-
-	if err != nil {
-		return "", err
-	}
-
-	return venvPath, nil
-}
-
 type requirementsInstaller interface {
 	EnsureVirtualEnvExists(ctx context.Context, repo *git.Repo, requirementsTxt string) (string, error)
 }
 
 type localPythonRunner struct {
-	cmd cmd
-
+	cmd                   cmd
 	requirementsInstaller requirementsInstaller
-	fs                    afero.Fs
 }
 
-func (l *localPythonRunner) Run(ctx context.Context, repo *git.Repo, module, requirementsTxt string) error {
-	var output io.Writer = os.Stdout
-	if ctx.Value(executor.KeyPrinter) != nil {
-		output = ctx.Value(executor.KeyPrinter).(io.Writer)
+func log(ctx context.Context, message string) {
+	if ctx.Value(executor.KeyPrinter) == nil {
+		return
 	}
 
-	if requirementsTxt == "" {
-		return l.cmd.Run(ctx, repo, &command{
-			Name: "python3",
-			Args: []string{"-u", "-m", module},
-		})
+	if !strings.HasSuffix(message, "\n") {
+		message += "\n"
 	}
 
-	_, err := output.Write([]byte("asset has dependencies, installing the packages to an isolated environment...\n"))
+	writer := ctx.Value(executor.KeyPrinter).(io.Writer)
+	_, _ = writer.Write([]byte(message))
+}
+
+func (l *localPythonRunner) Run(ctx context.Context, execCtx *executionContext) error {
+	noDependencyCommand := &command{
+		Name:    "python3",
+		Args:    []string{"-u", "-m", execCtx.module},
+		EnvVars: execCtx.envVariables,
+	}
+	if execCtx.requirementsTxt == "" {
+		return l.cmd.Run(ctx, execCtx.repo, noDependencyCommand)
+	}
+
+	log(ctx, "requirements.txt found, installing the packages to an isolated environment...")
+	depsPath, err := l.requirementsInstaller.EnsureVirtualEnvExists(ctx, execCtx.repo, execCtx.requirementsTxt)
 	if err != nil {
 		return err
 	}
 
-	depsPath, err := l.requirementsInstaller.EnsureVirtualEnvExists(ctx, repo, requirementsTxt)
-	if err != nil {
-		return err
+	if depsPath == "" {
+		log(ctx, "requirements.txt is empty, executing the script right away...")
+		return l.cmd.Run(ctx, execCtx.repo, noDependencyCommand)
 	}
 
-	_, err = output.Write([]byte("asset dependencies are successfully installed, starting execution...\n"))
-	if err != nil {
-		return err
-	}
-
-	fullCommand := fmt.Sprintf("source %s/bin/activate && echo 'activated virtualenv' && pip3 install -r %s --quiet --quiet && echo 'installed all the dependencies' && python3 -u -m %s", depsPath, requirementsTxt, module)
-
-	return l.cmd.Run(ctx, repo, &command{
-		Name: "/bin/sh",
-		Args: []string{"-c", fullCommand},
+	log(ctx, "asset dependencies are successfully installed, starting execCtx...")
+	fullCommand := fmt.Sprintf("source %s/bin/activate && echo 'activated virtualenv' && pip3 install -r %s --quiet --quiet && echo 'installed all the dependencies' && python3 -u -m %s", depsPath, execCtx.requirementsTxt, execCtx.module)
+	return l.cmd.Run(ctx, execCtx.repo, &command{
+		Name:    "/bin/sh",
+		Args:    []string{"-c", fullCommand},
+		EnvVars: execCtx.envVariables,
 	})
 }
 
 type commandRunner struct{}
 
 type command struct {
-	Name string
-	Args []string
+	Name    string
+	Args    []string
+	EnvVars map[string]string
 }
 
 func (l *commandRunner) Run(ctx context.Context, repo *git.Repo, command *command) error {
-	// TODO: support secrets / env variables //nolint:godox
-
 	cmd := exec.Command(command.Name, command.Args...) //nolint:gosec
 	cmd.Dir = repo.Path
+	cmd.Env = make([]string, len(command.EnvVars))
+	for k, v := range command.EnvVars {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+	}
 
 	var output io.Writer = os.Stdout
 	if ctx.Value(executor.KeyPrinter) != nil {
