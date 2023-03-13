@@ -30,45 +30,49 @@ func CreateTaskFromFileComments(fs afero.Fs) TaskCreator {
 		}
 		defer file.Close()
 
-		var allRows []string
-		var commentRows []string
 		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			rowText := scanner.Text()
-			allRows = append(allRows, rowText)
-
-			if !strings.HasPrefix(rowText, commentMarker) {
-				continue
-			}
-
-			commentValue := strings.TrimSpace(strings.TrimPrefix(rowText, commentMarker))
-			if strings.HasPrefix(commentValue, configMarker) {
-				commentRows = append(commentRows, strings.TrimPrefix(commentValue, configMarker))
-			}
-		}
-
-		if err := scanner.Err(); err != nil {
-			return nil, errors.Wrapf(err, "failed to read file %s", filePath)
-		}
-
-		if len(commentRows) == 0 {
-			return nil, nil
-		}
-
-		absFilePath, err := filepath.Abs(filePath)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get absolute path for file %s", filePath)
-		}
-
-		task := commentRowsToTask(commentRows)
-		task.ExecutableFile = ExecutableFile{
-			Name:    filepath.Base(filePath),
-			Path:    absFilePath,
-			Content: strings.Join(allRows, "\n"),
-		}
-
-		return task, nil
+		return singleLineCommentsToTask(scanner, commentMarker, filePath)
 	}
+}
+
+func singleLineCommentsToTask(scanner *bufio.Scanner, commentMarker, filePath string) (*Task, error) {
+	var allRows []string
+	var commentRows []string
+	for scanner.Scan() {
+		rowText := scanner.Text()
+		allRows = append(allRows, rowText)
+
+		if !strings.HasPrefix(rowText, commentMarker) {
+			continue
+		}
+
+		commentValue := strings.TrimSpace(strings.TrimPrefix(rowText, commentMarker))
+		if strings.HasPrefix(commentValue, configMarker) {
+			commentRows = append(commentRows, strings.TrimPrefix(commentValue, configMarker))
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to read file %s", filePath)
+	}
+
+	if len(commentRows) == 0 {
+		return nil, nil
+	}
+
+	absFilePath, err := filepath.Abs(filePath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get absolute path for file %s", filePath)
+	}
+
+	task := commentRowsToTask(commentRows)
+	task.ExecutableFile = ExecutableFile{
+		Name:    filepath.Base(filePath),
+		Path:    absFilePath,
+		Content: strings.Join(allRows, "\n"),
+	}
+
+	return task, nil
 }
 
 func commentRowsToTask(commentRows []string) *Task {
