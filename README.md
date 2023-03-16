@@ -145,6 +145,10 @@ Executed 1 tasks in 103ms
 You can optionally pass a `--downstream` flag to run the task with all of its downstreams.
 
 ## Upcoming Features
+- Support for full range of data quality tests on a per-column basis
+- Connection + config management
+- Secrets for Python tasks
+- More databases: Postgres, Redshift, MySQL, and more
 
 ## Disclaimer
 Blast is still in its early stages, so please use it with caution. We are working on improving the documentation and adding more features.
