@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"bufio"
+	"io"
 	"path/filepath"
 	"strings"
 
@@ -30,45 +31,112 @@ func CreateTaskFromFileComments(fs afero.Fs) TaskCreator {
 		}
 		defer file.Close()
 
-		var allRows []string
-		var commentRows []string
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			rowText := scanner.Text()
-			allRows = append(allRows, rowText)
-
-			if !strings.HasPrefix(rowText, commentMarker) {
-				continue
-			}
-
-			commentValue := strings.TrimSpace(strings.TrimPrefix(rowText, commentMarker))
-			if strings.HasPrefix(commentValue, configMarker) {
-				commentRows = append(commentRows, strings.TrimPrefix(commentValue, configMarker))
-			}
+		if !isEmbeddedYamlComment(file) {
+			scanner := bufio.NewScanner(file)
+			return singleLineCommentsToTask(scanner, commentMarker, filePath)
 		}
 
-		if err := scanner.Err(); err != nil {
-			return nil, errors.Wrapf(err, "failed to read file %s", filePath)
-		}
-
-		if len(commentRows) == 0 {
-			return nil, nil
-		}
-
-		absFilePath, err := filepath.Abs(filePath)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get absolute path for file %s", filePath)
-		}
-
-		task := commentRowsToTask(commentRows)
-		task.ExecutableFile = ExecutableFile{
-			Name:    filepath.Base(filePath),
-			Path:    absFilePath,
-			Content: strings.Join(allRows, "\n"),
-		}
-
-		return task, nil
+		return commentedYamlToTask(file, filePath)
 	}
+}
+
+func isEmbeddedYamlComment(file afero.File) bool {
+	scanner := bufio.NewScanner(file)
+	defer func() { _, _ = file.Seek(0, io.SeekStart) }()
+	scanner.Scan()
+	rowText := scanner.Text()
+	return strings.HasPrefix(rowText, "/* @blast")
+}
+
+func commentedYamlToTask(file afero.File, filePath string) (*Task, error) {
+	rows := readUntilComments(file)
+	if rows == "" {
+		return nil, errors.New("no embedded YAML found in the comments")
+	}
+
+	task, err := ConvertYamlToTask([]byte(rows))
+	if err != nil {
+		return nil, err
+	}
+
+	absFilePath, err := filepath.Abs(filePath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get absolute path for file %s", filePath)
+	}
+
+	scanner := bufio.NewScanner(file)
+	content := ""
+	for scanner.Scan() {
+		content += scanner.Text() + "\n"
+	}
+
+	task.ExecutableFile = ExecutableFile{
+		Name:    filepath.Base(filePath),
+		Path:    absFilePath,
+		Content: strings.TrimSpace(content),
+	}
+
+	return task, nil
+}
+
+func readUntilComments(file afero.File) string {
+	scanner := bufio.NewScanner(file)
+	defer func() { _, _ = file.Seek(0, io.SeekStart) }()
+	rows := ""
+	for scanner.Scan() {
+		rowText := scanner.Text()
+		if rowText == "/* @blast" {
+			continue
+		}
+
+		if strings.TrimSpace(rowText) == "@blast */" {
+			break
+		}
+
+		rows += rowText + "\n"
+	}
+
+	return strings.TrimSpace(rows)
+}
+
+func singleLineCommentsToTask(scanner *bufio.Scanner, commentMarker, filePath string) (*Task, error) {
+	var allRows []string
+	var commentRows []string
+	for scanner.Scan() {
+		rowText := scanner.Text()
+		allRows = append(allRows, rowText)
+
+		if !strings.HasPrefix(rowText, commentMarker) {
+			continue
+		}
+
+		commentValue := strings.TrimSpace(strings.TrimPrefix(rowText, commentMarker))
+		if strings.HasPrefix(commentValue, configMarker) {
+			commentRows = append(commentRows, strings.TrimPrefix(commentValue, configMarker))
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to read file %s", filePath)
+	}
+
+	if len(commentRows) == 0 {
+		return nil, nil
+	}
+
+	absFilePath, err := filepath.Abs(filePath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get absolute path for file %s", filePath)
+	}
+
+	task := commentRowsToTask(commentRows)
+	task.ExecutableFile = ExecutableFile{
+		Name:    filepath.Base(filePath),
+		Path:    absFilePath,
+		Content: strings.Join(allRows, "\n"),
+	}
+
+	return task, nil
 }
 
 func commentRowsToTask(commentRows []string) *Task {

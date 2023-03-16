@@ -72,6 +72,16 @@ func CreateTaskFromYamlDefinition(fs afero.Fs) TaskCreator {
 			return nil, err
 		}
 
+		buf, err := afero.ReadFile(fs, filePath)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to read file %s", filePath)
+		}
+
+		task, err := ConvertYamlToTask(buf)
+		if err != nil {
+			return nil, err
+		}
+
 		executableFile := ExecutableFile{}
 		if definition.RunFile != "" {
 			relativeRunFilePath := filepath.Join(filepath.Dir(filePath), definition.RunFile)
@@ -89,27 +99,38 @@ func CreateTaskFromYamlDefinition(fs afero.Fs) TaskCreator {
 			}
 			executableFile.Content = string(content)
 		}
+		task.ExecutableFile = executableFile
 
-		mat := Materialization{
-			Type:           MaterializationType(strings.ToLower(definition.Materialization.Type)),
-			Strategy:       MaterializationStrategy(strings.ToLower(definition.Materialization.Strategy)),
-			ClusterBy:      definition.Materialization.ClusterBy,
-			PartitionBy:    definition.Materialization.PartitionBy,
-			IncrementalKey: definition.Materialization.IncrementalKey,
-		}
-
-		task := Task{
-			Name:            definition.Name,
-			Description:     definition.Description,
-			Type:            definition.Type,
-			Parameters:      definition.Parameters,
-			Connections:     definition.Connections,
-			DependsOn:       definition.Depends,
-			ExecutableFile:  executableFile,
-			Schedule:        TaskSchedule{Days: definition.Schedule.Days},
-			Materialization: mat,
-		}
-
-		return &task, nil
+		return task, nil
 	}
+}
+
+func ConvertYamlToTask(content []byte) (*Task, error) {
+	var definition taskDefinition
+	err := path.ConvertYamlToObject(content, &definition)
+	if err != nil {
+		return nil, err
+	}
+
+	mat := Materialization{
+		Type:           MaterializationType(strings.ToLower(definition.Materialization.Type)),
+		Strategy:       MaterializationStrategy(strings.ToLower(definition.Materialization.Strategy)),
+		ClusterBy:      definition.Materialization.ClusterBy,
+		PartitionBy:    definition.Materialization.PartitionBy,
+		IncrementalKey: definition.Materialization.IncrementalKey,
+	}
+
+	task := Task{
+		Name:            definition.Name,
+		Description:     definition.Description,
+		Type:            definition.Type,
+		Parameters:      definition.Parameters,
+		Connections:     definition.Connections,
+		DependsOn:       definition.Depends,
+		ExecutableFile:  ExecutableFile{},
+		Schedule:        TaskSchedule{Days: definition.Schedule.Days},
+		Materialization: mat,
+	}
+
+	return &task, nil
 }

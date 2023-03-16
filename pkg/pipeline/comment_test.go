@@ -82,6 +82,39 @@ func Test_createTaskFromFile(t *testing.T) {
 			},
 		},
 		{
+			name: "SQL file with embedded yaml content is parsed",
+			args: args{
+				filePath: "testdata/comments/embeddedyaml.sql",
+			},
+			want: &pipeline.Task{
+				Name:        "some-sql-task",
+				Description: "some description goes here",
+				Type:        "bq.sql",
+				ExecutableFile: pipeline.ExecutableFile{
+					Name:    "embeddedyaml.sql",
+					Path:    absPath("testdata/comments/embeddedyaml.sql"),
+					Content: mustRead(t, "testdata/comments/embeddedyaml.sql"),
+				},
+				Parameters: map[string]string{
+					"param1":       "first-parameter",
+					"param2":       "second-parameter",
+					"s3_file_path": "s3://bucket/path",
+				},
+				Connections: map[string]string{
+					"conn1": "first-connection",
+					"conn2": "second-connection",
+				},
+				DependsOn: []string{"task1", "task2", "task3", "task4", "task5", "task3"},
+				Materialization: pipeline.Materialization{
+					Type:           pipeline.MaterializationTypeTable,
+					Strategy:       pipeline.MaterializationStrategyDeleteInsert,
+					PartitionBy:    "dt",
+					IncrementalKey: "dt",
+					ClusterBy:      []string{"event_name"},
+				},
+			},
+		},
+		{
 			name: "Python file parsed",
 			args: args{
 				filePath: absPath("testdata/comments/test.py"), // giving an absolute path here tests the case of double-absolute paths

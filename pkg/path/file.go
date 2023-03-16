@@ -16,7 +16,11 @@ func ReadYaml(fs afero.Fs, path string, out interface{}) error {
 		return errors.Wrapf(err, "failed to read file %s", path)
 	}
 
-	err = yaml.Unmarshal(buf, out)
+	return ConvertYamlToObject(buf, out)
+}
+
+func ConvertYamlToObject(buf []byte, out interface{}) error {
+	err := yaml.Unmarshal(buf, out)
 	if err != nil {
 		return err
 	}
@@ -25,7 +29,7 @@ func ReadYaml(fs afero.Fs, path string, out interface{}) error {
 
 	err = validate.Struct(out)
 	if err != nil {
-		return errors.Wrapf(err, "cannot validate the YAML file at '%s'", path)
+		return err
 	}
 
 	return nil
