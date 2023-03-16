@@ -12,6 +12,7 @@ Blast is a command-line tool for validating and running data transformations on 
 - 🐍 run Python in isolated virtual environments
   - every asset can have different dependencies
   - closest `requirements.txt` file is used for the asset
+  - easy to test Python scripts: no changes in your regular scripts needed to run in Blast
 - ✅ validate data pipelines end to end to catch issues early on
   - for BigQuery, it can also validate the queries via dry-run to validate the queries on live environment directly.
   - for Snowflake, it validates queries via `EXPLAIN` statements.
