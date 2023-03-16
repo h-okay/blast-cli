@@ -145,6 +145,7 @@ func commentRowsToTask(commentRows []string) *Task {
 		Connections: make(map[string]string),
 		DependsOn:   []string{},
 		Schedule:    TaskSchedule{},
+		Columns:     map[string]Column{},
 	}
 	for _, row := range commentRows {
 		key, value, found := strings.Cut(row, ":")

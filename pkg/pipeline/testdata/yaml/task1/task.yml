@@ -1,7 +1,7 @@
 name: hello-world
 description: This is a hello world task
-type: bash
-run: hello.sh
+type: bq.sql
+run: hello.sql
 depends:
   - gcs-to-bq
 parameters:
@@ -18,3 +18,13 @@ materialization:
   cluster_by:
     - key1
     - key2
+
+columns:
+  col1:
+    description: "column one"
+    tests:
+      - name: unique
+      - name: not_null
+  col2:
+    description: "column two"
+

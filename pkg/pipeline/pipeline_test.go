@@ -65,6 +65,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 					"conn2": "second connection",
 				},
 				DependsOn: []string{"gcs-to-bq"},
+				Columns:   map[string]pipeline.Column{},
 			},
 			{
 				Name: "second-task",
@@ -79,6 +80,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 					Path: absPath("testdata/pipeline/first-pipeline/tasks/task2/task.yaml"),
 					Type: pipeline.YamlTask,
 				},
+				Columns: map[string]pipeline.Column{},
 			},
 			{
 				Name:        "some-python-task",
@@ -104,6 +106,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 					"conn2": "second-connection",
 				},
 				DependsOn: []string{"task1", "task2", "task3", "task4", "task5", "task3"},
+				Columns:   map[string]pipeline.Column{},
 			},
 			{
 				Name:        "some-sql-task",
@@ -128,6 +131,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 					"conn2": "second-connection",
 				},
 				DependsOn: []string{"task1", "task2", "task3", "task4", "task5", "task3"},
+				Columns:   map[string]pipeline.Column{},
 			},
 		},
 	}

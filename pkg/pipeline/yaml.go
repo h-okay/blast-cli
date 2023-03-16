@@ -46,6 +46,13 @@ type materialization struct {
 	ClusterBy      clusterBy `yaml:"cluster_by"`
 	IncrementalKey string    `yaml:"incremental_key"`
 }
+type columnTest struct {
+	Name string `yaml:"name"`
+}
+type column struct {
+	Description string       `yaml:"description"`
+	Tests       []columnTest `yaml:"tests"`
+}
 
 type taskDefinition struct {
 	Name            string            `yaml:"name"`
@@ -57,6 +64,7 @@ type taskDefinition struct {
 	Connections     map[string]string `yaml:"connections"`
 	Schedule        taskSchedule      `yaml:"schedule"`
 	Materialization materialization   `yaml:"materialization"`
+	Columns         map[string]column `yaml:"columns"`
 }
 
 func CreateTaskFromYamlDefinition(fs afero.Fs) TaskCreator {
@@ -120,6 +128,19 @@ func ConvertYamlToTask(content []byte) (*Task, error) {
 		IncrementalKey: definition.Materialization.IncrementalKey,
 	}
 
+	columns := make(map[string]Column)
+	for name, column := range definition.Columns {
+		tests := make([]ColumnTest, len(column.Tests))
+		for i, test := range column.Tests {
+			tests[i] = ColumnTest(test)
+		}
+
+		columns[name] = Column{
+			Description: column.Description,
+			Tests:       tests,
+		}
+	}
+
 	task := Task{
 		Name:            definition.Name,
 		Description:     definition.Description,
@@ -130,6 +151,7 @@ func ConvertYamlToTask(content []byte) (*Task, error) {
 		ExecutableFile:  ExecutableFile{},
 		Schedule:        TaskSchedule{Days: definition.Schedule.Days},
 		Materialization: mat,
+		Columns:         columns,
 	}
 
 	return &task, nil

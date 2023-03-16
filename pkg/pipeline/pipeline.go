@@ -78,6 +78,15 @@ type Materialization struct {
 	IncrementalKey string
 }
 
+type ColumnTest struct {
+	Name string `yaml:"name"`
+}
+
+type Column struct {
+	Description string       `yaml:"description"`
+	Tests       []ColumnTest `yaml:"tests"`
+}
+
 type Task struct {
 	Name            string
 	Description     string
@@ -90,6 +99,7 @@ type Task struct {
 	Pipeline        *Pipeline
 	Schedule        TaskSchedule
 	Materialization Materialization
+	Columns         map[string]Column
 }
 
 type Pipeline struct {

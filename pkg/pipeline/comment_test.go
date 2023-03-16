@@ -79,6 +79,7 @@ func Test_createTaskFromFile(t *testing.T) {
 					IncrementalKey: "dt",
 					ClusterBy:      []string{"event_name"},
 				},
+				Columns: map[string]pipeline.Column{},
 			},
 		},
 		{
@@ -112,6 +113,7 @@ func Test_createTaskFromFile(t *testing.T) {
 					IncrementalKey: "dt",
 					ClusterBy:      []string{"event_name"},
 				},
+				Columns: map[string]pipeline.Column{},
 			},
 		},
 		{
@@ -139,6 +141,7 @@ func Test_createTaskFromFile(t *testing.T) {
 				},
 				DependsOn: []string{"task1", "task2", "task3", "task4", "task5", "task3"},
 				Schedule:  pipeline.TaskSchedule{Days: []string{"SUNDAY", "MONDAY", "TUESDAY"}},
+				Columns:   map[string]pipeline.Column{},
 			},
 		},
 	}
