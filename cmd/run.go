@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
+	"github.com/datablast-analytics/blast-cli/pkg/date"
 	"github.com/datablast-analytics/blast-cli/pkg/executor"
 	"github.com/datablast-analytics/blast-cli/pkg/lint"
 	"github.com/datablast-analytics/blast-cli/pkg/path"
@@ -32,6 +34,18 @@ func Run(isDebug *bool) *cli.Command {
 				Usage: "number of workers to run the tasks in parallel",
 				Value: 8,
 			},
+			&cli.StringFlag{
+				Name:        "start-date",
+				Usage:       "the start date of the range the pipeline will run for in YYYY-MM-DD or YYYY-MM-DD HH:MM:SS format",
+				DefaultText: fmt.Sprintf("yesterday, e.g. %s", time.Now().AddDate(0, 0, -1).Format("2006-01-02")),
+				Value:       time.Now().AddDate(0, 0, -1).Format("2006-01-02"),
+			},
+			&cli.StringFlag{
+				Name:        "end-date",
+				Usage:       "the end date of the range the pipeline will run for in YYYY-MM-DD or YYYY-MM-DD HH:MM:SS format",
+				DefaultText: fmt.Sprintf("today, e.g. %s", time.Now().Format("2006-01-02")),
+				Value:       time.Now().Format("2006-01-02"),
+			},
 		},
 		Action: func(c *cli.Context) error {
 			logger := makeLogger(*isDebug)
@@ -42,11 +56,30 @@ func Run(isDebug *bool) *cli.Command {
 				return cli.Exit("", 1)
 			}
 
+			startDate, err := date.ParseTime(c.String("start-date"))
+			logger.Debug("given start date: ", startDate)
+			if err != nil {
+				errorPrinter.Printf("Please give a valid start date: blast-cli run --start-date <start date>)\n")
+				errorPrinter.Printf("A valid start date can be in the YYYY-MM-DD or YYYY-MM-DD HH:MM:SS formats. \n")
+				errorPrinter.Printf("    e.g. %s  \n", time.Now().AddDate(0, 0, -1).Format("2006-01-02"))
+				errorPrinter.Printf("    e.g. %s  \n", time.Now().AddDate(0, 0, -1).Format("2006-01-02 15:04:05"))
+				return cli.Exit("", 1)
+			}
+
+			endDate, err := date.ParseTime(c.String("end-date"))
+			logger.Debug("given end date: ", endDate)
+			if err != nil {
+				errorPrinter.Printf("Please give a valid end date: blast-cli run --start-date <start date>)\n")
+				errorPrinter.Printf("A valid start date can be in the YYYY-MM-DD or YYYY-MM-DD HH:MM:SS formats. \n")
+				errorPrinter.Printf("    e.g. %s  \n", time.Now().AddDate(0, 0, -1).Format("2006-01-02"))
+				errorPrinter.Printf("    e.g. %s  \n", time.Now().AddDate(0, 0, -1).Format("2006-01-02 15:04:05"))
+				return cli.Exit("", 1)
+			}
+
 			pipelinePath := inputPath
 
 			runningForATask := isPathReferencingTask(inputPath)
 			var task *pipeline.Task
-			var err error
 
 			runDownstreamTasks := false
 			if runningForATask {
@@ -118,7 +151,7 @@ func Run(isDebug *bool) *cli.Command {
 			if s.WillRunTaskOfType(executor.TaskTypeBigqueryQuery) {
 				wholeFileExtractor := &query.WholeFileExtractor{
 					Fs:       fs,
-					Renderer: query.DefaultJinjaRenderer,
+					Renderer: query.NewJinjaRendererFromStartEndDates(&startDate, &endDate),
 				}
 
 				bqOperator, err := bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor, bigquery.Materializer{})

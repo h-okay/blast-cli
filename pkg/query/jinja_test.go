@@ -3,6 +3,7 @@ package query
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -105,6 +106,58 @@ group by 1`,
 			got := receiver.Render(tt.query)
 
 			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_DateAdd(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		args     []interface{}
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "add 5 days to a date string with default output format",
+			args:     []interface{}{"2022-12-31", 5},
+			expected: "2023-01-05",
+		},
+		{
+			name:     "add 10 days to a date string with custom output format",
+			args:     []interface{}{"2022-12-31", 10, "2006/01/02"},
+			expected: "2023/01/10",
+		},
+		{
+			name:     "add -3 days to a datetime string with custom input and output formats",
+			args:     []interface{}{"2022-12-31 12:34:56", -3, "02/01/06 15:04:05", "2006-01-02 15:04:05"},
+			expected: "28/12/22 12:34:56",
+		},
+		{
+			name:     "invalid arguments - fewer than 2",
+			args:     []interface{}{},
+			expected: "invalid arguments for date_add",
+		},
+		{
+			name:     "invalid arguments - date format",
+			args:     []interface{}{"12/31/2022", 10},
+			expected: "invalid date format:12/31/2022",
+		},
+		{
+			name:     "invalid arguments - output format",
+			args:     []interface{}{"2022-12-31", 10, 123},
+			expected: "invalid output format",
+		},
+	}
+
+	for _, tc := range testCases {
+		tt := tc
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			actualDate := dateAdd(tt.args...)
+			assert.Equal(t, tt.expected, actualDate)
 		})
 	}
 }
