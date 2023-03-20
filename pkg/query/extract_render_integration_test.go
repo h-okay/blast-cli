@@ -3,6 +3,7 @@ package query
 import (
 	"testing"
 
+	"github.com/datablast-analytics/blast-cli/pkg/jinja"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -110,7 +111,7 @@ with dummy_dates as (
 
 	extractor := FileQuerySplitterExtractor{
 		Fs: fs,
-		Renderer: NewJinjaRenderer(JinjaContext{
+		Renderer: jinja.NewRenderer(jinja.Context{
 			"ds": "2022-01-01",
 		}),
 	}

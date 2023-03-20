@@ -10,6 +10,7 @@ import (
 	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
 	"github.com/datablast-analytics/blast-cli/pkg/date"
 	"github.com/datablast-analytics/blast-cli/pkg/executor"
+	"github.com/datablast-analytics/blast-cli/pkg/jinja"
 	"github.com/datablast-analytics/blast-cli/pkg/lint"
 	"github.com/datablast-analytics/blast-cli/pkg/path"
 	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
@@ -151,7 +152,7 @@ func Run(isDebug *bool) *cli.Command {
 			if s.WillRunTaskOfType(executor.TaskTypeBigqueryQuery) {
 				wholeFileExtractor := &query.WholeFileExtractor{
 					Fs:       fs,
-					Renderer: query.NewJinjaRendererFromStartEndDates(&startDate, &endDate),
+					Renderer: jinja.NewRendererWithStartEndDates(&startDate, &endDate),
 				}
 
 				bqOperator, err := bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor, bigquery.Materializer{})

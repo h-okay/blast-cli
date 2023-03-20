@@ -7,18 +7,22 @@ import (
 )
 
 func ParseTime(input string) (time.Time, error) {
-	layout := "2006-01-02 15:04:05"
-	dateLayout := "2006-01-02"
+	allowedFormats := []string{
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04",
+		"2006-01-02T15:04",
+		"2006-01-02",
+	}
 
-	t, err := time.Parse(layout, input)
-	if err != nil {
-		t, err = time.Parse(dateLayout, input)
-		if err != nil {
-			return time.Time{}, errors.New("invalid datetime format")
+	for _, format := range allowedFormats {
+		t, err := time.Parse(format, input)
+		if err == nil {
+			return t, nil
 		}
 	}
 
-	return t, nil
+	return time.Time{}, errors.New("invalid datetime format")
 }
 
 func ConvertPythonDateFormatToGolang(pythonFormat string) string {
