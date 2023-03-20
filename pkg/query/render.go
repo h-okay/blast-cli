@@ -4,9 +4,11 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/datablast-analytics/blast-cli/pkg/jinja"
 )
 
-var DefaultJinjaRenderer = NewJinjaRenderer(JinjaContext{
+var DefaultJinjaRenderer = jinja.NewRenderer(jinja.Context{
 	"ds":                  time.Now().Format("2006-01-02"),
 	"ds_nodash":           time.Now().Format("20060102"),
 	"data_interval_start": time.Now().AddDate(0, 0, -1).Format(time.RFC3339),
