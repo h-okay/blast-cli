@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/alecthomas/chroma/v2/quick"
-	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
-	"github.com/datablast-analytics/blast-cli/pkg/executor"
-	"github.com/datablast-analytics/blast-cli/pkg/query"
+	"github.com/datablast-analytics/blast/pkg/bigquery"
+	"github.com/datablast-analytics/blast/pkg/executor"
+	"github.com/datablast-analytics/blast/pkg/query"
 	"github.com/urfave/cli/v2"
 )
 

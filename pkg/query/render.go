@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/datablast-analytics/blast-cli/pkg/jinja"
+	"github.com/datablast-analytics/blast/pkg/jinja"
 )
 
 var DefaultJinjaRenderer = jinja.NewRenderer(jinja.Context{

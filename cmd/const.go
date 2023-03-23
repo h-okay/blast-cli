@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/datablast-analytics/blast/pkg/pipeline"
 	"github.com/fatih/color"
 	"github.com/spf13/afero"
 )

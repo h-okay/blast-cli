@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/datablast-analytics/blast/pkg/pipeline"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

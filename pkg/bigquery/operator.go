@@ -3,8 +3,8 @@ package bigquery
 import (
 	"context"
 
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
-	"github.com/datablast-analytics/blast-cli/pkg/query"
+	"github.com/datablast-analytics/blast/pkg/pipeline"
+	"github.com/datablast-analytics/blast/pkg/query"
 	"github.com/pkg/errors"
 )
 

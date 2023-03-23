@@ -3,7 +3,7 @@ package query
 import (
 	"testing"
 
-	"github.com/datablast-analytics/blast-cli/pkg/jinja"
+	"github.com/datablast-analytics/blast/pkg/jinja"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

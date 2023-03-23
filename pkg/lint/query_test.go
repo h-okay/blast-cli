@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
-	"github.com/datablast-analytics/blast-cli/pkg/query"
+	"github.com/datablast-analytics/blast/pkg/pipeline"
+	"github.com/datablast-analytics/blast/pkg/query"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"

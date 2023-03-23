@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/datablast-analytics/blast-cli/pkg/query"
+	"github.com/datablast-analytics/blast/pkg/query"
 	"github.com/pkg/errors"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/datablast-analytics/blast-cli/pkg/git"
+	"github.com/datablast-analytics/blast/pkg/git"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/datablast-analytics/blast-cli/pkg/query"
+	"github.com/datablast-analytics/blast/pkg/query"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/snowflakedb/gosnowflake"

@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/datablast-analytics/blast/pkg/pipeline"
 	"go.uber.org/zap"
 )
 

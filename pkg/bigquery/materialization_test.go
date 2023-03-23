@@ -3,7 +3,7 @@ package bigquery
 import (
 	"testing"
 
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/datablast-analytics/blast/pkg/pipeline"
 	"github.com/stretchr/testify/assert"
 )
 

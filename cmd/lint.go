@@ -3,9 +3,9 @@ package cmd
 import (
 	"strings"
 
-	"github.com/datablast-analytics/blast-cli/pkg/lint"
-	"github.com/datablast-analytics/blast-cli/pkg/path"
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/datablast-analytics/blast/pkg/lint"
+	"github.com/datablast-analytics/blast/pkg/path"
+	"github.com/datablast-analytics/blast/pkg/pipeline"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 )

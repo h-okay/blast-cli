@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/datablast-analytics/blast-cli/pkg/query"
+	"github.com/datablast-analytics/blast/pkg/query"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"

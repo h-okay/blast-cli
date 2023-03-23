@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
-	"github.com/datablast-analytics/blast-cli/pkg/scheduler"
+	"github.com/datablast-analytics/blast/pkg/pipeline"
+	"github.com/datablast-analytics/blast/pkg/scheduler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"

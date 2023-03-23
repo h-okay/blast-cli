@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
-	"github.com/datablast-analytics/blast-cli/pkg/scheduler"
+	"github.com/datablast-analytics/blast/pkg/pipeline"
+	"github.com/datablast-analytics/blast/pkg/scheduler"
 	"github.com/fatih/color"
 	"go.uber.org/zap"
 )

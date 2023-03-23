@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/datablast-analytics/blast-cli/pkg/executor"
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/datablast-analytics/blast/pkg/executor"
+	"github.com/datablast-analytics/blast/pkg/pipeline"
 	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
 	"github.com/spf13/afero"

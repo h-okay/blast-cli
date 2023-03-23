@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/datablast-analytics/blast-cli/pkg/date"
+	"github.com/datablast-analytics/blast/pkg/date"
 )
 
 // this func uses variadic arguments because I couldn't find a nicer way of supporting optional arguments

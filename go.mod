@@ -1,4 +1,4 @@
-module github.com/datablast-analytics/blast-cli
+module github.com/datablast-analytics/blast
 
 go 1.19
 

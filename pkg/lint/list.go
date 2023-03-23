@@ -1,10 +1,10 @@
 package lint
 
 import (
-	"github.com/datablast-analytics/blast-cli/pkg/bigquery"
-	"github.com/datablast-analytics/blast-cli/pkg/executor"
-	"github.com/datablast-analytics/blast-cli/pkg/query"
-	"github.com/datablast-analytics/blast-cli/pkg/snowflake"
+	"github.com/datablast-analytics/blast/pkg/bigquery"
+	"github.com/datablast-analytics/blast/pkg/executor"
+	"github.com/datablast-analytics/blast/pkg/query"
+	"github.com/datablast-analytics/blast/pkg/snowflake"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"

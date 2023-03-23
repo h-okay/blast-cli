@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/datablast-analytics/blast-cli/pkg/path"
+	"github.com/datablast-analytics/blast/pkg/path"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )

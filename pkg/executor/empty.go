@@ -3,7 +3,7 @@ package executor
 import (
 	"context"
 
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/datablast-analytics/blast/pkg/pipeline"
 )
 
 type NoOpOperator struct{}

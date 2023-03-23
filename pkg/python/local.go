@@ -9,8 +9,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/datablast-analytics/blast-cli/pkg/executor"
-	"github.com/datablast-analytics/blast-cli/pkg/git"
+	"github.com/datablast-analytics/blast/pkg/executor"
+	"github.com/datablast-analytics/blast/pkg/git"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 )

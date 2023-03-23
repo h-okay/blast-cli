@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/datablast-analytics/blast-cli/cmd"
+	"github.com/datablast-analytics/blast/cmd"
 	"github.com/fatih/color"
 	"github.com/urfave/cli/v2"
 )

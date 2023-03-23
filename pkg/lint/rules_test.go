@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/datablast-analytics/blast-cli/pkg/executor"
-	"github.com/datablast-analytics/blast-cli/pkg/pipeline"
+	"github.com/datablast-analytics/blast/pkg/executor"
+	"github.com/datablast-analytics/blast/pkg/pipeline"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
