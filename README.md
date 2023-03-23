@@ -1,40 +1,26 @@
-# Blast CLI
+# Blast
 [![Go](https://img.shields.io/badge/--00ADD8?logo=go&logoColor=ffffff)](https://golang.org/)
-[![Go Report Card](https://goreportcard.com/badge/github.com/datablast-analytics/blast-cli)](https://goreportcard.com/report/github.com/datablast-analytics/blast-cli)
-[![GitHub Release](https://img.shields.io/github/v/release/datablast-analytics/blast-cli)](https://img.shields.io/github/v/release/datablast-analytics/blast-cli)
+[![Go Report Card](https://goreportcard.com/badge/github.com/datablast-analytics/blast)](https://goreportcard.com/report/github.com/datablast-analytics/blast)
+[![GitHub Release](https://img.shields.io/github/v/release/datablast-analytics/blast)](https://img.shields.io/github/v/release/datablast-analytics/blast)
 
 Blast is a command-line tool for validating and running data transformations on SQL, similar to dbt. On top, Blast can also run Python assets within the same pipeline.
 
 - ✨ run SQL transformations on BigQuery/Snowflake
-  - run pipelines in parallel, as many workers as you want
-  - run only a single asset or with all of its downstream
-  - more databases coming soon: Postgres, Redshift, MySQL, and more
-- 🐍 run Python in isolated virtual environments
-  - every asset can have different dependencies
-  - closest `requirements.txt` file is used for the asset
-  - easy to test Python scripts: no changes in your regular scripts needed to run in Blast
+- 🐍 run Python in isolated environments
 - 🚀 Jinja templating language to avoid repetition
-- ✅ validate data pipelines end to end to catch issues early on
-  - for BigQuery, it can also validate the queries via dry-run to validate the queries on live environment directly.
-  - for Snowflake, it validates queries via `EXPLAIN` statements.
+- ✅ validate data pipelines end-to-end to catch issues early on via dry-run on live
 - 📐 table/view materialization
-  - BigQuery-only at the moment, Snowflake and Postgres in progress
-  - Blast fills the DDL statements on top of your queries, you just write a `SELECT` query
 - ➕ incremental tables
-  - just focus on your business logic, the rest is handled by Blast
-- 💻 mix different technologies + databases in a single pipeline
-  - e.g. SQL and Python in the same pipeline
-  - e.g. BigQuery and Snowflake in the same pipeline
-- built-in data quality checks [coming soon]
-  - ensure the generated tables/views have the correct data on a per-column basis
-- ⚡ written in Golang: blazing fast
+- 💻 mix different technologies + databases in a single pipeline, e.g. SQL and Python in the same pipeline
+- 💅 built-in data quality checks [coming soon]
+- ⚡ blazing fast pipeline execution: Blast is written in Golang and uses concurrency at every opportunity
 
 ![Blast CLI](./resources/blast.svg)
 
 ## Installation
 You need to have Golang installed in the first place, then you can run the following command:
 ```shell
-go install github.com/datablast-analytics/blast-cli@latest
+go install github.com/datablast-analytics/blast@latest
 ```
 
 Please make sure to add GOPATH to your executable path.
@@ -74,7 +60,7 @@ print("Hello, world!")
 
 Once you are done, run the following command to validate your pipeline:
 ```shell
-blast-cli validate .
+blast validate .
 ```
 
 You should get an output that looks like this:
@@ -114,7 +100,7 @@ You need to define two environment variables:
 Blast CLI can also run the whole pipeline or any task with the downstreams:
 
 ```shell
-blast-cli run .
+blast run .
 ```
 
 ```shell
@@ -131,7 +117,7 @@ Executed 2 tasks in 1.798s
 
 You can also run a single task:
 ```shell
-blast-cli run tasks/hello.py                            
+blast run tasks/hello.py                            
 ```
 ```shell
 Starting the pipeline execution...
@@ -155,5 +141,5 @@ You can optionally pass a `--downstream` flag to run the task with all of its do
 ## Disclaimer
 Blast is still in its early stages, so please use it with caution. We are working on improving the documentation and adding more features.
 
-If you are interested in a cloud data platform that does all of these & more on a hosted platform, please check out [Blast Data Platform](https://getblast.io).
+If you are interested in a cloud data platform that does all of these & more as a managed service check out [Blast Data Platform](https://getblast.io).
 
