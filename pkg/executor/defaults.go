@@ -16,6 +16,7 @@ var DefaultExecutors = map[string]Operator{
 	"bq.transfer":                          NoOpOperator{},
 	"bq.sensor.partition":                  NoOpOperator{},
 	"gcs.from.s3":                          NoOpOperator{},
+	"gcs.delete":                           NoOpOperator{},
 	"gcs.sensor.object_sensor_with_prefix": NoOpOperator{},
 	"gcs.sensor.object":                    NoOpOperator{},
 	TaskTypeEmpty:                          NoOpOperator{},

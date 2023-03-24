@@ -136,9 +136,10 @@ func (p Pipeline) HasTaskType(taskType string) bool {
 type TaskCreator func(path string) (*Task, error)
 
 type BuilderConfig struct {
-	PipelineFileName   string
-	TasksDirectoryName string
-	TasksFileSuffixes  []string
+	PipelineFileName    string
+	TasksDirectoryName  string
+	TasksDirectoryNames []string
+	TasksFileSuffixes   []string
 }
 
 type builder struct {
@@ -165,8 +166,6 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		pathToPipeline = filepath.Dir(pathToPipeline)
 	}
 
-	tasksPath := filepath.Join(pathToPipeline, b.config.TasksDirectoryName)
-
 	var pipeline Pipeline
 	err := path.ReadYaml(b.fs, pipelineFilePath, &pipeline)
 	if err != nil {
@@ -190,9 +189,15 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		Path: absPipelineFilePath,
 	}
 
-	taskFiles, err := path.GetAllFilesRecursive(tasksPath, supportedFileSuffixes)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error listing Task files at '%s'", tasksPath)
+	taskFiles := make([]string, 0)
+	for _, tasksDirectoryName := range b.config.TasksDirectoryNames {
+		tasksPath := filepath.Join(pathToPipeline, tasksDirectoryName)
+		files, err := path.GetAllFilesRecursive(tasksPath, supportedFileSuffixes)
+		if err != nil {
+			continue
+		}
+
+		taskFiles = append(taskFiles, files...)
 	}
 
 	for _, file := range taskFiles {

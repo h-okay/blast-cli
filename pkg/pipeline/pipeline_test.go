@@ -153,16 +153,6 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "missing path for the tasks should error",
-			fields: fields{
-				tasksDirectoryName: "some-missing-directory-name",
-			},
-			args: args{
-				pathToPipeline: "testdata/pipeline/first-pipeline",
-			},
-			wantErr: true,
-		},
-		{
 			name: "should create pipeline from path",
 			fields: fields{
 				tasksDirectoryName: "tasks",
@@ -195,9 +185,9 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			t.Parallel()
 
 			builderConfig := pipeline.BuilderConfig{
-				PipelineFileName:   "pipeline.yml",
-				TasksDirectoryName: tt.fields.tasksDirectoryName,
-				TasksFileSuffixes:  []string{"task.yml", "task.yaml"},
+				PipelineFileName:    "pipeline.yml",
+				TasksDirectoryNames: []string{tt.fields.tasksDirectoryName},
+				TasksFileSuffixes:   []string{"task.yml", "task.yaml"},
 			}
 
 			p := pipeline.NewBuilder(builderConfig, tt.fields.yamlTaskCreator, tt.fields.commentTaskCreator, afero.NewOsFs())
