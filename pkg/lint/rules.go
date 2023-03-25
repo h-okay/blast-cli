@@ -264,7 +264,7 @@ func EnsureOnlyAcceptedTaskTypesAreThere(p *pipeline.Pipeline) ([]*Issue, error)
 			continue
 		}
 
-		if _, ok := executor.DefaultExecutors[task.Type]; !ok {
+		if _, ok := executor.DefaultExecutorsV2[task.Type]; !ok {
 			issues = append(issues, &Issue{
 				Task:        task,
 				Description: fmt.Sprintf("Invalid task type '%s'", task.Type),

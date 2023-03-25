@@ -144,7 +144,7 @@ func ConvertYamlToTask(content []byte) (*Asset, error) {
 	task := Asset{
 		Name:            definition.Name,
 		Description:     definition.Description,
-		Type:            definition.Type,
+		Type:            AssetType(definition.Type),
 		Parameters:      definition.Parameters,
 		Connections:     definition.Connections,
 		DependsOn:       definition.Depends,

@@ -47,34 +47,25 @@ func TestConcurrent_Start(t *testing.T) {
 	}
 
 	mockOperator := new(mockOperator)
-	mockOperator.On("RunTask", mock.Anything, p, t11).
-		Return(nil).
-		Once()
-
-	mockOperator.On("RunTask", mock.Anything, p, t21).
-		Return(nil).
-		Once()
-
-	mockOperator.On("RunTask", mock.Anything, p, t12).
-		Return(nil).
-		Once()
-
-	mockOperator.On("RunTask", mock.Anything, p, t22).
-		Return(nil).
-		Once()
-
-	mockOperator.On("RunTask", mock.Anything, p, t3).
-		Return(nil).
-		Once()
+	for _, a := range p.Tasks {
+		a := a
+		mockOperator.On("Run", mock.Anything, mock.MatchedBy(func(ti scheduler.TaskInstance) bool {
+			return ti.GetAsset().Name == a.Name
+		})).
+			Return(nil).
+			Once()
+	}
 
 	logger := zap.NewNop().Sugar()
 	s := scheduler.NewScheduler(logger, p)
+	assert.Equal(t, 5, s.InstanceCount())
 
-	ops := map[scheduler.TaskInstanceType]OperatorMap{
-		scheduler.TaskInstanceTypeMain: {
-			"test": mockOperator,
+	ops := map[pipeline.AssetType]Config{
+		"test": {
+			scheduler.TaskInstanceTypeMain: mockOperator,
 		},
 	}
+
 	ex := NewConcurrent(logger, ops, 8)
 	ex.Start(s.WorkQueue, s.Results)
 

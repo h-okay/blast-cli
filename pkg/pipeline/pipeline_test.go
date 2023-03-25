@@ -278,7 +278,7 @@ func TestPipeline_HasTaskType(t *testing.T) {
 				DefinitionFile: pipeline.DefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
-				TasksByType: map[string][]*pipeline.Asset{
+				TasksByType: map[pipeline.AssetType][]*pipeline.Asset{
 					"type1": {},
 					"type2": {},
 					"type3": {},
@@ -293,7 +293,7 @@ func TestPipeline_HasTaskType(t *testing.T) {
 				DefinitionFile: pipeline.DefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
-				TasksByType: map[string][]*pipeline.Asset{
+				TasksByType: map[pipeline.AssetType][]*pipeline.Asset{
 					"type1": {},
 					"type2": {},
 					"type3": {},
@@ -307,7 +307,7 @@ func TestPipeline_HasTaskType(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.want, tt.pipeline.HasTaskType(tt.taskType))
+			assert.Equal(t, tt.want, tt.pipeline.HasTaskType(pipeline.AssetType(tt.taskType)))
 		})
 	}
 }

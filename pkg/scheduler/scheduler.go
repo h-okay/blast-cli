@@ -13,6 +13,18 @@ type TaskInstanceStatus int
 
 type TaskInstanceType int
 
+func (s TaskInstanceType) String() string {
+	switch s {
+	case TaskInstanceTypeMain:
+		return "main"
+	case TaskInstanceTypeColumnTest:
+		return "column_test"
+	case TaskInstanceTypeCustomTest:
+		return "custom_test"
+	}
+	return "unknown"
+}
+
 const (
 	Pending TaskInstanceStatus = iota
 	Queued
@@ -187,7 +199,7 @@ func (s *Scheduler) GetTaskInstancesByStatus(status TaskInstanceStatus) []TaskIn
 	return instances
 }
 
-func (s *Scheduler) WillRunTaskOfType(taskType string) bool {
+func (s *Scheduler) WillRunTaskOfType(taskType pipeline.AssetType) bool {
 	instances := s.GetTaskInstancesByStatus(Pending)
 	for _, instance := range instances {
 		if instance.GetAsset().Type == taskType {

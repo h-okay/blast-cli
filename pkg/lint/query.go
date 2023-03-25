@@ -21,7 +21,7 @@ type queryExtractor interface {
 
 type QueryValidatorRule struct {
 	Identifier  string
-	TaskType    string
+	TaskType    pipeline.AssetType
 	Validator   queryValidator
 	Extractor   queryExtractor
 	WorkerCount int

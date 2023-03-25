@@ -5,6 +5,7 @@ import (
 
 	"github.com/datablast-analytics/blast/pkg/git"
 	"github.com/datablast-analytics/blast/pkg/pipeline"
+	"github.com/datablast-analytics/blast/pkg/scheduler"
 	"github.com/datablast-analytics/blast/pkg/user"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
@@ -57,6 +58,15 @@ func NewLocalOperator(envVariables map[string]string) *LocalOperator {
 		},
 		envVariables: envVariables,
 	}
+}
+
+func (o *LocalOperator) Run(ctx context.Context, ti scheduler.TaskInstance) error {
+	_, ok := ti.(*scheduler.AssetInstance)
+	if !ok {
+		return errors.New("python assets can only be run as a main task")
+	}
+
+	return o.RunTask(ctx, ti.GetPipeline(), ti.GetAsset())
 }
 
 func (o *LocalOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pipeline.Asset) error {

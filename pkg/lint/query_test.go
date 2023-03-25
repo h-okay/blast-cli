@@ -34,7 +34,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 	t.Parallel()
 
 	noIssues := make([]*Issue, 0)
-	taskType := "someTaskType"
+	taskType := pipeline.AssetType("someTaskType")
 
 	tests := []struct {
 		name           string

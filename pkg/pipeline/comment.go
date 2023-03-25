@@ -166,7 +166,7 @@ func commentRowsToTask(commentRows []string) *Asset {
 
 			continue
 		case "type":
-			task.Type = value
+			task.Type = AssetType(value)
 
 			continue
 		case "depends":

@@ -40,7 +40,7 @@ type Concurrent struct {
 
 func NewConcurrent(
 	logger *zap.SugaredLogger,
-	taskTypeMap map[scheduler.TaskInstanceType]OperatorMap,
+	taskTypeMap map[pipeline.AssetType]Config,
 	workerCount int,
 ) *Concurrent {
 	executor := &Sequential{
@@ -93,7 +93,7 @@ func (w worker) run(taskChannel <-chan scheduler.TaskInstance, results chan<- *s
 		}
 
 		ctx := context.WithValue(context.Background(), KeyPrinter, printer)
-		err := w.executor.RunSingleTask(ctx, task.GetPipeline(), task)
+		err := w.executor.RunSingleTask(ctx, task)
 
 		duration := time.Since(start)
 		durationString := fmt.Sprintf("(%s)", duration.Truncate(time.Millisecond).String())

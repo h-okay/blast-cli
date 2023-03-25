@@ -9,32 +9,31 @@ import (
 )
 
 type Operator interface {
-	RunTask(ctx context.Context, p *pipeline.Pipeline, t *pipeline.Asset) error
+	Run(ctx context.Context, ti scheduler.TaskInstance) error
 }
 
-type OperatorMap map[string]Operator
+type (
+	OperatorMap       map[pipeline.AssetType]Operator
+	OperatorSecondMap map[string]Operator
+)
 
 type Sequential struct {
-	TaskTypeMap map[scheduler.TaskInstanceType]OperatorMap
+	TaskTypeMap map[pipeline.AssetType]Config
 }
 
-func (s Sequential) RunSingleTask(ctx context.Context, pipeline *pipeline.Pipeline, instance scheduler.TaskInstance) error {
+func (s Sequential) RunSingleTask(ctx context.Context, instance scheduler.TaskInstance) error {
 	task := instance.GetAsset()
 
-	executors, ok := s.TaskTypeMap[instance.GetType()]
-	if !ok {
-		return errors.New("there is no executor configured for the asset class: " + task.Type)
-	}
-
 	// check if task type exists in map
-	executor, ok := executors[task.Type]
+	executors, ok := s.TaskTypeMap[task.Type]
 	if !ok {
-		return errors.New("there is no executor configured for the task type, task cannot be run: " + task.Type)
+		return errors.New("there is no executor configured for the task type, task cannot be run: " + string(task.Type))
 	}
 
-	if instance.GetType() == scheduler.TaskInstanceTypeMain {
-		return executor.RunTask(ctx, pipeline, task)
+	executor, ok := executors[instance.GetType()]
+	if !ok {
+		return errors.New("there is no executor configured for the asset class: " + instance.GetType().String())
 	}
 
-	return nil
+	return executor.Run(ctx, instance)
 }

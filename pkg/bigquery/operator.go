@@ -5,6 +5,7 @@ import (
 
 	"github.com/datablast-analytics/blast/pkg/pipeline"
 	"github.com/datablast-analytics/blast/pkg/query"
+	"github.com/datablast-analytics/blast/pkg/scheduler"
 	"github.com/pkg/errors"
 )
 
@@ -48,6 +49,10 @@ func NewBasicOperator(client *DB, extractor queryExtractor, materializer materia
 	}
 }
 
+func (o BasicOperator) Run(ctx context.Context, ti scheduler.TaskInstance) error {
+	return o.RunTask(ctx, ti.GetPipeline(), ti.GetAsset())
+}
+
 func (o BasicOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pipeline.Asset) error {
 	queries, err := o.extractor.ExtractQueriesFromFile(t.ExecutableFile.Path)
 	if err != nil {
@@ -70,4 +75,26 @@ func (o BasicOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pip
 
 	q.Query = materialized
 	return o.client.RunQueryWithoutResult(ctx, q)
+}
+
+type testRunner interface {
+	RunTest(ctx context.Context, test *scheduler.ColumnTestInstance) error
+}
+
+type ColumnTestOperator struct {
+	testRunners map[string]testRunner
+}
+
+func (o ColumnTestOperator) Run(ctx context.Context, ti scheduler.TaskInstance) error {
+	test, ok := ti.(*scheduler.ColumnTestInstance)
+	if !ok {
+		return errors.New("cannot run a non-column test instance")
+	}
+
+	executor, ok := o.testRunners[test.Test.Name]
+	if !ok {
+		return errors.New("there is no executor configured for the test type, test cannot be run: " + test.Test.Name)
+	}
+
+	return executor.RunTest(ctx, test)
 }

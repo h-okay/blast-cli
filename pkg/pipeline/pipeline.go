@@ -87,10 +87,12 @@ type Column struct {
 	Tests       []ColumnTest `yaml:"tests"`
 }
 
+type AssetType string
+
 type Asset struct {
 	Name            string
 	Description     string
-	Type            string
+	Type            AssetType
 	ExecutableFile  ExecutableFile
 	DefinitionFile  TaskDefinitionFile
 	Parameters      map[string]string
@@ -113,7 +115,7 @@ type Pipeline struct {
 	Tasks              []*Asset
 	Notifications      Notifications `yaml:"notifications"`
 
-	TasksByType map[string][]*Asset
+	TasksByType map[AssetType][]*Asset
 	tasksByName map[string]*Asset
 }
 
@@ -128,7 +130,7 @@ func (p *Pipeline) RelativeTaskPath(t *Asset) string {
 	return pipelineDirectory
 }
 
-func (p Pipeline) HasTaskType(taskType string) bool {
+func (p Pipeline) HasTaskType(taskType AssetType) bool {
 	_, ok := p.TasksByType[taskType]
 	return ok
 }
@@ -176,7 +178,7 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 	if pipeline.Name == "" {
 		pipeline.Name = pipeline.LegacyID
 	}
-	pipeline.TasksByType = make(map[string][]*Asset)
+	pipeline.TasksByType = make(map[AssetType][]*Asset)
 	pipeline.tasksByName = make(map[string]*Asset)
 
 	absPipelineFilePath, err := filepath.Abs(pipelineFilePath)

@@ -15,15 +15,14 @@ type mockOperator struct {
 	mock.Mock
 }
 
-func (d *mockOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pipeline.Asset) error {
-	args := d.Called(ctx, p, t)
+func (d *mockOperator) Run(ctx context.Context, ti scheduler.TaskInstance) error {
+	args := d.Called(ctx, ti)
 	return args.Error(0)
 }
 
 func TestLocal_RunSingleTask(t *testing.T) {
 	t.Parallel()
 
-	p := &pipeline.Pipeline{}
 	asset := &pipeline.Asset{
 		Name: "task1",
 		Type: "test",
@@ -36,18 +35,18 @@ func TestLocal_RunSingleTask(t *testing.T) {
 		t.Parallel()
 
 		mockOperator := new(mockOperator)
-		mockOperator.On("RunTask", mock.Anything, p, asset).
+		mockOperator.On("Run", mock.Anything, instance).
 			Return(nil)
 
 		l := Sequential{
-			TaskTypeMap: map[scheduler.TaskInstanceType]OperatorMap{
-				scheduler.TaskInstanceTypeMain: {
-					"test": mockOperator,
+			TaskTypeMap: map[pipeline.AssetType]Config{
+				"test": {
+					scheduler.TaskInstanceTypeMain: mockOperator,
 				},
 			},
 		}
 
-		err := l.RunSingleTask(context.Background(), p, instance)
+		err := l.RunSingleTask(context.Background(), instance)
 
 		assert.NoError(t, err)
 		mockOperator.AssertExpectations(t)
@@ -59,14 +58,14 @@ func TestLocal_RunSingleTask(t *testing.T) {
 		mockOperator := new(mockOperator)
 
 		l := Sequential{
-			TaskTypeMap: map[scheduler.TaskInstanceType]OperatorMap{
-				scheduler.TaskInstanceTypeMain: {
-					"some-other-instance": mockOperator,
+			TaskTypeMap: map[pipeline.AssetType]Config{
+				"some-other-instance": {
+					scheduler.TaskInstanceTypeMain: mockOperator,
 				},
 			},
 		}
 
-		err := l.RunSingleTask(context.Background(), p, instance)
+		err := l.RunSingleTask(context.Background(), instance)
 
 		assert.Error(t, err)
 		mockOperator.AssertExpectations(t)
@@ -76,18 +75,18 @@ func TestLocal_RunSingleTask(t *testing.T) {
 		t.Parallel()
 
 		mockOperator := new(mockOperator)
-		mockOperator.On("RunTask", mock.Anything, p, asset).
+		mockOperator.On("Run", mock.Anything, instance).
 			Return(errors.New("some error occurred"))
 
 		l := Sequential{
-			TaskTypeMap: map[scheduler.TaskInstanceType]OperatorMap{
-				scheduler.TaskInstanceTypeMain: {
-					"test": mockOperator,
+			TaskTypeMap: map[pipeline.AssetType]Config{
+				"test": {
+					scheduler.TaskInstanceTypeMain: mockOperator,
 				},
 			},
 		}
 
-		err := l.RunSingleTask(context.Background(), p, instance)
+		err := l.RunSingleTask(context.Background(), instance)
 
 		assert.Error(t, err)
 		mockOperator.AssertExpectations(t)
