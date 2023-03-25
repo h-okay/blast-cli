@@ -40,7 +40,7 @@ type Concurrent struct {
 
 func NewConcurrent(
 	logger *zap.SugaredLogger,
-	taskTypeMap map[string]Operator,
+	taskTypeMap map[scheduler.TaskInstanceType]OperatorMap,
 	workerCount int,
 ) *Concurrent {
 	executor := &Sequential{

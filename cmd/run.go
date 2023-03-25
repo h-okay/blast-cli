@@ -144,9 +144,9 @@ func Run(isDebug *bool) *cli.Command {
 				s.MarkTask(task, scheduler.Pending, runDownstreamTasks)
 			}
 
-			executors := executor.DefaultExecutors
+			mainExecutors := executor.DefaultExecutors
 			if s.WillRunTaskOfType(executor.TaskTypePython) {
-				executors[executor.TaskTypePython] = python.NewLocalOperator(map[string]string{})
+				mainExecutors[executor.TaskTypePython] = python.NewLocalOperator(map[string]string{})
 			}
 
 			if s.WillRunTaskOfType(executor.TaskTypeBigqueryQuery) {
@@ -161,9 +161,12 @@ func Run(isDebug *bool) *cli.Command {
 					return cli.Exit("", 1)
 				}
 
-				executors[executor.TaskTypeBigqueryQuery] = bqOperator
+				mainExecutors[executor.TaskTypeBigqueryQuery] = bqOperator
 			}
 
+			executors := map[scheduler.TaskInstanceType]executor.OperatorMap{
+				scheduler.TaskInstanceTypeMain: mainExecutors,
+			}
 			ex := executor.NewConcurrent(logger, executors, c.Int("workers"))
 			ex.Start(s.WorkQueue, s.Results)
 

@@ -40,8 +40,10 @@ func TestLocal_RunSingleTask(t *testing.T) {
 			Return(nil)
 
 		l := Sequential{
-			TaskTypeMap: map[string]Operator{
-				"test": mockOperator,
+			TaskTypeMap: map[scheduler.TaskInstanceType]OperatorMap{
+				scheduler.TaskInstanceTypeMain: {
+					"test": mockOperator,
+				},
 			},
 		}
 
@@ -57,8 +59,10 @@ func TestLocal_RunSingleTask(t *testing.T) {
 		mockOperator := new(mockOperator)
 
 		l := Sequential{
-			TaskTypeMap: map[string]Operator{
-				"some-other-instance": mockOperator,
+			TaskTypeMap: map[scheduler.TaskInstanceType]OperatorMap{
+				scheduler.TaskInstanceTypeMain: {
+					"some-other-instance": mockOperator,
+				},
 			},
 		}
 
@@ -76,8 +80,10 @@ func TestLocal_RunSingleTask(t *testing.T) {
 			Return(errors.New("some error occurred"))
 
 		l := Sequential{
-			TaskTypeMap: map[string]Operator{
-				"test": mockOperator,
+			TaskTypeMap: map[scheduler.TaskInstanceType]OperatorMap{
+				scheduler.TaskInstanceTypeMain: {
+					"test": mockOperator,
+				},
 			},
 		}
 

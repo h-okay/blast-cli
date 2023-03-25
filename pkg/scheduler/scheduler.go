@@ -43,6 +43,7 @@ type TaskInstance interface {
 }
 
 type AssetInstance struct {
+	Name     string
 	Pipeline *pipeline.Pipeline
 	Asset    *pipeline.Asset
 
@@ -89,6 +90,13 @@ func (t *AssetInstance) AddUpstream(task TaskInstance) {
 
 func (t *AssetInstance) AddDownstream(task TaskInstance) {
 	t.downstream = append(t.downstream, task)
+}
+
+type ColumnTestInstance struct {
+	*AssetInstance
+
+	Column *pipeline.Column
+	Test   *pipeline.ColumnTest
 }
 
 type TaskExecutionResult struct {
@@ -173,6 +181,24 @@ func NewScheduler(logger *zap.SugaredLogger, p *pipeline.Pipeline) *Scheduler {
 			upstream:   make([]TaskInstance, 0),
 			downstream: make([]TaskInstance, 0),
 		})
+
+		for _, column := range task.Columns {
+			col := column
+			for _, test := range column.Tests {
+				t := test
+				instances = append(instances, ColumnTestInstance{
+					AssetInstance: &AssetInstance{
+						Pipeline:   p,
+						Asset:      task,
+						status:     Pending,
+						upstream:   make([]TaskInstance, 0),
+						downstream: make([]TaskInstance, 0),
+					},
+					Column: &col,
+					Test:   &t,
+				})
+			}
+		}
 	}
 
 	s := &Scheduler{

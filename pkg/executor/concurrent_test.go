@@ -70,7 +70,12 @@ func TestConcurrent_Start(t *testing.T) {
 	logger := zap.NewNop().Sugar()
 	s := scheduler.NewScheduler(logger, p)
 
-	ex := NewConcurrent(logger, map[string]Operator{"test": mockOperator}, 8)
+	ops := map[scheduler.TaskInstanceType]OperatorMap{
+		scheduler.TaskInstanceTypeMain: {
+			"test": mockOperator,
+		},
+	}
+	ex := NewConcurrent(logger, ops, 8)
 	ex.Start(s.WorkQueue, s.Results)
 
 	results := s.Run(context.Background())
