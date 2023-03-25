@@ -34,7 +34,7 @@ schedule: "daily"
 start_date: "2023-03-01"
 ```
 
-create a new folder called `tasks` and create your first asset there `tasks/blast-test.sql`:
+create a new folder called `assets` and create your first asset there `assets/blast-test.sql`:
 ```sql
 -- @blast.name: dataset.blast-test
 -- @blast.type: bq.sql
@@ -48,7 +48,7 @@ Blast will take this result, and will create a `dataset.blast-test` table on Big
 > **Snowflake assets**
 > If you'd like to run the asset on Snowflake, simply replace the `bq.sql` with `sf.sql`.
 
-Then let's create a Python asset `tasks/blast-test.py`:
+Then let's create a Python asset `assets/blast-test.py`:
 ```python
 # @blast.name: hello
 # @blast.type: python
@@ -117,7 +117,7 @@ Executed 2 tasks in 1.798s
 
 You can also run a single task:
 ```shell
-blast run tasks/hello.py                            
+blast run assets/hello.py                            
 ```
 ```shell
 Starting the pipeline execution...
@@ -135,7 +135,7 @@ You can optionally pass a `--downstream` flag to run the task with all of its do
 ## Upcoming Features
 - Support for full range of data quality tests on a per-column basis
 - Connection + config management
-- Secrets for Python tasks
+- Secrets for Python assets
 - More databases: Postgres, Redshift, MySQL, and more
 
 ## Disclaimer
