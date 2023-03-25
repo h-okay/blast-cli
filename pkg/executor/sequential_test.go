@@ -28,8 +28,8 @@ func TestLocal_RunSingleTask(t *testing.T) {
 		Name: "task1",
 		Type: "test",
 	}
-	instance := &scheduler.TaskInstance{
-		Task: asset,
+	instance := &scheduler.AssetInstance{
+		Asset: asset,
 	}
 
 	t.Run("simple instance is executed successfully", func(t *testing.T) {

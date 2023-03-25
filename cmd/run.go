@@ -182,7 +182,7 @@ func Run(isDebug *bool) *cli.Command {
 			if len(errors) > 0 {
 				errorPrinter.Printf("\nFailed tasks: %d\n", len(errors))
 				for _, t := range errors {
-					errorPrinter.Printf("  - %s\n", t.Instance.Task.Name)
+					errorPrinter.Printf("  - %s\n", t.Instance.GetAsset().Name)
 					errorPrinter.Printf("    └── %s\n\n", t.Error.Error())
 				}
 
@@ -190,7 +190,7 @@ func Run(isDebug *bool) *cli.Command {
 				if len(upstreamFailedTasks) > 0 {
 					errorPrinter.Printf("The following tasks are skipped due to their upstream failing:\n")
 					for _, t := range upstreamFailedTasks {
-						errorPrinter.Printf("  - %s\n", t.Task.Name)
+						errorPrinter.Printf("  - %s\n", t.GetAsset().Name)
 					}
 				}
 			}

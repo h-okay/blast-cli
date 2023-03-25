@@ -66,7 +66,7 @@ func NewConcurrent(
 	}
 }
 
-func (c Concurrent) Start(input chan *scheduler.TaskInstance, result chan<- *scheduler.TaskExecutionResult) {
+func (c Concurrent) Start(input chan scheduler.TaskInstance, result chan<- *scheduler.TaskExecutionResult) {
 	for i := 0; i < c.workerCount; i++ {
 		go c.workers[i].run(input, result)
 	}
@@ -80,25 +80,25 @@ type worker struct {
 	printLock *sync.Mutex
 }
 
-func (w worker) run(taskChannel <-chan *scheduler.TaskInstance, results chan<- *scheduler.TaskExecutionResult) {
+func (w worker) run(taskChannel <-chan scheduler.TaskInstance, results chan<- *scheduler.TaskExecutionResult) {
 	for task := range taskChannel {
-		w.printer.Printf("[%s] [%s] Running: %s\n", time.Now().Format(time.RFC3339), w.id, task.Task.Name)
+		w.printer.Printf("[%s] [%s] Running: %s\n", time.Now().Format(time.RFC3339), w.id, task.GetAsset().Name)
 		start := time.Now()
 
 		printer := &workerWriter{
 			w:           os.Stdout,
-			task:        task.Task,
+			task:        task.GetAsset(),
 			sprintfFunc: w.printer.SprintfFunc(),
 			worker:      w.id,
 		}
 
 		ctx := context.WithValue(context.Background(), KeyPrinter, printer)
-		err := w.executor.RunSingleTask(ctx, task.Pipeline, task)
+		err := w.executor.RunSingleTask(ctx, task.GetPipeline(), task)
 
 		duration := time.Since(start)
 		durationString := fmt.Sprintf("(%s)", duration.Truncate(time.Millisecond).String())
 		w.printLock.Lock()
-		w.printer.Printf("[%s] [%s] Completed: %s %s\n", time.Now().Format(time.RFC3339), w.id, task.Task.Name, faint(durationString))
+		w.printer.Printf("[%s] [%s] Completed: %s %s\n", time.Now().Format(time.RFC3339), w.id, task.GetAsset().Name, faint(durationString))
 		w.printLock.Unlock()
 
 		results <- &scheduler.TaskExecutionResult{

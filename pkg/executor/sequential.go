@@ -16,8 +16,8 @@ type Sequential struct {
 	TaskTypeMap map[string]Operator
 }
 
-func (s Sequential) RunSingleTask(ctx context.Context, pipeline *pipeline.Pipeline, instance *scheduler.TaskInstance) error {
-	task := instance.Task
+func (s Sequential) RunSingleTask(ctx context.Context, pipeline *pipeline.Pipeline, instance scheduler.TaskInstance) error {
+	task := instance.GetAsset()
 
 	// check if task type exists in map
 	if _, ok := s.TaskTypeMap[task.Type]; !ok {
