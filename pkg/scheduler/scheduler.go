@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/datablast-analytics/blast/pkg/pipeline"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -43,7 +44,7 @@ type TaskInstance interface {
 }
 
 type AssetInstance struct {
-	Name     string
+	ID       string
 	Pipeline *pipeline.Pipeline
 	Asset    *pipeline.Asset
 
@@ -95,8 +96,13 @@ func (t *AssetInstance) AddDownstream(task TaskInstance) {
 type ColumnTestInstance struct {
 	*AssetInstance
 
-	Column *pipeline.Column
-	Test   *pipeline.ColumnTest
+	parentID string
+	Column   *pipeline.Column
+	Test     *pipeline.ColumnTest
+}
+
+func (t *ColumnTestInstance) GetType() TaskInstanceType {
+	return TaskInstanceTypeColumnTest
 }
 
 type TaskExecutionResult struct {
@@ -104,15 +110,32 @@ type TaskExecutionResult struct {
 	Error    error
 }
 
-type Scheduler struct {
-	logger *zap.SugaredLogger
+type InstancesByType map[TaskInstanceType][]TaskInstance
 
-	taskInstances    []TaskInstance
+type Scheduler struct {
+	logger           *zap.SugaredLogger
 	taskScheduleLock sync.Mutex
-	taskNameMap      map[string]TaskInstance
+
+	taskInstances []TaskInstance
+	taskNameMap   map[string]InstancesByType
 
 	WorkQueue chan TaskInstance
 	Results   chan *TaskExecutionResult
+}
+
+func (s *Scheduler) InstanceCount() int {
+	return len(s.taskInstances)
+}
+
+func (s *Scheduler) InstanceCountByStatus(status TaskInstanceStatus) int {
+	count := 0
+	for _, i := range s.taskInstances {
+		if i.GetStatus() == status {
+			count++
+		}
+	}
+
+	return count
 }
 
 func (s *Scheduler) MarkAll(status TaskInstanceStatus) {
@@ -122,8 +145,12 @@ func (s *Scheduler) MarkAll(status TaskInstanceStatus) {
 }
 
 func (s *Scheduler) MarkTask(task *pipeline.Asset, status TaskInstanceStatus, downstream bool) {
-	instance := s.taskNameMap[task.Name]
-	s.MarkTaskInstance(instance, status, downstream)
+	instancesByType := s.taskNameMap[task.Name]
+	for _, instance := range instancesByType {
+		for _, i := range instance {
+			s.MarkTaskInstance(i, status, downstream)
+		}
+	}
 }
 
 func (s *Scheduler) MarkTaskInstance(instance TaskInstance, status TaskInstanceStatus, downstream bool) {
@@ -172,31 +199,38 @@ func (s *Scheduler) WillRunTaskOfType(taskType string) bool {
 }
 
 func NewScheduler(logger *zap.SugaredLogger, p *pipeline.Pipeline) *Scheduler {
-	instances := make([]TaskInstance, 0, len(p.Tasks))
+	instances := make([]TaskInstance, 0)
+
 	for _, task := range p.Tasks {
-		instances = append(instances, &AssetInstance{
+		parentID := uuid.New().String()
+		instance := &AssetInstance{
+			ID:         parentID,
 			Pipeline:   p,
 			Asset:      task,
 			status:     Pending,
 			upstream:   make([]TaskInstance, 0),
 			downstream: make([]TaskInstance, 0),
-		})
+		}
+		instances = append(instances, instance)
 
 		for _, column := range task.Columns {
 			col := column
 			for _, test := range column.Tests {
 				t := test
-				instances = append(instances, ColumnTestInstance{
+				testInstance := &ColumnTestInstance{
 					AssetInstance: &AssetInstance{
+						ID:         uuid.New().String(),
 						Pipeline:   p,
 						Asset:      task,
 						status:     Pending,
 						upstream:   make([]TaskInstance, 0),
 						downstream: make([]TaskInstance, 0),
 					},
-					Column: &col,
-					Test:   &t,
-				})
+					parentID: parentID,
+					Column:   &col,
+					Test:     &t,
+				}
+				instances = append(instances, testInstance)
 			}
 		}
 	}
@@ -215,22 +249,40 @@ func NewScheduler(logger *zap.SugaredLogger, p *pipeline.Pipeline) *Scheduler {
 }
 
 func (s *Scheduler) constructTaskNameMap() {
-	s.taskNameMap = make(map[string]TaskInstance)
+	s.taskNameMap = make(map[string]InstancesByType)
 	for _, ti := range s.taskInstances {
-		s.taskNameMap[ti.GetAsset().Name] = ti
+		assetName := ti.GetAsset().Name
+		if _, ok := s.taskNameMap[assetName]; !ok {
+			s.taskNameMap[assetName] = InstancesByType{}
+		}
+
+		s.taskNameMap[assetName][ti.GetType()] = append(s.taskNameMap[assetName][ti.GetType()], ti)
 	}
 }
 
 func (s *Scheduler) constructInstanceRelationships() {
 	for _, ti := range s.taskInstances {
+		if ti.GetType() == TaskInstanceTypeMain {
+			assetName := ti.GetAsset().Name
+			columnTests := s.taskNameMap[assetName][TaskInstanceTypeColumnTest]
+			for _, instance := range columnTests {
+				instance.AddUpstream(ti)
+				ti.AddDownstream(instance)
+			}
+		}
+
 		for _, dep := range ti.GetAsset().DependsOn {
-			upstream, ok := s.taskNameMap[dep]
+			upstreamInstances, ok := s.taskNameMap[dep]
 			if !ok {
 				continue
 			}
 
-			ti.AddUpstream(upstream)
-			upstream.AddDownstream(ti)
+			for _, instances := range upstreamInstances {
+				for _, upstream := range instances {
+					ti.AddUpstream(upstream)
+					upstream.AddDownstream(ti)
+				}
+			}
 		}
 	}
 }
@@ -327,14 +379,18 @@ func (s *Scheduler) allDependenciesSucceededForTask(t TaskInstance) bool {
 	}
 
 	for _, dep := range t.GetAsset().DependsOn {
-		upstream, ok := s.taskNameMap[dep]
+		upstreamInstances, ok := s.taskNameMap[dep]
 		if !ok {
 			continue
 		}
 
-		status := upstream.GetStatus()
-		if status == Pending || status == Queued || status == Running {
-			return false
+		for _, instances := range upstreamInstances {
+			for _, upstream := range instances {
+				status := upstream.GetStatus()
+				if status == Pending || status == Queued || status == Running {
+					return false
+				}
+			}
 		}
 	}
 

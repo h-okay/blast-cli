@@ -173,6 +173,15 @@ func TestScheduler_Run(t *testing.T) {
 			{
 				Name:      "task12",
 				DependsOn: []string{"task11"},
+				Columns: map[string]pipeline.Column{
+					"col1": {
+						Tests: []pipeline.ColumnTest{
+							{
+								Name: "not_null",
+							},
+						},
+					},
+				},
 			},
 			{
 				Name:      "task22",
@@ -215,6 +224,16 @@ func TestScheduler_Run(t *testing.T) {
 	// mark t21 as completed
 	scheduler.Tick(&TaskExecutionResult{
 		Instance: t21,
+	})
+
+	// expect t12's test to be scheduled
+	t12Tests := <-scheduler.WorkQueue
+	assert.Equal(t, "task12", t12Tests.GetAsset().Name)
+	assert.Equal(t, TaskInstanceTypeColumnTest, t12Tests.GetType())
+
+	// mark t21 as completed
+	scheduler.Tick(&TaskExecutionResult{
+		Instance: t12Tests,
 	})
 
 	// expect t22 to arrive, given that t21 was completed
@@ -322,6 +341,15 @@ func TestScheduler_WillRunTaskOfType(t *testing.T) {
 		Name:      "task12",
 		DependsOn: []string{"task11"},
 		Type:      "bq.sql",
+		Columns: map[string]pipeline.Column{
+			"col1": {
+				Tests: []pipeline.ColumnTest{
+					{
+						Name: "not_null",
+					},
+				},
+			},
+		},
 	}
 
 	p := &pipeline.Pipeline{
@@ -366,6 +394,8 @@ func TestScheduler_WillRunTaskOfType(t *testing.T) {
 	s.MarkAll(Succeeded)
 	s.MarkTask(t12, Pending, true)
 
+	assert.Equal(t, s.InstanceCount(), 9)
+	assert.Equal(t, 5, s.InstanceCountByStatus(Pending))
 	assert.False(t, s.WillRunTaskOfType("sf.sql"))
 	assert.False(t, s.WillRunTaskOfType("random"))
 	assert.True(t, s.WillRunTaskOfType("bq.sql"))
