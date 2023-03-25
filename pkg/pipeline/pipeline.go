@@ -87,7 +87,7 @@ type Column struct {
 	Tests       []ColumnTest `yaml:"tests"`
 }
 
-type Task struct {
+type Asset struct {
 	Name            string
 	Description     string
 	Type            string
@@ -110,14 +110,14 @@ type Pipeline struct {
 	DefinitionFile     DefinitionFile
 	DefaultParameters  map[string]string `yaml:"default_parameters"`
 	DefaultConnections map[string]string `yaml:"default_connections"`
-	Tasks              []*Task
+	Tasks              []*Asset
 	Notifications      Notifications `yaml:"notifications"`
 
-	TasksByType map[string][]*Task
-	tasksByName map[string]*Task
+	TasksByType map[string][]*Asset
+	tasksByName map[string]*Asset
 }
 
-func (p *Pipeline) RelativeTaskPath(t *Task) string {
+func (p *Pipeline) RelativeTaskPath(t *Asset) string {
 	absolutePipelineRoot := filepath.Dir(p.DefinitionFile.Path)
 
 	pipelineDirectory, err := filepath.Rel(absolutePipelineRoot, t.DefinitionFile.Path)
@@ -133,7 +133,7 @@ func (p Pipeline) HasTaskType(taskType string) bool {
 	return ok
 }
 
-type TaskCreator func(path string) (*Task, error)
+type TaskCreator func(path string) (*Asset, error)
 
 type BuilderConfig struct {
 	PipelineFileName    string
@@ -176,8 +176,8 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 	if pipeline.Name == "" {
 		pipeline.Name = pipeline.LegacyID
 	}
-	pipeline.TasksByType = make(map[string][]*Task)
-	pipeline.tasksByName = make(map[string]*Task)
+	pipeline.TasksByType = make(map[string][]*Asset)
+	pipeline.tasksByName = make(map[string]*Asset)
 
 	absPipelineFilePath, err := filepath.Abs(pipelineFilePath)
 	if err != nil {
@@ -213,7 +213,7 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		pipeline.Tasks = append(pipeline.Tasks, task)
 
 		if _, ok := pipeline.TasksByType[task.Type]; !ok {
-			pipeline.TasksByType[task.Type] = make([]*Task, 0)
+			pipeline.TasksByType[task.Type] = make([]*Asset, 0)
 		}
 
 		pipeline.TasksByType[task.Type] = append(pipeline.TasksByType[task.Type], task)
@@ -232,7 +232,7 @@ func fileHasSuffix(arr []string, str string) bool {
 	return false
 }
 
-func (b *builder) CreateTaskFromFile(path string) (*Task, error) {
+func (b *builder) CreateTaskFromFile(path string) (*Asset, error) {
 	isSeparateDefinitionFile := false
 	creator := b.commentTaskCreator
 

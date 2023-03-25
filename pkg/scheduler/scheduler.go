@@ -21,7 +21,7 @@ const (
 
 type TaskInstance struct {
 	Pipeline *pipeline.Pipeline
-	Task     *pipeline.Task
+	Task     *pipeline.Asset
 	status   TaskInstanceStatus
 
 	upstream   []*TaskInstance
@@ -58,7 +58,7 @@ func (s *Scheduler) MarkAll(status TaskInstanceStatus) {
 	}
 }
 
-func (s *Scheduler) MarkTask(task *pipeline.Task, status TaskInstanceStatus, downstream bool) {
+func (s *Scheduler) MarkTask(task *pipeline.Asset, status TaskInstanceStatus, downstream bool) {
 	instance := s.taskNameMap[task.Name]
 	s.MarkTaskInstance(instance, status, downstream)
 }
@@ -178,7 +178,7 @@ func (s *Scheduler) Run(ctx context.Context) []*TaskExecutionResult {
 
 // Tick marks an iteration of the scheduler loop. It is called when a result is received.
 // The results are mainly fed from a channel, but Tick allows implementing additional methods of passing
-// Task results and simulating scheduler loops, e.g. time travel. It is also useful for testing purposes.
+// Asset results and simulating scheduler loops, e.g. time travel. It is also useful for testing purposes.
 func (s *Scheduler) Tick(result *TaskExecutionResult) bool {
 	s.taskScheduleLock.Lock()
 	defer s.taskScheduleLock.Unlock()
@@ -210,7 +210,7 @@ func (s *Scheduler) Tick(result *TaskExecutionResult) bool {
 func (s *Scheduler) Kickstart() {
 	s.Tick(&TaskExecutionResult{
 		Instance: &TaskInstance{
-			Task: &pipeline.Task{
+			Task: &pipeline.Asset{
 				Name: "start",
 			},
 			status: Succeeded,

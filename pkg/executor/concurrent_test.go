@@ -14,36 +14,36 @@ import (
 func TestConcurrent_Start(t *testing.T) {
 	t.Parallel()
 
-	t11 := &pipeline.Task{
+	t11 := &pipeline.Asset{
 		Name: "task11",
 		Type: "test",
 	}
 
-	t21 := &pipeline.Task{
+	t21 := &pipeline.Asset{
 		Name: "task21",
 		Type: "test",
 	}
 
-	t12 := &pipeline.Task{
+	t12 := &pipeline.Asset{
 		Name:      "task12",
 		Type:      "test",
 		DependsOn: []string{"task11"},
 	}
 
-	t22 := &pipeline.Task{
+	t22 := &pipeline.Asset{
 		Name:      "task22",
 		Type:      "test",
 		DependsOn: []string{"task21"},
 	}
 
-	t3 := &pipeline.Task{
+	t3 := &pipeline.Asset{
 		Name:      "task3",
 		Type:      "test",
 		DependsOn: []string{"task12", "task22"},
 	}
 
 	p := &pipeline.Pipeline{
-		Tasks: []*pipeline.Task{t11, t21, t12, t22, t3},
+		Tasks: []*pipeline.Asset{t11, t21, t12, t22, t3},
 	}
 
 	mockOperator := new(mockOperator)

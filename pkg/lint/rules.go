@@ -35,7 +35,7 @@ const (
 
 	pipelineContainsCycle = "The pipeline has a cycle with dependencies, make sure there are no cyclic dependencies"
 
-	taskScheduleDayDoesNotExist = "Task schedule day must be a valid weekday"
+	taskScheduleDayDoesNotExist = "Asset schedule day must be a valid weekday"
 
 	pipelineSlackFieldEmptyName           = "Slack notifications must have a `name` attribute"
 	pipelineSlackFieldEmptyConnection     = "Slack notifications must have a `connection` attribute"
@@ -75,14 +75,14 @@ func EnsureTaskNameIsValid(pipeline *pipeline.Pipeline) ([]*Issue, error) {
 }
 
 func EnsureTaskNameIsUnique(p *pipeline.Pipeline) ([]*Issue, error) {
-	nameFileMapping := make(map[string][]*pipeline.Task)
+	nameFileMapping := make(map[string][]*pipeline.Asset)
 	for _, task := range p.Tasks {
 		if task.Name == "" {
 			continue
 		}
 
 		if _, ok := nameFileMapping[task.Name]; !ok {
-			nameFileMapping[task.Name] = make([]*pipeline.Task, 0)
+			nameFileMapping[task.Name] = make([]*pipeline.Asset, 0)
 		}
 
 		nameFileMapping[task.Name] = append(nameFileMapping[task.Name], task)
@@ -101,7 +101,7 @@ func EnsureTaskNameIsUnique(p *pipeline.Pipeline) ([]*Issue, error) {
 
 		issues = append(issues, &Issue{
 			Task:        files[0],
-			Description: fmt.Sprintf("Task name '%s' is not unique, please make sure all the task names are unique", name),
+			Description: fmt.Sprintf("Asset name '%s' is not unique, please make sure all the task names are unique", name),
 			Context:     taskPaths,
 		})
 	}
@@ -287,7 +287,7 @@ func EnsurePipelineHasNoCycles(p *pipeline.Pipeline) ([]*Issue, error) {
 			if task.Name == dep {
 				issues = append(issues, &Issue{
 					Description: pipelineContainsCycle,
-					Context:     []string{fmt.Sprintf("Task `%s` depends on itself", task.Name)},
+					Context:     []string{fmt.Sprintf("Asset `%s` depends on itself", task.Name)},
 				})
 			}
 		}

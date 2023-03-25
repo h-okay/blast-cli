@@ -32,7 +32,7 @@ func (q QueryValidatorRule) Name() string {
 	return q.Identifier
 }
 
-func (q QueryValidatorRule) validateTask(task *pipeline.Task, done chan<- []*Issue) {
+func (q QueryValidatorRule) validateTask(task *pipeline.Asset, done chan<- []*Issue) {
 	issues := make([]*Issue, 0)
 
 	queries, err := q.Extractor.ExtractQueriesFromFile(task.ExecutableFile.Path)
@@ -117,12 +117,12 @@ func (q *QueryValidatorRule) Validate(p *pipeline.Pipeline) ([]*Issue, error) {
 
 	q.Logger.Debugf("Starting validation with %d workers for task type '%s'", q.WorkerCount, q.TaskType)
 
-	taskChannel := make(chan *pipeline.Task, q.bufferSize())
+	taskChannel := make(chan *pipeline.Asset, q.bufferSize())
 	results := make(chan []*Issue, q.bufferSize())
 
 	// start the workers
 	for i := 0; i < q.WorkerCount; i++ {
-		go func(taskChannel <-chan *pipeline.Task, results chan<- []*Issue) {
+		go func(taskChannel <-chan *pipeline.Asset, results chan<- []*Issue) {
 			for task := range taskChannel {
 				q.validateTask(task, results)
 			}

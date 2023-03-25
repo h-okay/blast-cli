@@ -17,7 +17,7 @@ type executionContext struct {
 
 	envVariables map[string]string
 	pipeline     *pipeline.Pipeline
-	task         *pipeline.Task
+	task         *pipeline.Asset
 }
 
 type modulePathFinder interface {
@@ -59,7 +59,7 @@ func NewLocalOperator(envVariables map[string]string) *LocalOperator {
 	}
 }
 
-func (o *LocalOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pipeline.Task) error {
+func (o *LocalOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pipeline.Asset) error {
 	repo, err := o.repoFinder.Repo(t.ExecutableFile.Path)
 	if err != nil {
 		return errors.Wrap(err, "failed to find repo to run Python")

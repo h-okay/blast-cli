@@ -13,7 +13,7 @@ type querier interface {
 }
 
 type materializer interface {
-	Render(task *pipeline.Task, query string) (string, error)
+	Render(task *pipeline.Asset, query string) (string, error)
 }
 
 type queryExtractor interface {
@@ -48,7 +48,7 @@ func NewBasicOperator(client *DB, extractor queryExtractor, materializer materia
 	}
 }
 
-func (o BasicOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pipeline.Task) error {
+func (o BasicOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pipeline.Asset) error {
 	queries, err := o.extractor.ExtractQueriesFromFile(t.ExecutableFile.Path)
 	if err != nil {
 		return errors.Wrap(err, "cannot extract queries from the task file")

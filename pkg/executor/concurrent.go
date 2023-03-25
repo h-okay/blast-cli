@@ -93,7 +93,7 @@ func (w worker) run(taskChannel <-chan *scheduler.TaskInstance, results chan<- *
 		}
 
 		ctx := context.WithValue(context.Background(), KeyPrinter, printer)
-		err := w.executor.RunSingleTask(ctx, task.Pipeline, task.Task)
+		err := w.executor.RunSingleTask(ctx, task.Pipeline, task)
 
 		duration := time.Since(start)
 		durationString := fmt.Sprintf("(%s)", duration.Truncate(time.Millisecond).String())
@@ -110,7 +110,7 @@ func (w worker) run(taskChannel <-chan *scheduler.TaskInstance, results chan<- *
 
 type workerWriter struct {
 	w           io.Writer
-	task        *pipeline.Task
+	task        *pipeline.Asset
 	sprintfFunc func(format string, a ...interface{}) string
 	worker      string
 }

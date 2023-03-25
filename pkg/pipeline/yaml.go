@@ -68,7 +68,7 @@ type taskDefinition struct {
 }
 
 func CreateTaskFromYamlDefinition(fs afero.Fs) TaskCreator {
-	return func(filePath string) (*Task, error) {
+	return func(filePath string) (*Asset, error) {
 		filePath, err := filepath.Abs(filePath)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get absolute path for the definition file")
@@ -113,7 +113,7 @@ func CreateTaskFromYamlDefinition(fs afero.Fs) TaskCreator {
 	}
 }
 
-func ConvertYamlToTask(content []byte) (*Task, error) {
+func ConvertYamlToTask(content []byte) (*Asset, error) {
 	var definition taskDefinition
 	err := path.ConvertYamlToObject(content, &definition)
 	if err != nil {
@@ -141,7 +141,7 @@ func ConvertYamlToTask(content []byte) (*Task, error) {
 		}
 	}
 
-	task := Task{
+	task := Asset{
 		Name:            definition.Name,
 		Description:     definition.Description,
 		Type:            definition.Type,

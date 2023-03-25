@@ -80,7 +80,7 @@ func Run(isDebug *bool) *cli.Command {
 			pipelinePath := inputPath
 
 			runningForATask := isPathReferencingTask(inputPath)
-			var task *pipeline.Task
+			var task *pipeline.Asset
 
 			runDownstreamTasks := false
 			if runningForATask {

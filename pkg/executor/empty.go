@@ -8,6 +8,6 @@ import (
 
 type NoOpOperator struct{}
 
-func (e NoOpOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pipeline.Task) error {
+func (e NoOpOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pipeline.Asset) error {
 	return nil
 }

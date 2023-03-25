@@ -31,7 +31,7 @@ func Test_createTaskFromFile(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *pipeline.Task
+		want    *pipeline.Asset
 		wantErr bool
 	}{
 		{
@@ -53,7 +53,7 @@ func Test_createTaskFromFile(t *testing.T) {
 			args: args{
 				filePath: "testdata/comments/test.sql",
 			},
-			want: &pipeline.Task{
+			want: &pipeline.Asset{
 				Name:        "some-sql-task",
 				Description: "some description goes here",
 				Type:        "bq.sql",
@@ -87,7 +87,7 @@ func Test_createTaskFromFile(t *testing.T) {
 			args: args{
 				filePath: "testdata/comments/embeddedyaml.sql",
 			},
-			want: &pipeline.Task{
+			want: &pipeline.Asset{
 				Name:        "some-sql-task",
 				Description: "some description goes here",
 				Type:        "bq.sql",
@@ -121,7 +121,7 @@ func Test_createTaskFromFile(t *testing.T) {
 			args: args{
 				filePath: absPath("testdata/comments/test.py"), // giving an absolute path here tests the case of double-absolute paths
 			},
-			want: &pipeline.Task{
+			want: &pipeline.Asset{
 				Name:        "some-python-task",
 				Description: "some description goes here",
 				Type:        "bq.sql",

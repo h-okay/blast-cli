@@ -25,7 +25,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *pipeline.Task
+		want    *pipeline.Asset
 		wantErr bool
 		err     error
 	}{
@@ -48,7 +48,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 			args: args{
 				filePath: "testdata/yaml/task1/task.yml",
 			},
-			want: &pipeline.Task{
+			want: &pipeline.Asset{
 				Name:        "hello-world",
 				Description: "This is a hello world task",
 				Type:        "bq.sql",
@@ -97,7 +97,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 			args: args{
 				filePath: "testdata/yaml/task-with-nested/task.yml",
 			},
-			want: &pipeline.Task{
+			want: &pipeline.Asset{
 				Name:        "hello-world",
 				Description: "This is a hello world task",
 				Type:        "bash",
@@ -123,7 +123,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 			args: args{
 				filePath: "testdata/yaml/task-with-toplevel-runfile/task.yml",
 			},
-			want: &pipeline.Task{
+			want: &pipeline.Asset{
 				Name:        "hello-world",
 				Description: "This is a hello world task",
 				Type:        "bash",
@@ -150,7 +150,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 			args: args{
 				filePath: "testdata/yaml/task-with-no-runfile/task.yml",
 			},
-			want: &pipeline.Task{
+			want: &pipeline.Asset{
 				Name:        "hello-world",
 				Description: "This is a hello world task",
 				Type:        "bash",

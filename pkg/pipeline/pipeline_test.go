@@ -41,7 +41,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			"slack":           "slack-connection",
 			"gcpConnectionId": "gcp-connection-id-here",
 		},
-		Tasks: []*pipeline.Task{
+		Tasks: []*pipeline.Asset{
 			{
 				Name:        "hello-world",
 				Description: "This is a hello world task",
@@ -220,7 +220,7 @@ func TestTask_RelativePathToPipelineRoot(t *testing.T) {
 	tests := []struct {
 		name     string
 		pipeline *pipeline.Pipeline
-		task     *pipeline.Task
+		task     *pipeline.Asset
 		want     string
 	}{
 		{
@@ -230,7 +230,7 @@ func TestTask_RelativePathToPipelineRoot(t *testing.T) {
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
 			},
-			task: &pipeline.Task{
+			task: &pipeline.Asset{
 				Name: "test-task",
 				DefinitionFile: pipeline.TaskDefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/tasks/task-folder/task1.sql",
@@ -245,7 +245,7 @@ func TestTask_RelativePathToPipelineRoot(t *testing.T) {
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
 			},
-			task: &pipeline.Task{
+			task: &pipeline.Asset{
 				Name: "test-task",
 				DefinitionFile: pipeline.TaskDefinitionFile{
 					Path: "/users/user1/pipelines/task-folder/task1.sql",
@@ -278,7 +278,7 @@ func TestPipeline_HasTaskType(t *testing.T) {
 				DefinitionFile: pipeline.DefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
-				TasksByType: map[string][]*pipeline.Task{
+				TasksByType: map[string][]*pipeline.Asset{
 					"type1": {},
 					"type2": {},
 					"type3": {},
@@ -293,7 +293,7 @@ func TestPipeline_HasTaskType(t *testing.T) {
 				DefinitionFile: pipeline.DefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
-				TasksByType: map[string][]*pipeline.Task{
+				TasksByType: map[string][]*pipeline.Asset{
 					"type1": {},
 					"type2": {},
 					"type3": {},

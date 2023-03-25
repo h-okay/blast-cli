@@ -21,7 +21,7 @@ type pipelineBuilder interface {
 }
 
 type Issue struct {
-	Task        *pipeline.Task
+	Task        *pipeline.Asset
 	Description string
 	Context     []string
 }

@@ -17,7 +17,7 @@ func TestScheduler_getScheduleableTasks(t *testing.T) {
 	// task3 -> task5
 	// task4 -> task5
 
-	tasks := []*pipeline.Task{
+	tasks := []*pipeline.Asset{
 		{
 			Name: "task11",
 		},
@@ -99,7 +99,7 @@ func TestScheduler_getScheduleableTasks(t *testing.T) {
 			want: []string{"task22"},
 		},
 		{
-			name: "t22 succeeded as well, should get the final Task",
+			name: "t22 succeeded as well, should get the final Asset",
 			taskInstances: map[string]TaskInstanceStatus{
 				"task11": Succeeded,
 				"task12": Succeeded,
@@ -130,7 +130,7 @@ func TestScheduler_getScheduleableTasks(t *testing.T) {
 			for _, task := range tasks {
 				status, ok := tt.taskInstances[task.Name]
 				if !ok {
-					t.Fatalf("Given Task doesn't have a status set on the test: %s", task.Name)
+					t.Fatalf("Given Asset doesn't have a status set on the test: %s", task.Name)
 				}
 				taskInstances = append(taskInstances, &TaskInstance{
 					Task:   task,
@@ -163,7 +163,7 @@ func TestScheduler_Run(t *testing.T) {
 	// task4 -> task5
 
 	p := &pipeline.Pipeline{
-		Tasks: []*pipeline.Task{
+		Tasks: []*pipeline.Asset{
 			{
 				Name: "task11",
 			},
@@ -189,7 +189,7 @@ func TestScheduler_Run(t *testing.T) {
 
 	scheduler.Tick(&TaskExecutionResult{
 		Instance: &TaskInstance{
-			Task: &pipeline.Task{
+			Task: &pipeline.Asset{
 				Name: "start",
 			},
 			status: Succeeded,
@@ -247,13 +247,13 @@ func TestScheduler_Run(t *testing.T) {
 func TestScheduler_MarkTasksAndDownstream(t *testing.T) {
 	t.Parallel()
 
-	t12 := &pipeline.Task{
+	t12 := &pipeline.Asset{
 		Name:      "task12",
 		DependsOn: []string{"task11"},
 	}
 
 	p := &pipeline.Pipeline{
-		Tasks: []*pipeline.Task{
+		Tasks: []*pipeline.Asset{
 			{
 				Name: "task11",
 			},
@@ -318,14 +318,14 @@ func TestScheduler_MarkTasksAndDownstream(t *testing.T) {
 func TestScheduler_WillRunTaskOfType(t *testing.T) {
 	t.Parallel()
 
-	t12 := &pipeline.Task{
+	t12 := &pipeline.Asset{
 		Name:      "task12",
 		DependsOn: []string{"task11"},
 		Type:      "bq.sql",
 	}
 
 	p := &pipeline.Pipeline{
-		Tasks: []*pipeline.Task{
+		Tasks: []*pipeline.Asset{
 			{
 				Name: "task11",
 				Type: "bq.sql",
