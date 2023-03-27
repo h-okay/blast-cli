@@ -25,6 +25,7 @@ linters:
     - ifshort
     - forbidigo
     - musttag
+    - interfacebloat
   presets:
     - bugs
     - comment

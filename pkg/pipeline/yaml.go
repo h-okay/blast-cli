@@ -136,6 +136,7 @@ func ConvertYamlToTask(content []byte) (*Asset, error) {
 		}
 
 		columns[name] = Column{
+			Name:        name,
 			Description: column.Description,
 			Tests:       tests,
 		}

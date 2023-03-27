@@ -175,6 +175,7 @@ func TestScheduler_Run(t *testing.T) {
 				DependsOn: []string{"task11"},
 				Columns: map[string]pipeline.Column{
 					"col1": {
+						Name: "col1",
 						Tests: []pipeline.ColumnTest{
 							{
 								Name: "not_null",
@@ -207,10 +208,10 @@ func TestScheduler_Run(t *testing.T) {
 
 	// ensure the first two tasks are scheduled
 	t11 := <-scheduler.WorkQueue
-	assert.Equal(t, "task11", t11.GetAsset().Name)
+	assert.Equal(t, "task11", t11.GetHumanID())
 
 	t21 := <-scheduler.WorkQueue
-	assert.Equal(t, "task21", t21.GetAsset().Name)
+	assert.Equal(t, "task21", t21.GetHumanID())
 
 	// mark t11 as completed
 	scheduler.Tick(&TaskExecutionResult{
@@ -219,30 +220,30 @@ func TestScheduler_Run(t *testing.T) {
 
 	// expect t12 to be scheduled
 	t12 := <-scheduler.WorkQueue
-	assert.Equal(t, "task12", t12.GetAsset().Name)
+	assert.Equal(t, "task12", t12.GetHumanID())
 
 	// mark t21 as completed
 	scheduler.Tick(&TaskExecutionResult{
 		Instance: t21,
 	})
 
+	// expect t22 to arrive, given that t21 was completed
+	t22 := <-scheduler.WorkQueue
+	assert.Equal(t, "task22", t22.GetHumanID())
+
+	// mark t12 as completed
+	scheduler.Tick(&TaskExecutionResult{
+		Instance: t12,
+	})
+
 	// expect t12's test to be scheduled
 	t12Tests := <-scheduler.WorkQueue
-	assert.Equal(t, "task12", t12Tests.GetAsset().Name)
+	assert.Equal(t, "task12:col1:not_null", t12Tests.GetHumanID())
 	assert.Equal(t, TaskInstanceTypeColumnTest, t12Tests.GetType())
 
 	// mark t21 as completed
 	scheduler.Tick(&TaskExecutionResult{
 		Instance: t12Tests,
-	})
-
-	// expect t22 to arrive, given that t21 was completed
-	t22 := <-scheduler.WorkQueue
-	assert.Equal(t, "task22", t22.GetAsset().Name)
-
-	// mark t12 as completed
-	scheduler.Tick(&TaskExecutionResult{
-		Instance: t12,
 	})
 
 	// mark t22 as completed
@@ -253,7 +254,7 @@ func TestScheduler_Run(t *testing.T) {
 
 	// now that both t12 and t22 are completed, expect t3 to be dispatched
 	t3 := <-scheduler.WorkQueue
-	assert.Equal(t, "task3", t3.GetAsset().Name)
+	assert.Equal(t, "task3", t3.GetHumanID())
 
 	// mark t3 as completed
 	finished = scheduler.Tick(&TaskExecutionResult{

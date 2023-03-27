@@ -144,24 +144,10 @@ func Run(isDebug *bool) *cli.Command {
 				s.MarkTask(task, scheduler.Pending, runDownstreamTasks)
 			}
 
-			mainExecutors := executor.DefaultExecutorsV2
-			if s.WillRunTaskOfType(executor.TaskTypePython) {
-				mainExecutors[executor.TaskTypePython][scheduler.TaskInstanceTypeMain] = python.NewLocalOperator(map[string]string{})
-			}
-
-			if s.WillRunTaskOfType(executor.TaskTypeBigqueryQuery) {
-				wholeFileExtractor := &query.WholeFileExtractor{
-					Fs:       fs,
-					Renderer: jinja.NewRendererWithStartEndDates(&startDate, &endDate),
-				}
-
-				bqOperator, err := bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor, bigquery.Materializer{})
-				if err != nil {
-					errorPrinter.Printf(err.Error())
-					return cli.Exit("", 1)
-				}
-
-				mainExecutors[executor.TaskTypeBigqueryQuery][scheduler.TaskInstanceTypeMain] = bqOperator
+			mainExecutors, err := setupExecutors(s, startDate, endDate)
+			if err != nil {
+				errorPrinter.Printf(err.Error())
+				return cli.Exit("", 1)
 			}
 
 			ex := executor.NewConcurrent(logger, mainExecutors, c.Int("workers"))
@@ -198,6 +184,35 @@ func Run(isDebug *bool) *cli.Command {
 			return nil
 		},
 	}
+}
+
+func setupExecutors(s *scheduler.Scheduler, startDate, endDate time.Time) (map[pipeline.AssetType]executor.Config, error) {
+	mainExecutors := executor.DefaultExecutorsV2
+	if s.WillRunTaskOfType(executor.TaskTypePython) {
+		mainExecutors[executor.TaskTypePython][scheduler.TaskInstanceTypeMain] = python.NewLocalOperator(map[string]string{})
+	}
+
+	if s.WillRunTaskOfType(executor.TaskTypeBigqueryQuery) {
+		wholeFileExtractor := &query.WholeFileExtractor{
+			Fs:       fs,
+			Renderer: jinja.NewRendererWithStartEndDates(&startDate, &endDate),
+		}
+
+		bqOperator, err := bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor, bigquery.Materializer{})
+		if err != nil {
+			return nil, err
+		}
+
+		bqTestRunner, err := bigquery.NewColumnTestOperatorFromGlobals()
+		if err != nil {
+			return nil, err
+		}
+
+		mainExecutors[executor.TaskTypeBigqueryQuery][scheduler.TaskInstanceTypeMain] = bqOperator
+		mainExecutors[executor.TaskTypeBigqueryQuery][scheduler.TaskInstanceTypeColumnTest] = bqTestRunner
+	}
+
+	return mainExecutors, nil
 }
 
 func isPathReferencingTask(p string) bool {

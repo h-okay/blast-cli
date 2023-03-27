@@ -83,6 +83,7 @@ type ColumnTest struct {
 }
 
 type Column struct {
+	Name        string
 	Description string       `yaml:"description"`
 	Tests       []ColumnTest `yaml:"tests"`
 }

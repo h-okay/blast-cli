@@ -78,11 +78,31 @@ func (o BasicOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pip
 }
 
 type testRunner interface {
-	RunTest(ctx context.Context, test *scheduler.ColumnTestInstance) error
+	Check(ctx context.Context, ti *scheduler.ColumnTestInstance) error
 }
 
 type ColumnTestOperator struct {
 	testRunners map[string]testRunner
+}
+
+func NewColumnTestOperatorFromGlobals() (*ColumnTestOperator, error) {
+	config, err := LoadConfigFromEnv()
+	if err != nil || !config.IsValid() {
+		return nil, errors.New("failed to setup bigquery connection, please set the BIGQUERY_CREDENTIALS_FILE and BIGQUERY_PROJECT environment variables.")
+	}
+
+	bq, err := NewDB(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to connect to bigquery")
+	}
+
+	return &ColumnTestOperator{
+		testRunners: map[string]testRunner{
+			"not_null": &NotNullCheck{
+				q: bq,
+			},
+		},
+	}, nil
 }
 
 func (o ColumnTestOperator) Run(ctx context.Context, ti scheduler.TaskInstance) error {
@@ -96,5 +116,5 @@ func (o ColumnTestOperator) Run(ctx context.Context, ti scheduler.TaskInstance) 
 		return errors.New("there is no executor configured for the test type, test cannot be run: " + test.Test.Name)
 	}
 
-	return executor.RunTest(ctx, test)
+	return executor.Check(ctx, test)
 }

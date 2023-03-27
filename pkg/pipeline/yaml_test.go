@@ -75,6 +75,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 				},
 				Columns: map[string]pipeline.Column{
 					"col1": {
+						Name:        "col1",
 						Description: "column one",
 						Tests: []pipeline.ColumnTest{
 							{
@@ -86,6 +87,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 						},
 					},
 					"col2": {
+						Name:        "col2",
 						Description: "column two",
 						Tests:       []pipeline.ColumnTest{},
 					},
