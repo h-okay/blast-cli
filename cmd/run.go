@@ -203,13 +203,13 @@ func setupExecutors(s *scheduler.Scheduler, startDate, endDate time.Time) (map[p
 			return nil, err
 		}
 
-		bqTestRunner, err := bigquery.NewColumnTestOperatorFromGlobals()
+		bqTestRunner, err := bigquery.NewColumnCheckOperatorFromGlobals()
 		if err != nil {
 			return nil, err
 		}
 
 		mainExecutors[executor.TaskTypeBigqueryQuery][scheduler.TaskInstanceTypeMain] = bqOperator
-		mainExecutors[executor.TaskTypeBigqueryQuery][scheduler.TaskInstanceTypeColumnTest] = bqTestRunner
+		mainExecutors[executor.TaskTypeBigqueryQuery][scheduler.TaskInstanceTypeColumnCheck] = bqTestRunner
 	}
 
 	return mainExecutors, nil

@@ -78,14 +78,15 @@ type Materialization struct {
 	IncrementalKey string
 }
 
-type ColumnTest struct {
-	Name string `yaml:"name"`
+type ColumnCheck struct {
+	Name  string      `yaml:"name"`
+	Value interface{} `yaml:"value"`
 }
 
 type Column struct {
 	Name        string
-	Description string       `yaml:"description"`
-	Tests       []ColumnTest `yaml:"tests"`
+	Description string        `yaml:"description"`
+	Checks      []ColumnCheck `yaml:"checks"`
 }
 
 type AssetType string

@@ -32,7 +32,7 @@ var (
 		}
 	}
 
-	testInstance = &scheduler.ColumnTestInstance{
+	testInstance = &scheduler.ColumnCheckInstance{
 		AssetInstance: &scheduler.AssetInstance{
 			Asset: &pipeline.Asset{
 				Name: "dataset.test_asset",
@@ -40,13 +40,13 @@ var (
 		},
 		Column: &pipeline.Column{
 			Name: "test_column",
-			Tests: []pipeline.ColumnTest{
+			Checks: []pipeline.ColumnCheck{
 				{
 					Name: "not_null",
 				},
 			},
 		},
-		Test: &pipeline.ColumnTest{
+		Test: &pipeline.ColumnCheck{
 			Name: "not_null",
 		},
 	}

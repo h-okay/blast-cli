@@ -16,8 +16,8 @@ type Config map[scheduler.TaskInstanceType]Operator
 
 var DefaultExecutorsV2 = map[pipeline.AssetType]Config{
 	TaskTypeBigqueryQuery: {
-		scheduler.TaskInstanceTypeMain:       NoOpOperator{},
-		scheduler.TaskInstanceTypeColumnTest: NoOpOperator{},
+		scheduler.TaskInstanceTypeMain:        NoOpOperator{},
+		scheduler.TaskInstanceTypeColumnCheck: NoOpOperator{},
 	},
 	"bq.sensor.table": {
 		scheduler.TaskInstanceTypeMain: NoOpOperator{},

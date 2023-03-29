@@ -46,12 +46,13 @@ type materialization struct {
 	ClusterBy      clusterBy `yaml:"cluster_by"`
 	IncrementalKey string    `yaml:"incremental_key"`
 }
-type columnTest struct {
-	Name string `yaml:"name"`
+type columnCheck struct {
+	Name  string      `yaml:"name"`
+	Value interface{} `yaml:"value"`
 }
 type column struct {
-	Description string       `yaml:"description"`
-	Tests       []columnTest `yaml:"tests"`
+	Description string        `yaml:"description"`
+	Tests       []columnCheck `yaml:"checks"`
 }
 
 type taskDefinition struct {
@@ -130,15 +131,15 @@ func ConvertYamlToTask(content []byte) (*Asset, error) {
 
 	columns := make(map[string]Column)
 	for name, column := range definition.Columns {
-		tests := make([]ColumnTest, len(column.Tests))
+		tests := make([]ColumnCheck, len(column.Tests))
 		for i, test := range column.Tests {
-			tests[i] = ColumnTest(test)
+			tests[i] = ColumnCheck(test)
 		}
 
 		columns[name] = Column{
 			Name:        name,
 			Description: column.Description,
-			Tests:       tests,
+			Checks:      tests,
 		}
 	}
 

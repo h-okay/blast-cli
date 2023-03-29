@@ -35,9 +35,9 @@ func ensureCountZero(check string, res [][]interface{}) (int64, error) {
 	return nullCount, nil
 }
 
-func (n *NotNullCheck) Check(ctx context.Context, ti *scheduler.ColumnTestInstance) error {
+func (c *NotNullCheck) Check(ctx context.Context, ti *scheduler.ColumnCheckInstance) error {
 	qq := fmt.Sprintf("SELECT count(*) FROM `%s` WHERE `%s` IS NULL", ti.GetAsset().Name, ti.Column.Name)
-	res, err := n.q.Select(ctx, &query.Query{Query: qq})
+	res, err := c.q.Select(ctx, &query.Query{Query: qq})
 	if err != nil {
 		return errors.Wrap(err, "failed to check for null values during not_null check")
 	}
@@ -58,9 +58,9 @@ type PositiveCheck struct {
 	q querierWithResult
 }
 
-func (n *PositiveCheck) Check(ctx context.Context, ti *scheduler.ColumnTestInstance) error {
+func (c *PositiveCheck) Check(ctx context.Context, ti *scheduler.ColumnCheckInstance) error {
 	qq := fmt.Sprintf("SELECT count(*) FROM `%s` WHERE `%s` <= 0", ti.GetAsset().Name, ti.Column.Name)
-	res, err := n.q.Select(ctx, &query.Query{Query: qq})
+	res, err := c.q.Select(ctx, &query.Query{Query: qq})
 	if err != nil {
 		return errors.Wrap(err, "failed to check for null values during not_null check")
 	}

@@ -36,7 +36,7 @@ func (s TaskInstanceType) String() string {
 	switch s {
 	case TaskInstanceTypeMain:
 		return "main"
-	case TaskInstanceTypeColumnTest:
+	case TaskInstanceTypeColumnCheck:
 		return "column_test"
 	case TaskInstanceTypeCustomTest:
 		return "custom_test"
@@ -55,7 +55,7 @@ const (
 
 const (
 	TaskInstanceTypeMain TaskInstanceType = iota
-	TaskInstanceTypeColumnTest
+	TaskInstanceTypeColumnCheck
 	TaskInstanceTypeCustomTest
 )
 
@@ -130,16 +130,16 @@ func (t *AssetInstance) AddDownstream(task TaskInstance) {
 	t.downstream = append(t.downstream, task)
 }
 
-type ColumnTestInstance struct {
+type ColumnCheckInstance struct {
 	*AssetInstance
 
 	parentID string
 	Column   *pipeline.Column
-	Test     *pipeline.ColumnTest
+	Test     *pipeline.ColumnCheck
 }
 
-func (t *ColumnTestInstance) GetType() TaskInstanceType {
-	return TaskInstanceTypeColumnTest
+func (t *ColumnCheckInstance) GetType() TaskInstanceType {
+	return TaskInstanceTypeColumnCheck
 }
 
 type TaskExecutionResult struct {
@@ -253,9 +253,9 @@ func NewScheduler(logger *zap.SugaredLogger, p *pipeline.Pipeline) *Scheduler {
 
 		for _, column := range task.Columns {
 			col := column
-			for _, test := range column.Tests {
+			for _, test := range column.Checks {
 				t := test
-				testInstance := &ColumnTestInstance{
+				testInstance := &ColumnCheckInstance{
 					AssetInstance: &AssetInstance{
 						ID:         uuid.New().String(),
 						HumanID:    fmt.Sprintf("%s:%s:%s", task.Name, col.Name, t.Name),
@@ -336,8 +336,8 @@ func (s *Scheduler) constructInstanceRelationships() {
 		}
 
 		assetName := ti.GetAsset().Name
-		columnTests := s.taskNameMap[assetName][TaskInstanceTypeColumnTest]
-		for _, instance := range columnTests {
+		columnChecks := s.taskNameMap[assetName][TaskInstanceTypeColumnCheck]
+		for _, instance := range columnChecks {
 			instance.AddUpstream(ti)
 			ti.AddDownstream(instance)
 		}

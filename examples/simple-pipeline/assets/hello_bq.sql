@@ -13,7 +13,7 @@ columns:
    one:
     type: integer
     description: "Just a number"
-    tests:
+    checks:
         - name: not_null
 
 

@@ -78,14 +78,14 @@ func (o BasicOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pip
 }
 
 type testRunner interface {
-	Check(ctx context.Context, ti *scheduler.ColumnTestInstance) error
+	Check(ctx context.Context, ti *scheduler.ColumnCheckInstance) error
 }
 
-type ColumnTestOperator struct {
+type ColumnCheckOperator struct {
 	testRunners map[string]testRunner
 }
 
-func NewColumnTestOperatorFromGlobals() (*ColumnTestOperator, error) {
+func NewColumnCheckOperatorFromGlobals() (*ColumnCheckOperator, error) {
 	config, err := LoadConfigFromEnv()
 	if err != nil || !config.IsValid() {
 		return nil, errors.New("failed to setup bigquery connection, please set the BIGQUERY_CREDENTIALS_FILE and BIGQUERY_PROJECT environment variables.")
@@ -96,7 +96,7 @@ func NewColumnTestOperatorFromGlobals() (*ColumnTestOperator, error) {
 		return nil, errors.Wrap(err, "failed to connect to bigquery")
 	}
 
-	return &ColumnTestOperator{
+	return &ColumnCheckOperator{
 		testRunners: map[string]testRunner{
 			"not_null": &NotNullCheck{
 				q: bq,
@@ -105,8 +105,8 @@ func NewColumnTestOperatorFromGlobals() (*ColumnTestOperator, error) {
 	}, nil
 }
 
-func (o ColumnTestOperator) Run(ctx context.Context, ti scheduler.TaskInstance) error {
-	test, ok := ti.(*scheduler.ColumnTestInstance)
+func (o ColumnCheckOperator) Run(ctx context.Context, ti scheduler.TaskInstance) error {
+	test, ok := ti.(*scheduler.ColumnCheckInstance)
 	if !ok {
 		return errors.New("cannot run a non-column test instance")
 	}

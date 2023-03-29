@@ -77,19 +77,25 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 					"col1": {
 						Name:        "col1",
 						Description: "column one",
-						Tests: []pipeline.ColumnTest{
+						Checks: []pipeline.ColumnCheck{
 							{
 								Name: "unique",
 							},
 							{
 								Name: "not_null",
 							},
+							{
+								Name: "accepted_values",
+								Value: []interface{}{
+									"a", "b", "c",
+								},
+							},
 						},
 					},
 					"col2": {
 						Name:        "col2",
 						Description: "column two",
-						Tests:       []pipeline.ColumnTest{},
+						Checks:      []pipeline.ColumnCheck{},
 					},
 				},
 			},

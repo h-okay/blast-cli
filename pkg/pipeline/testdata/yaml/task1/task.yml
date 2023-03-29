@@ -22,9 +22,11 @@ materialization:
 columns:
   col1:
     description: "column one"
-    tests:
+    checks:
       - name: unique
       - name: not_null
+      - name: accepted_values
+        value: ['a', 'b', 'c']
   col2:
     description: "column two"
 

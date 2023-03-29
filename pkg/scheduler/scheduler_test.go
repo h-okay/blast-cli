@@ -176,7 +176,7 @@ func TestScheduler_Run(t *testing.T) {
 				Columns: map[string]pipeline.Column{
 					"col1": {
 						Name: "col1",
-						Tests: []pipeline.ColumnTest{
+						Checks: []pipeline.ColumnCheck{
 							{
 								Name: "not_null",
 							},
@@ -239,7 +239,7 @@ func TestScheduler_Run(t *testing.T) {
 	// expect t12's test to be scheduled
 	t12Tests := <-scheduler.WorkQueue
 	assert.Equal(t, "task12:col1:not_null", t12Tests.GetHumanID())
-	assert.Equal(t, TaskInstanceTypeColumnTest, t12Tests.GetType())
+	assert.Equal(t, TaskInstanceTypeColumnCheck, t12Tests.GetType())
 
 	// mark t21 as completed
 	scheduler.Tick(&TaskExecutionResult{
@@ -344,7 +344,7 @@ func TestScheduler_WillRunTaskOfType(t *testing.T) {
 		Type:      "bq.sql",
 		Columns: map[string]pipeline.Column{
 			"col1": {
-				Tests: []pipeline.ColumnTest{
+				Checks: []pipeline.ColumnCheck{
 					{
 						Name: "not_null",
 					},
