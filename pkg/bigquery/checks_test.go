@@ -25,105 +25,92 @@ func (m *mockQuerierWithResult) Select(ctx context.Context, q *query.Query) ([][
 	return get.([][]interface{}), args.Error(1)
 }
 
-var (
-	checkError = func(message string) assert.ErrorAssertionFunc {
-		return func(t assert.TestingT, err error, i ...interface{}) bool {
-			return assert.EqualError(t, err, message)
-		}
-	}
-
-	testInstance = &scheduler.ColumnCheckInstance{
-		AssetInstance: &scheduler.AssetInstance{
-			Asset: &pipeline.Asset{
-				Name: "dataset.test_asset",
-			},
-		},
-		Column: &pipeline.Column{
-			Name: "test_column",
-			Checks: []pipeline.ColumnCheck{
-				{
-					Name: "not_null",
-				},
-			},
-		},
-		Test: &pipeline.ColumnCheck{
-			Name: "not_null",
-		},
-	}
-)
-
 func TestNotNullCheck_Check(t *testing.T) {
 	t.Parallel()
 
-	expectedQuery := &query.Query{Query: "SELECT count(*) FROM `dataset.test_asset` WHERE `test_column` IS NULL"}
-	setupFunc := func(val [][]interface{}, err error) func(f NotNullCheck) {
-		return func(n NotNullCheck) {
-			n.q.(*mockQuerierWithResult).On("Select", mock.Anything, expectedQuery).
-				Return(val, err).
-				Once()
-		}
-	}
-
-	tests := []struct {
-		name    string
-		setup   func(f NotNullCheck)
-		wantErr assert.ErrorAssertionFunc
-	}{
-		{
-			name:    "failed to run query",
-			setup:   setupFunc(nil, assert.AnError),
-			wantErr: assert.Error,
+	runTestsFoCountZeroCheck(
+		t,
+		func(q *mockQuerierWithResult) testRunner {
+			return &NotNullCheck{q: q}
 		},
-		{
-			name:    "multiple results are returned",
-			setup:   setupFunc([][]interface{}{{1}, {2}}, nil),
-			wantErr: assert.Error,
+		"SELECT count(*) FROM `dataset.test_asset` WHERE `test_column` IS NULL",
+		"column `test_column` has 5 null values",
+		&pipeline.ColumnCheck{
+			Name: "not_null",
 		},
-		{
-			name:    "null values found",
-			setup:   setupFunc([][]interface{}{{5}}, nil),
-			wantErr: checkError("column `test_column` has 5 null values"),
-		},
-		{
-			name:    "null values found with int64 results",
-			setup:   setupFunc([][]interface{}{{int64(5)}}, nil),
-			wantErr: checkError("column `test_column` has 5 null values"),
-		},
-		{
-			name:    "no null values found, test passed",
-			setup:   setupFunc([][]interface{}{{0}}, nil),
-			wantErr: assert.NoError,
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			n := NotNullCheck{q: new(mockQuerierWithResult)}
-			tt.setup(n)
-
-			tt.wantErr(t, n.Check(context.Background(), testInstance))
-			defer new(mockQuerierWithResult).AssertExpectations(t)
-		})
-	}
+	)
 }
 
 func TestPositiveCheck_Check(t *testing.T) {
 	t.Parallel()
 
-	expectedQuery := &query.Query{Query: "SELECT count(*) FROM `dataset.test_asset` WHERE `test_column` <= 0"}
-	setupFunc := func(val [][]interface{}, err error) func(n PositiveCheck) {
-		return func(n PositiveCheck) {
-			n.q.(*mockQuerierWithResult).On("Select", mock.Anything, expectedQuery).
+	runTestsFoCountZeroCheck(
+		t,
+		func(q *mockQuerierWithResult) testRunner {
+			return &PositiveCheck{q: q}
+		},
+		"SELECT count(*) FROM `dataset.test_asset` WHERE `test_column` <= 0",
+		"column `test_column` has 5 non-positive values",
+		&pipeline.ColumnCheck{
+			Name: "positive",
+		},
+	)
+}
+
+func TestUniqueCheck_Check(t *testing.T) {
+	t.Parallel()
+
+	runTestsFoCountZeroCheck(
+		t,
+		func(q *mockQuerierWithResult) testRunner {
+			return &UniqueCheck{q: q}
+		},
+		"SELECT COUNT(`dataset.test_asset`) - COUNT(DISTINCT `dataset.test_asset`) FROM `test_column`",
+		"column `test_column` has 5 non-unique values",
+		&pipeline.ColumnCheck{
+			Name: "unique",
+		},
+	)
+}
+
+func TestAcceptedValuesCheck_Check(t *testing.T) {
+	t.Parallel()
+
+	runTestsFoCountZeroCheck(
+		t,
+		func(q *mockQuerierWithResult) testRunner {
+			return &AcceptedValuesCheck{q: q}
+		},
+		"SELECT COUNT(*) FROM `dataset.test_asset` WHERE {`test_column`} NOT IN (\"test\",\"test2\")",
+		"column `test_column` has 5 rows that are not in the accepted values",
+		&pipeline.ColumnCheck{
+			Name: "accepted_values",
+			Value: []string{
+				"test", "test2",
+			},
+		},
+	)
+}
+
+func runTestsFoCountZeroCheck(t *testing.T, instanceBuilder func(q *mockQuerierWithResult) testRunner, expectedQueryString string, expectedErrorMessage string, checkInstance *pipeline.ColumnCheck) {
+	expectedQuery := &query.Query{Query: expectedQueryString}
+	setupFunc := func(val [][]interface{}, err error) func(n *mockQuerierWithResult) {
+		return func(q *mockQuerierWithResult) {
+			q.On("Select", mock.Anything, expectedQuery).
 				Return(val, err).
 				Once()
 		}
 	}
 
+	checkError := func(message string) assert.ErrorAssertionFunc {
+		return func(t assert.TestingT, err error, i ...interface{}) bool {
+			return assert.EqualError(t, err, message)
+		}
+	}
+
 	tests := []struct {
 		name    string
-		setup   func(n PositiveCheck)
+		setup   func(n *mockQuerierWithResult)
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{
@@ -139,12 +126,12 @@ func TestPositiveCheck_Check(t *testing.T) {
 		{
 			name:    "null values found",
 			setup:   setupFunc([][]interface{}{{5}}, nil),
-			wantErr: checkError("column `test_column` has 5 positive values"),
+			wantErr: checkError(expectedErrorMessage),
 		},
 		{
 			name:    "null values found with int64 results",
 			setup:   setupFunc([][]interface{}{{int64(5)}}, nil),
-			wantErr: checkError("column `test_column` has 5 positive values"),
+			wantErr: checkError(expectedErrorMessage),
 		},
 		{
 			name:    "no null values found, test passed",
@@ -157,14 +144,30 @@ func TestPositiveCheck_Check(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			n := PositiveCheck{
-				q: new(mockQuerierWithResult),
+			q := new(mockQuerierWithResult)
+			tt.setup(q)
+
+			n := instanceBuilder(q)
+
+			testInstance := &scheduler.ColumnCheckInstance{
+				AssetInstance: &scheduler.AssetInstance{
+					Asset: &pipeline.Asset{
+						Name: "dataset.test_asset",
+					},
+				},
+				Column: &pipeline.Column{
+					Name: "test_column",
+					Checks: []pipeline.ColumnCheck{
+						{
+							Name: "not_null",
+						},
+					},
+				},
+				Check: checkInstance,
 			}
 
-			tt.setup(n)
-
 			tt.wantErr(t, n.Check(context.Background(), testInstance))
-			defer n.q.(*mockQuerierWithResult).AssertExpectations(t)
+			defer q.AssertExpectations(t)
 		})
 	}
 }

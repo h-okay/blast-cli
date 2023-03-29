@@ -98,9 +98,10 @@ func NewColumnCheckOperatorFromGlobals() (*ColumnCheckOperator, error) {
 
 	return &ColumnCheckOperator{
 		testRunners: map[string]testRunner{
-			"not_null": &NotNullCheck{
-				q: bq,
-			},
+			"not_null":        &NotNullCheck{q: bq},
+			"unique":          &UniqueCheck{q: bq},
+			"positive":        &PositiveCheck{q: bq},
+			"accepted_values": &AcceptedValuesCheck{q: bq},
 		},
 	}, nil
 }
@@ -111,9 +112,9 @@ func (o ColumnCheckOperator) Run(ctx context.Context, ti scheduler.TaskInstance)
 		return errors.New("cannot run a non-column test instance")
 	}
 
-	executor, ok := o.testRunners[test.Test.Name]
+	executor, ok := o.testRunners[test.Check.Name]
 	if !ok {
-		return errors.New("there is no executor configured for the test type, test cannot be run: " + test.Test.Name)
+		return errors.New("there is no executor configured for the test type, test cannot be run: " + test.Check.Name)
 	}
 
 	return executor.Check(ctx, test)

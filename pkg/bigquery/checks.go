@@ -2,6 +2,7 @@ package bigquery
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/datablast-analytics/blast/pkg/query"
@@ -37,21 +38,15 @@ func ensureCountZero(check string, res [][]interface{}) (int64, error) {
 
 func (c *NotNullCheck) Check(ctx context.Context, ti *scheduler.ColumnCheckInstance) error {
 	qq := fmt.Sprintf("SELECT count(*) FROM `%s` WHERE `%s` IS NULL", ti.GetAsset().Name, ti.Column.Name)
-	res, err := c.q.Select(ctx, &query.Query{Query: qq})
-	if err != nil {
-		return errors.Wrap(err, "failed to check for null values during not_null check")
-	}
 
-	nullCount, err := ensureCountZero("not_null", res)
-	if err != nil {
-		return err
-	}
-
-	if nullCount != 0 {
-		return errors.Errorf("column `%s` has %d null values", ti.Column.Name, nullCount)
-	}
-
-	return nil
+	return (&countZeroCheck{
+		q:             c.q,
+		queryInstance: &query.Query{Query: qq},
+		checkName:     "not_null",
+		customError: func(count int64) error {
+			return errors.Errorf("column `%s` has %d null values", ti.Column.Name, count)
+		},
+	}).Check(ctx, ti)
 }
 
 type PositiveCheck struct {
@@ -60,18 +55,86 @@ type PositiveCheck struct {
 
 func (c *PositiveCheck) Check(ctx context.Context, ti *scheduler.ColumnCheckInstance) error {
 	qq := fmt.Sprintf("SELECT count(*) FROM `%s` WHERE `%s` <= 0", ti.GetAsset().Name, ti.Column.Name)
-	res, err := c.q.Select(ctx, &query.Query{Query: qq})
-	if err != nil {
-		return errors.Wrap(err, "failed to check for null values during not_null check")
+	return (&countZeroCheck{
+		q:             c.q,
+		queryInstance: &query.Query{Query: qq},
+		checkName:     "positive",
+		customError: func(count int64) error {
+			return errors.Errorf("column `%s` has %d non-positive values", ti.Column.Name, count)
+		},
+	}).Check(ctx, ti)
+}
+
+type UniqueCheck struct {
+	q querierWithResult
+}
+
+func (c *UniqueCheck) Check(ctx context.Context, ti *scheduler.ColumnCheckInstance) error {
+	qq := fmt.Sprintf("SELECT COUNT(`%s`) - COUNT(DISTINCT `%s`) FROM `%s`", ti.GetAsset().Name, ti.GetAsset().Name, ti.Column.Name)
+	return (&countZeroCheck{
+		q:             c.q,
+		queryInstance: &query.Query{Query: qq},
+		checkName:     "unique",
+		customError: func(count int64) error {
+			return errors.Errorf("column `%s` has %d non-unique values", ti.Column.Name, count)
+		},
+	}).Check(ctx, ti)
+}
+
+type AcceptedValuesCheck struct {
+	q querierWithResult
+}
+
+func (c *AcceptedValuesCheck) Check(ctx context.Context, ti *scheduler.ColumnCheckInstance) error {
+	val, ok := ti.Check.Value.([]string)
+	if !ok {
+		return errors.Errorf("unexpected value for accepted_values check, the values must to be a string array, instead %T", ti.Check.Value)
 	}
 
-	count, err := ensureCountZero("positive", res)
+	if len(val) == 0 {
+		return errors.Errorf("no values provided for accepted_values check")
+	}
+
+	res, err := json.Marshal(val)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal accepted values for the query result")
+	}
+
+	sz := len(res)
+	res = res[1 : sz-1]
+
+	qq := fmt.Sprintf("SELECT COUNT(*) FROM `%s` WHERE {`%s`} NOT IN (%s)", ti.GetAsset().Name, ti.Column.Name, res)
+	return (&countZeroCheck{
+		q:             c.q,
+		queryInstance: &query.Query{Query: qq},
+		checkName:     "unique",
+		customError: func(count int64) error {
+			return errors.Errorf("column `%s` has %d rows that are not in the accepted values", ti.Column.Name, count)
+		},
+	}).Check(ctx, ti)
+}
+
+type countZeroCheck struct {
+	q             querierWithResult
+	queryInstance *query.Query
+	checkName     string
+	customError   func(count int64) error
+}
+
+func (c *countZeroCheck) Check(ctx context.Context, ti *scheduler.ColumnCheckInstance) error {
+	res, err := c.q.Select(ctx, c.queryInstance)
+	if err != nil {
+		return errors.Wrapf(err, "failed '%s' check", c.checkName)
+	}
+
+	count, err := ensureCountZero(c.checkName, res)
 	if err != nil {
 		return err
 	}
 
 	if count != 0 {
-		return errors.Errorf("column `%s` has %d positive values", ti.Column.Name, count)
+		return c.customError(count)
+		// return errors.Errorf("column `%s` has %d positive values", ti.Column.Name, count)
 	}
 
 	return nil

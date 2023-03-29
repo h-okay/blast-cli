@@ -135,7 +135,7 @@ type ColumnCheckInstance struct {
 
 	parentID string
 	Column   *pipeline.Column
-	Test     *pipeline.ColumnCheck
+	Check    *pipeline.ColumnCheck
 }
 
 func (t *ColumnCheckInstance) GetType() TaskInstanceType {
@@ -267,7 +267,7 @@ func NewScheduler(logger *zap.SugaredLogger, p *pipeline.Pipeline) *Scheduler {
 					},
 					parentID: parentID,
 					Column:   &col,
-					Test:     &t,
+					Check:    &t,
 				}
 				instances = append(instances, testInstance)
 			}
