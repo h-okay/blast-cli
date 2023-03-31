@@ -78,9 +78,17 @@ type Materialization struct {
 	IncrementalKey string
 }
 
+type ColumnCheckValue struct {
+	IntArray    *[]int
+	Int         *int
+	Float       *float64
+	StringArray *[]string
+	String      *string
+}
+
 type ColumnCheck struct {
-	Name  string      `yaml:"name"`
-	Value interface{} `yaml:"value"`
+	Name  string `yaml:"name"`
+	Value ColumnCheckValue
 }
 
 type Column struct {

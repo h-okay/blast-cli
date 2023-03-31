@@ -81,12 +81,27 @@ func TestAcceptedValuesCheck_Check(t *testing.T) {
 		func(q *mockQuerierWithResult) testRunner {
 			return &AcceptedValuesCheck{q: q}
 		},
-		"SELECT COUNT(*) FROM `dataset.test_asset` WHERE {`test_column`} NOT IN (\"test\",\"test2\")",
+		"SELECT COUNT(*) FROM `dataset.test_asset` WHERE CAST(`test_column` as STRING) NOT IN (\"test\",\"test2\")",
 		"column `test_column` has 5 rows that are not in the accepted values",
 		&pipeline.ColumnCheck{
 			Name: "accepted_values",
-			Value: []string{
-				"test", "test2",
+			Value: pipeline.ColumnCheckValue{
+				StringArray: &[]string{"test", "test2"},
+			},
+		},
+	)
+
+	runTestsFoCountZeroCheck(
+		t,
+		func(q *mockQuerierWithResult) testRunner {
+			return &AcceptedValuesCheck{q: q}
+		},
+		"SELECT COUNT(*) FROM `dataset.test_asset` WHERE CAST(`test_column` as STRING) NOT IN (\"1\",\"2\")",
+		"column `test_column` has 5 rows that are not in the accepted values",
+		&pipeline.ColumnCheck{
+			Name: "accepted_values",
+			Value: pipeline.ColumnCheckValue{
+				IntArray: &[]int{1, 2},
 			},
 		},
 	)

@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -46,10 +47,56 @@ type materialization struct {
 	ClusterBy      clusterBy `yaml:"cluster_by"`
 	IncrementalKey string    `yaml:"incremental_key"`
 }
-type columnCheck struct {
-	Name  string      `yaml:"name"`
-	Value interface{} `yaml:"value"`
+
+type columnCheckValue struct {
+	IntArray    *[]int
+	Int         *int
+	Float       *float64
+	StringArray *[]string
+	String      *string
 }
+
+func (a *columnCheckValue) UnmarshalYAML(value *yaml.Node) error {
+	var val interface{}
+	err := value.Decode(&val)
+	if err != nil {
+		return err
+	}
+
+	switch v := val.(type) {
+	case []interface{}:
+		var multiInt []int
+		err := value.Decode(&multiInt)
+		if err == nil {
+			*a = columnCheckValue{IntArray: &multiInt}
+			return nil
+		}
+
+		var multi []string
+		err = value.Decode(&multi)
+		if err != nil {
+			return err
+		}
+
+		*a = columnCheckValue{StringArray: &multi}
+	case string:
+		*a = columnCheckValue{String: &v}
+	case int:
+		*a = columnCheckValue{Int: &v}
+	case float64:
+		*a = columnCheckValue{Float: &v}
+	default:
+		return fmt.Errorf("unexpected type %T", v)
+	}
+
+	return nil
+}
+
+type columnCheck struct {
+	Name  string           `yaml:"name"`
+	Value columnCheckValue `yaml:"value"`
+}
+
 type column struct {
 	Description string        `yaml:"description"`
 	Tests       []columnCheck `yaml:"checks"`
@@ -133,7 +180,10 @@ func ConvertYamlToTask(content []byte) (*Asset, error) {
 	for name, column := range definition.Columns {
 		tests := make([]ColumnCheck, len(column.Tests))
 		for i, test := range column.Tests {
-			tests[i] = ColumnCheck(test)
+			tests[i] = ColumnCheck{
+				Name:  test.Name,
+				Value: ColumnCheckValue(test.Value),
+			}
 		}
 
 		columns[name] = Column{

@@ -86,13 +86,25 @@ type AcceptedValuesCheck struct {
 }
 
 func (c *AcceptedValuesCheck) Check(ctx context.Context, ti *scheduler.ColumnCheckInstance) error {
-	val, ok := ti.Check.Value.([]string)
-	if !ok {
-		return errors.Errorf("unexpected value for accepted_values check, the values must to be a string array, instead %T", ti.Check.Value)
+	if ti.Check.Value.StringArray == nil && ti.Check.Value.IntArray == nil {
+		return errors.Errorf("unexpected value for accepted_values check, the values must to be an array, instead %T", ti.Check.Value)
 	}
 
-	if len(val) == 0 {
+	if ti.Check.Value.StringArray != nil && len(*ti.Check.Value.StringArray) == 0 {
 		return errors.Errorf("no values provided for accepted_values check")
+	}
+
+	if ti.Check.Value.IntArray != nil && len(*ti.Check.Value.IntArray) == 0 {
+		return errors.Errorf("no values provided for accepted_values check")
+	}
+
+	var val []string
+	if ti.Check.Value.StringArray != nil {
+		val = *ti.Check.Value.StringArray
+	} else {
+		for _, v := range *ti.Check.Value.IntArray {
+			val = append(val, fmt.Sprintf("%d", v))
+		}
 	}
 
 	res, err := json.Marshal(val)
@@ -103,7 +115,7 @@ func (c *AcceptedValuesCheck) Check(ctx context.Context, ti *scheduler.ColumnChe
 	sz := len(res)
 	res = res[1 : sz-1]
 
-	qq := fmt.Sprintf("SELECT COUNT(*) FROM `%s` WHERE {`%s`} NOT IN (%s)", ti.GetAsset().Name, ti.Column.Name, res)
+	qq := fmt.Sprintf("SELECT COUNT(*) FROM `%s` WHERE CAST(`%s` as STRING) NOT IN (%s)", ti.GetAsset().Name, ti.Column.Name, res)
 	return (&countZeroCheck{
 		q:             c.q,
 		queryInstance: &query.Query{Query: qq},
