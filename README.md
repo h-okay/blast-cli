@@ -7,12 +7,13 @@ Blast is a command-line tool for validating and running data transformations on 
 
 - ✨ run SQL transformations on BigQuery/Snowflake
 - 🐍 run Python in isolated environments
+- 💅 built-in data quality checks
 - 🚀 Jinja templating language to avoid repetition
 - ✅ validate data pipelines end-to-end to catch issues early on via dry-run on live
 - 📐 table/view materialization
 - ➕ incremental tables
 - 💻 mix different technologies + databases in a single pipeline, e.g. SQL and Python in the same pipeline
-- 💅 built-in data quality checks [coming soon]
+
 - ⚡ blazing fast pipeline execution: Blast is written in Golang and uses concurrency at every opportunity
 
 ![Blast CLI](./resources/blast.svg)

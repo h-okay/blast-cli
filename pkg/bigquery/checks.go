@@ -70,7 +70,7 @@ type UniqueCheck struct {
 }
 
 func (c *UniqueCheck) Check(ctx context.Context, ti *scheduler.ColumnCheckInstance) error {
-	qq := fmt.Sprintf("SELECT COUNT(`%s`) - COUNT(DISTINCT `%s`) FROM `%s`", ti.GetAsset().Name, ti.GetAsset().Name, ti.Column.Name)
+	qq := fmt.Sprintf("SELECT COUNT(`%s`) - COUNT(DISTINCT `%s`) FROM `%s`", ti.Column.Name, ti.Column.Name, ti.GetAsset().Name)
 	return (&countZeroCheck{
 		q:             c.q,
 		queryInstance: &query.Query{Query: qq},
@@ -119,7 +119,7 @@ func (c *AcceptedValuesCheck) Check(ctx context.Context, ti *scheduler.ColumnChe
 	return (&countZeroCheck{
 		q:             c.q,
 		queryInstance: &query.Query{Query: qq},
-		checkName:     "unique",
+		checkName:     "accepted_values",
 		customError: func(count int64) error {
 			return errors.Errorf("column `%s` has %d rows that are not in the accepted values", ti.Column.Name, count)
 		},

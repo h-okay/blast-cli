@@ -65,7 +65,7 @@ func TestUniqueCheck_Check(t *testing.T) {
 		func(q *mockQuerierWithResult) testRunner {
 			return &UniqueCheck{q: q}
 		},
-		"SELECT COUNT(`dataset.test_asset`) - COUNT(DISTINCT `dataset.test_asset`) FROM `test_column`",
+		"SELECT COUNT(`test_column`) - COUNT(DISTINCT `test_column`) FROM `dataset.test_asset`",
 		"column `test_column` has 5 non-unique values",
 		&pipeline.ColumnCheck{
 			Name: "unique",
