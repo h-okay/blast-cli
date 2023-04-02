@@ -34,7 +34,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 	t.Parallel()
 
 	noIssues := make([]*Issue, 0)
-	taskType := "someTaskType"
+	taskType := pipeline.AssetType("someTaskType")
 
 	tests := []struct {
 		name           string
@@ -47,7 +47,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 		{
 			name: "no tasks to execute",
 			p: &pipeline.Pipeline{
-				Tasks: []*pipeline.Task{},
+				Tasks: []*pipeline.Asset{},
 			},
 			want:    noIssues,
 			wantErr: false,
@@ -55,7 +55,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 		{
 			name: "no tasks from task type to execute",
 			p: &pipeline.Pipeline{
-				Tasks: []*pipeline.Task{
+				Tasks: []*pipeline.Asset{
 					{
 						Type: "someOtherTaskType",
 					},
@@ -70,7 +70,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 		{
 			name: "a task to extract, but query extractor fails",
 			p: &pipeline.Pipeline{
-				Tasks: []*pipeline.Task{
+				Tasks: []*pipeline.Asset{
 					{
 						Type: "someOtherTaskType",
 					},
@@ -88,7 +88,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Type: taskType,
 						ExecutableFile: pipeline.ExecutableFile{
 							Path: "path/to/file-with-no-queries.sql",
@@ -101,7 +101,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 		{
 			name: "a task to extract, but no queries in it",
 			p: &pipeline.Pipeline{
-				Tasks: []*pipeline.Task{
+				Tasks: []*pipeline.Asset{
 					{
 						Type: "someOtherTaskType",
 					},
@@ -119,7 +119,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Type: taskType,
 						ExecutableFile: pipeline.ExecutableFile{
 							Path: "path/to/file-with-no-queries.sql",
@@ -132,7 +132,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 		{
 			name: "two tasks to extract, 3 queries in each, one invalid",
 			p: &pipeline.Pipeline{
-				Tasks: []*pipeline.Task{
+				Tasks: []*pipeline.Asset{
 					{
 						Type: "someOtherTaskType",
 					},
@@ -180,7 +180,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Type: taskType,
 						ExecutableFile: pipeline.ExecutableFile{
 							Path: "path/to/file1.sql",
@@ -193,7 +193,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 					},
 				},
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Type: taskType,
 						ExecutableFile: pipeline.ExecutableFile{
 							Path: "path/to/file2.sql",

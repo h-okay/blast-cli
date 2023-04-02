@@ -1,0 +1,3 @@
+name: blast-init
+schedule: daily
+start_date: "2023-03-20"

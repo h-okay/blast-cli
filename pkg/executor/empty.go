@@ -3,11 +3,11 @@ package executor
 import (
 	"context"
 
-	"github.com/datablast-analytics/blast/pkg/pipeline"
+	"github.com/datablast-analytics/blast/pkg/scheduler"
 )
 
 type NoOpOperator struct{}
 
-func (e NoOpOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pipeline.Task) error {
+func (e NoOpOperator) Run(ctx context.Context, ti scheduler.TaskInstance) error {
 	return nil
 }

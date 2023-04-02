@@ -8,6 +8,7 @@ import (
 	"github.com/datablast-analytics/blast/pkg/query"
 	"github.com/pkg/errors"
 	"google.golang.org/api/googleapi"
+	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
 
@@ -66,6 +67,35 @@ func (d DB) RunQueryWithoutResult(ctx context.Context, query *query.Query) error
 	}
 
 	return nil
+}
+
+func (d DB) Select(ctx context.Context, query *query.Query) ([][]interface{}, error) {
+	q := d.client.Query(query.String())
+	rows, err := q.Read(ctx)
+	if err != nil {
+		return nil, formatError(err)
+	}
+
+	result := make([][]interface{}, 0)
+	for {
+		var values []bigquery.Value
+		err := rows.Next(&values)
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		interfaces := make([]interface{}, len(values))
+		for i, v := range values {
+			interfaces[i] = v
+		}
+
+		result = append(result, interfaces)
+	}
+
+	return result, nil
 }
 
 func formatError(err error) error {

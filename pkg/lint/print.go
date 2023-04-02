@@ -45,7 +45,7 @@ func (l *Printer) printPipelineSummary(pipelineIssues *PipelineIssues) {
 	}
 
 	genericIssues := make([]*taskSummary, 0, len(pipelineIssues.Issues))
-	taskIssueMap := make(map[*pipeline.Task]*taskSummary)
+	taskIssueMap := make(map[*pipeline.Asset]*taskSummary)
 
 	for rule, issues := range pipelineIssues.Issues {
 		genericIssuesForRule := &taskSummary{

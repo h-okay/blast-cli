@@ -9,7 +9,7 @@ import (
 
 type Materializer struct{}
 
-func (m Materializer) Render(task *pipeline.Task, query string) (string, error) {
+func (m Materializer) Render(task *pipeline.Asset, query string) (string, error) {
 	mat := task.Materialization
 	if mat.Type == pipeline.MaterializationTypeNone {
 		return query, nil
@@ -41,7 +41,7 @@ func (m Materializer) Render(task *pipeline.Task, query string) (string, error) 
 	return "", fmt.Errorf("unsupported materialization type `%s`", mat.Type)
 }
 
-func buildIncrementalQuery(task *pipeline.Task, query string, mat pipeline.Materialization, strategy pipeline.MaterializationStrategy) (string, error) {
+func buildIncrementalQuery(task *pipeline.Asset, query string, mat pipeline.Materialization, strategy pipeline.MaterializationStrategy) (string, error) {
 	if mat.IncrementalKey == "" {
 		return "", fmt.Errorf("materialization strategy %s requires the `incremental_key` field to be set", strategy)
 	}
@@ -57,7 +57,7 @@ func buildIncrementalQuery(task *pipeline.Task, query string, mat pipeline.Mater
 	return strings.Join(queries, "\n") + ";", nil
 }
 
-func buildCreateReplaceQuery(task *pipeline.Task, query string, mat pipeline.Materialization) (string, error) {
+func buildCreateReplaceQuery(task *pipeline.Asset, query string, mat pipeline.Materialization) (string, error) {
 	partitionClause := ""
 	if mat.PartitionBy != "" {
 		partitionClause = fmt.Sprintf("PARTITION BY `%s`", mat.PartitionBy)

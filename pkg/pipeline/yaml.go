@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -47,6 +48,60 @@ type materialization struct {
 	IncrementalKey string    `yaml:"incremental_key"`
 }
 
+type columnCheckValue struct {
+	IntArray    *[]int
+	Int         *int
+	Float       *float64
+	StringArray *[]string
+	String      *string
+}
+
+func (a *columnCheckValue) UnmarshalYAML(value *yaml.Node) error {
+	var val interface{}
+	err := value.Decode(&val)
+	if err != nil {
+		return err
+	}
+
+	switch v := val.(type) {
+	case []interface{}:
+		var multiInt []int
+		err := value.Decode(&multiInt)
+		if err == nil {
+			*a = columnCheckValue{IntArray: &multiInt}
+			return nil
+		}
+
+		var multi []string
+		err = value.Decode(&multi)
+		if err != nil {
+			return err
+		}
+
+		*a = columnCheckValue{StringArray: &multi}
+	case string:
+		*a = columnCheckValue{String: &v}
+	case int:
+		*a = columnCheckValue{Int: &v}
+	case float64:
+		*a = columnCheckValue{Float: &v}
+	default:
+		return fmt.Errorf("unexpected type %T", v)
+	}
+
+	return nil
+}
+
+type columnCheck struct {
+	Name  string           `yaml:"name"`
+	Value columnCheckValue `yaml:"value"`
+}
+
+type column struct {
+	Description string        `yaml:"description"`
+	Tests       []columnCheck `yaml:"checks"`
+}
+
 type taskDefinition struct {
 	Name            string            `yaml:"name"`
 	Description     string            `yaml:"description"`
@@ -57,10 +112,11 @@ type taskDefinition struct {
 	Connections     map[string]string `yaml:"connections"`
 	Schedule        taskSchedule      `yaml:"schedule"`
 	Materialization materialization   `yaml:"materialization"`
+	Columns         map[string]column `yaml:"columns"`
 }
 
 func CreateTaskFromYamlDefinition(fs afero.Fs) TaskCreator {
-	return func(filePath string) (*Task, error) {
+	return func(filePath string) (*Asset, error) {
 		filePath, err := filepath.Abs(filePath)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get absolute path for the definition file")
@@ -105,7 +161,7 @@ func CreateTaskFromYamlDefinition(fs afero.Fs) TaskCreator {
 	}
 }
 
-func ConvertYamlToTask(content []byte) (*Task, error) {
+func ConvertYamlToTask(content []byte) (*Asset, error) {
 	var definition taskDefinition
 	err := path.ConvertYamlToObject(content, &definition)
 	if err != nil {
@@ -120,16 +176,34 @@ func ConvertYamlToTask(content []byte) (*Task, error) {
 		IncrementalKey: definition.Materialization.IncrementalKey,
 	}
 
-	task := Task{
+	columns := make(map[string]Column)
+	for name, column := range definition.Columns {
+		tests := make([]ColumnCheck, len(column.Tests))
+		for i, test := range column.Tests {
+			tests[i] = ColumnCheck{
+				Name:  test.Name,
+				Value: ColumnCheckValue(test.Value),
+			}
+		}
+
+		columns[name] = Column{
+			Name:        name,
+			Description: column.Description,
+			Checks:      tests,
+		}
+	}
+
+	task := Asset{
 		Name:            definition.Name,
 		Description:     definition.Description,
-		Type:            definition.Type,
+		Type:            AssetType(definition.Type),
 		Parameters:      definition.Parameters,
 		Connections:     definition.Connections,
 		DependsOn:       definition.Depends,
 		ExecutableFile:  ExecutableFile{},
 		Schedule:        TaskSchedule{Days: definition.Schedule.Days},
 		Materialization: mat,
+		Columns:         columns,
 	}
 
 	return &task, nil

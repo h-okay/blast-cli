@@ -45,7 +45,7 @@ func (m *mockRunner) Run(ctx context.Context, ec *executionContext) error {
 func TestLocalOperator_RunTask(t *testing.T) {
 	t.Parallel()
 
-	task := &pipeline.Task{
+	task := &pipeline.Asset{
 		ExecutableFile: pipeline.ExecutableFile{
 			Path: "/path/to/file.py",
 		},

@@ -25,7 +25,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *pipeline.Task
+		want    *pipeline.Asset
 		wantErr bool
 		err     error
 	}{
@@ -39,7 +39,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 		{
 			name: "fails for non-yaml files",
 			args: args{
-				filePath: "testdata/yaml/task1/hello.sh",
+				filePath: "testdata/yaml/task1/hello.sql",
 			},
 			wantErr: true,
 		},
@@ -48,14 +48,14 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 			args: args{
 				filePath: "testdata/yaml/task1/task.yml",
 			},
-			want: &pipeline.Task{
+			want: &pipeline.Asset{
 				Name:        "hello-world",
 				Description: "This is a hello world task",
-				Type:        "bash",
+				Type:        "bq.sql",
 				ExecutableFile: pipeline.ExecutableFile{
-					Name:    "hello.sh",
-					Path:    absPath("testdata/yaml/task1/hello.sh"),
-					Content: mustRead(t, "testdata/yaml/task1/hello.sh"),
+					Name:    "hello.sql",
+					Path:    absPath("testdata/yaml/task1/hello.sql"),
+					Content: mustRead(t, "testdata/yaml/task1/hello.sql"),
 				},
 				Parameters: map[string]string{
 					"param1": "value1",
@@ -73,6 +73,49 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 					PartitionBy:    "dt",
 					IncrementalKey: "dt",
 				},
+				Columns: map[string]pipeline.Column{
+					"col1": {
+						Name:        "col1",
+						Description: "column one",
+						Checks: []pipeline.ColumnCheck{
+							{
+								Name: "unique",
+							},
+							{
+								Name: "not_null",
+							},
+							{
+								Name: "accepted_values",
+								Value: pipeline.ColumnCheckValue{
+									StringArray: &[]string{"a", "b", "c"},
+								},
+							},
+							{
+								Name: "min",
+								Value: pipeline.ColumnCheckValue{
+									Int: &[]int{3}[0],
+								},
+							},
+							{
+								Name: "pi",
+								Value: pipeline.ColumnCheckValue{
+									Float: &[]float64{3.14}[0],
+								},
+							},
+							{
+								Name: "intarrays",
+								Value: pipeline.ColumnCheckValue{
+									IntArray: &[]int{1, 2, 3},
+								},
+							},
+						},
+					},
+					"col2": {
+						Name:        "col2",
+						Description: "column two",
+						Checks:      []pipeline.ColumnCheck{},
+					},
+				},
 			},
 		},
 		{
@@ -80,7 +123,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 			args: args{
 				filePath: "testdata/yaml/task-with-nested/task.yml",
 			},
-			want: &pipeline.Task{
+			want: &pipeline.Asset{
 				Name:        "hello-world",
 				Description: "This is a hello world task",
 				Type:        "bash",
@@ -98,6 +141,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 					"conn2": "second connection",
 				},
 				DependsOn: []string{"gcs-to-bq"},
+				Columns:   map[string]pipeline.Column{},
 			},
 		},
 		{
@@ -105,7 +149,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 			args: args{
 				filePath: "testdata/yaml/task-with-toplevel-runfile/task.yml",
 			},
-			want: &pipeline.Task{
+			want: &pipeline.Asset{
 				Name:        "hello-world",
 				Description: "This is a hello world task",
 				Type:        "bash",
@@ -124,6 +168,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 				},
 				DependsOn: []string{"gcs-to-bq"},
 				Schedule:  pipeline.TaskSchedule{Days: []string{"sunday", "monday", "tuesday"}},
+				Columns:   map[string]pipeline.Column{},
 			},
 		},
 		{
@@ -131,7 +176,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 			args: args{
 				filePath: "testdata/yaml/task-with-no-runfile/task.yml",
 			},
-			want: &pipeline.Task{
+			want: &pipeline.Asset{
 				Name:        "hello-world",
 				Description: "This is a hello world task",
 				Type:        "bash",
@@ -144,6 +189,7 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 					"conn2": "second connection",
 				},
 				DependsOn: []string{"gcs-to-bq"},
+				Columns:   map[string]pipeline.Column{},
 			},
 		},
 		{

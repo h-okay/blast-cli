@@ -5,6 +5,7 @@ import (
 
 	"github.com/datablast-analytics/blast/pkg/git"
 	"github.com/datablast-analytics/blast/pkg/pipeline"
+	"github.com/datablast-analytics/blast/pkg/scheduler"
 	"github.com/datablast-analytics/blast/pkg/user"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
@@ -17,7 +18,7 @@ type executionContext struct {
 
 	envVariables map[string]string
 	pipeline     *pipeline.Pipeline
-	task         *pipeline.Task
+	task         *pipeline.Asset
 }
 
 type modulePathFinder interface {
@@ -59,7 +60,16 @@ func NewLocalOperator(envVariables map[string]string) *LocalOperator {
 	}
 }
 
-func (o *LocalOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pipeline.Task) error {
+func (o *LocalOperator) Run(ctx context.Context, ti scheduler.TaskInstance) error {
+	_, ok := ti.(*scheduler.AssetInstance)
+	if !ok {
+		return errors.New("python assets can only be run as a main task")
+	}
+
+	return o.RunTask(ctx, ti.GetPipeline(), ti.GetAsset())
+}
+
+func (o *LocalOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pipeline.Asset) error {
 	repo, err := o.repoFinder.Repo(t.ExecutableFile.Path)
 	if err != nil {
 		return errors.Wrap(err, "failed to find repo to run Python")

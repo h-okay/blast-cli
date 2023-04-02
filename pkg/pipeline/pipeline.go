@@ -78,10 +78,31 @@ type Materialization struct {
 	IncrementalKey string
 }
 
-type Task struct {
+type ColumnCheckValue struct {
+	IntArray    *[]int
+	Int         *int
+	Float       *float64
+	StringArray *[]string
+	String      *string
+}
+
+type ColumnCheck struct {
+	Name  string `yaml:"name"`
+	Value ColumnCheckValue
+}
+
+type Column struct {
+	Name        string
+	Description string        `yaml:"description"`
+	Checks      []ColumnCheck `yaml:"checks"`
+}
+
+type AssetType string
+
+type Asset struct {
 	Name            string
 	Description     string
-	Type            string
+	Type            AssetType
 	ExecutableFile  ExecutableFile
 	DefinitionFile  TaskDefinitionFile
 	Parameters      map[string]string
@@ -90,6 +111,7 @@ type Task struct {
 	Pipeline        *Pipeline
 	Schedule        TaskSchedule
 	Materialization Materialization
+	Columns         map[string]Column
 }
 
 type Pipeline struct {
@@ -100,14 +122,14 @@ type Pipeline struct {
 	DefinitionFile     DefinitionFile
 	DefaultParameters  map[string]string `yaml:"default_parameters"`
 	DefaultConnections map[string]string `yaml:"default_connections"`
-	Tasks              []*Task
+	Tasks              []*Asset
 	Notifications      Notifications `yaml:"notifications"`
 
-	TasksByType map[string][]*Task
-	tasksByName map[string]*Task
+	TasksByType map[AssetType][]*Asset
+	tasksByName map[string]*Asset
 }
 
-func (p *Pipeline) RelativeTaskPath(t *Task) string {
+func (p *Pipeline) RelativeTaskPath(t *Asset) string {
 	absolutePipelineRoot := filepath.Dir(p.DefinitionFile.Path)
 
 	pipelineDirectory, err := filepath.Rel(absolutePipelineRoot, t.DefinitionFile.Path)
@@ -118,17 +140,18 @@ func (p *Pipeline) RelativeTaskPath(t *Task) string {
 	return pipelineDirectory
 }
 
-func (p Pipeline) HasTaskType(taskType string) bool {
+func (p Pipeline) HasTaskType(taskType AssetType) bool {
 	_, ok := p.TasksByType[taskType]
 	return ok
 }
 
-type TaskCreator func(path string) (*Task, error)
+type TaskCreator func(path string) (*Asset, error)
 
 type BuilderConfig struct {
-	PipelineFileName   string
-	TasksDirectoryName string
-	TasksFileSuffixes  []string
+	PipelineFileName    string
+	TasksDirectoryName  string
+	TasksDirectoryNames []string
+	TasksFileSuffixes   []string
 }
 
 type builder struct {
@@ -155,8 +178,6 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		pathToPipeline = filepath.Dir(pathToPipeline)
 	}
 
-	tasksPath := filepath.Join(pathToPipeline, b.config.TasksDirectoryName)
-
 	var pipeline Pipeline
 	err := path.ReadYaml(b.fs, pipelineFilePath, &pipeline)
 	if err != nil {
@@ -167,8 +188,8 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 	if pipeline.Name == "" {
 		pipeline.Name = pipeline.LegacyID
 	}
-	pipeline.TasksByType = make(map[string][]*Task)
-	pipeline.tasksByName = make(map[string]*Task)
+	pipeline.TasksByType = make(map[AssetType][]*Asset)
+	pipeline.tasksByName = make(map[string]*Asset)
 
 	absPipelineFilePath, err := filepath.Abs(pipelineFilePath)
 	if err != nil {
@@ -180,9 +201,15 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		Path: absPipelineFilePath,
 	}
 
-	taskFiles, err := path.GetAllFilesRecursive(tasksPath, supportedFileSuffixes)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error listing Task files at '%s'", tasksPath)
+	taskFiles := make([]string, 0)
+	for _, tasksDirectoryName := range b.config.TasksDirectoryNames {
+		tasksPath := filepath.Join(pathToPipeline, tasksDirectoryName)
+		files, err := path.GetAllFilesRecursive(tasksPath, supportedFileSuffixes)
+		if err != nil {
+			continue
+		}
+
+		taskFiles = append(taskFiles, files...)
 	}
 
 	for _, file := range taskFiles {
@@ -198,7 +225,7 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		pipeline.Tasks = append(pipeline.Tasks, task)
 
 		if _, ok := pipeline.TasksByType[task.Type]; !ok {
-			pipeline.TasksByType[task.Type] = make([]*Task, 0)
+			pipeline.TasksByType[task.Type] = make([]*Asset, 0)
 		}
 
 		pipeline.TasksByType[task.Type] = append(pipeline.TasksByType[task.Type], task)
@@ -217,7 +244,7 @@ func fileHasSuffix(arr []string, str string) bool {
 	return false
 }
 
-func (b *builder) CreateTaskFromFile(path string) (*Task, error) {
+func (b *builder) CreateTaskFromFile(path string) (*Asset, error) {
 	isSeparateDefinitionFile := false
 	creator := b.commentTaskCreator
 

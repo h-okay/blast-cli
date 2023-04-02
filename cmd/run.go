@@ -80,7 +80,7 @@ func Run(isDebug *bool) *cli.Command {
 			pipelinePath := inputPath
 
 			runningForATask := isPathReferencingTask(inputPath)
-			var task *pipeline.Task
+			var task *pipeline.Asset
 
 			runDownstreamTasks := false
 			if runningForATask {
@@ -144,27 +144,13 @@ func Run(isDebug *bool) *cli.Command {
 				s.MarkTask(task, scheduler.Pending, runDownstreamTasks)
 			}
 
-			executors := executor.DefaultExecutors
-			if s.WillRunTaskOfType(executor.TaskTypePython) {
-				executors[executor.TaskTypePython] = python.NewLocalOperator(map[string]string{})
+			mainExecutors, err := setupExecutors(s, startDate, endDate)
+			if err != nil {
+				errorPrinter.Printf(err.Error())
+				return cli.Exit("", 1)
 			}
 
-			if s.WillRunTaskOfType(executor.TaskTypeBigqueryQuery) {
-				wholeFileExtractor := &query.WholeFileExtractor{
-					Fs:       fs,
-					Renderer: jinja.NewRendererWithStartEndDates(&startDate, &endDate),
-				}
-
-				bqOperator, err := bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor, bigquery.Materializer{})
-				if err != nil {
-					errorPrinter.Printf(err.Error())
-					return cli.Exit("", 1)
-				}
-
-				executors[executor.TaskTypeBigqueryQuery] = bqOperator
-			}
-
-			ex := executor.NewConcurrent(logger, executors, c.Int("workers"))
+			ex := executor.NewConcurrent(logger, mainExecutors, c.Int("workers"))
 			ex.Start(s.WorkQueue, s.Results)
 
 			start := time.Now()
@@ -182,7 +168,7 @@ func Run(isDebug *bool) *cli.Command {
 			if len(errors) > 0 {
 				errorPrinter.Printf("\nFailed tasks: %d\n", len(errors))
 				for _, t := range errors {
-					errorPrinter.Printf("  - %s\n", t.Instance.Task.Name)
+					errorPrinter.Printf("  - %s\n", t.Instance.GetAsset().Name)
 					errorPrinter.Printf("    └── %s\n\n", t.Error.Error())
 				}
 
@@ -190,7 +176,7 @@ func Run(isDebug *bool) *cli.Command {
 				if len(upstreamFailedTasks) > 0 {
 					errorPrinter.Printf("The following tasks are skipped due to their upstream failing:\n")
 					for _, t := range upstreamFailedTasks {
-						errorPrinter.Printf("  - %s\n", t.Task.Name)
+						errorPrinter.Printf("  - %s\n", t.GetAsset().Name)
 					}
 				}
 			}
@@ -198,6 +184,35 @@ func Run(isDebug *bool) *cli.Command {
 			return nil
 		},
 	}
+}
+
+func setupExecutors(s *scheduler.Scheduler, startDate, endDate time.Time) (map[pipeline.AssetType]executor.Config, error) {
+	mainExecutors := executor.DefaultExecutorsV2
+	if s.WillRunTaskOfType(executor.TaskTypePython) {
+		mainExecutors[executor.TaskTypePython][scheduler.TaskInstanceTypeMain] = python.NewLocalOperator(map[string]string{})
+	}
+
+	if s.WillRunTaskOfType(executor.TaskTypeBigqueryQuery) {
+		wholeFileExtractor := &query.WholeFileExtractor{
+			Fs:       fs,
+			Renderer: jinja.NewRendererWithStartEndDates(&startDate, &endDate),
+		}
+
+		bqOperator, err := bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor, bigquery.Materializer{})
+		if err != nil {
+			return nil, err
+		}
+
+		bqTestRunner, err := bigquery.NewColumnCheckOperatorFromGlobals()
+		if err != nil {
+			return nil, err
+		}
+
+		mainExecutors[executor.TaskTypeBigqueryQuery][scheduler.TaskInstanceTypeMain] = bqOperator
+		mainExecutors[executor.TaskTypeBigqueryQuery][scheduler.TaskInstanceTypeColumnCheck] = bqTestRunner
+	}
+
+	return mainExecutors, nil
 }
 
 func isPathReferencingTask(p string) bool {

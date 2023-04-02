@@ -33,7 +33,7 @@ type mockMaterializer struct {
 	mock.Mock
 }
 
-func (m *mockMaterializer) Render(t *pipeline.Task, query string) (string, error) {
+func (m *mockMaterializer) Render(t *pipeline.Asset, query string) (string, error) {
 	res := m.Called(t, query)
 	return res.Get(0).(string), res.Error(1)
 }
@@ -42,7 +42,7 @@ func TestBasicOperator_RunTask(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
-		t *pipeline.Task
+		t *pipeline.Asset
 	}
 
 	tests := []struct {
@@ -60,7 +60,7 @@ func TestBasicOperator_RunTask(t *testing.T) {
 					Return([]*query.Query{}, errors.New("failed to extract queries"))
 			},
 			args: args{
-				t: &pipeline.Task{
+				t: &pipeline.Asset{
 					ExecutableFile: pipeline.ExecutableFile{
 						Path: "test-file.sql",
 					},
@@ -75,7 +75,7 @@ func TestBasicOperator_RunTask(t *testing.T) {
 					Return([]*query.Query{}, nil)
 			},
 			args: args{
-				t: &pipeline.Task{
+				t: &pipeline.Asset{
 					ExecutableFile: pipeline.ExecutableFile{
 						Path: "test-file.sql",
 					},
@@ -93,7 +93,7 @@ func TestBasicOperator_RunTask(t *testing.T) {
 					}, nil)
 			},
 			args: args{
-				t: &pipeline.Task{
+				t: &pipeline.Asset{
 					ExecutableFile: pipeline.ExecutableFile{
 						Path: "test-file.sql",
 					},
@@ -121,7 +121,7 @@ func TestBasicOperator_RunTask(t *testing.T) {
 					Return(errors.New("failed to run query"))
 			},
 			args: args{
-				t: &pipeline.Task{
+				t: &pipeline.Asset{
 					ExecutableFile: pipeline.ExecutableFile{
 						Path: "test-file.sql",
 					},
@@ -146,7 +146,7 @@ func TestBasicOperator_RunTask(t *testing.T) {
 					Return(nil)
 			},
 			args: args{
-				t: &pipeline.Task{
+				t: &pipeline.Asset{
 					ExecutableFile: pipeline.ExecutableFile{
 						Path: "test-file.sql",
 					},
@@ -171,7 +171,7 @@ func TestBasicOperator_RunTask(t *testing.T) {
 					Return(nil)
 			},
 			args: args{
-				t: &pipeline.Task{
+				t: &pipeline.Asset{
 					ExecutableFile: pipeline.ExecutableFile{
 						Path: "test-file.sql",
 					},

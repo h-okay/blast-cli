@@ -18,7 +18,7 @@ var commentMarkers = map[string]string{
 }
 
 func CreateTaskFromFileComments(fs afero.Fs) TaskCreator {
-	return func(filePath string) (*Task, error) {
+	return func(filePath string) (*Asset, error) {
 		extension := filepath.Ext(filePath)
 		commentMarker, ok := commentMarkers[extension]
 		if !ok {
@@ -48,7 +48,7 @@ func isEmbeddedYamlComment(file afero.File) bool {
 	return strings.HasPrefix(rowText, "/* @blast")
 }
 
-func commentedYamlToTask(file afero.File, filePath string) (*Task, error) {
+func commentedYamlToTask(file afero.File, filePath string) (*Asset, error) {
 	rows := readUntilComments(file)
 	if rows == "" {
 		return nil, errors.New("no embedded YAML found in the comments")
@@ -99,7 +99,7 @@ func readUntilComments(file afero.File) string {
 	return strings.TrimSpace(rows)
 }
 
-func singleLineCommentsToTask(scanner *bufio.Scanner, commentMarker, filePath string) (*Task, error) {
+func singleLineCommentsToTask(scanner *bufio.Scanner, commentMarker, filePath string) (*Asset, error) {
 	var allRows []string
 	var commentRows []string
 	for scanner.Scan() {
@@ -139,12 +139,13 @@ func singleLineCommentsToTask(scanner *bufio.Scanner, commentMarker, filePath st
 	return task, nil
 }
 
-func commentRowsToTask(commentRows []string) *Task {
-	task := Task{
+func commentRowsToTask(commentRows []string) *Asset {
+	task := Asset{
 		Parameters:  make(map[string]string),
 		Connections: make(map[string]string),
 		DependsOn:   []string{},
 		Schedule:    TaskSchedule{},
+		Columns:     map[string]Column{},
 	}
 	for _, row := range commentRows {
 		key, value, found := strings.Cut(row, ":")
@@ -165,7 +166,7 @@ func commentRowsToTask(commentRows []string) *Task {
 
 			continue
 		case "type":
-			task.Type = value
+			task.Type = AssetType(value)
 
 			continue
 		case "depends":

@@ -41,7 +41,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			"slack":           "slack-connection",
 			"gcpConnectionId": "gcp-connection-id-here",
 		},
-		Tasks: []*pipeline.Task{
+		Tasks: []*pipeline.Asset{
 			{
 				Name:        "hello-world",
 				Description: "This is a hello world task",
@@ -65,6 +65,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 					"conn2": "second connection",
 				},
 				DependsOn: []string{"gcs-to-bq"},
+				Columns:   map[string]pipeline.Column{},
 			},
 			{
 				Name: "second-task",
@@ -79,6 +80,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 					Path: absPath("testdata/pipeline/first-pipeline/tasks/task2/task.yaml"),
 					Type: pipeline.YamlTask,
 				},
+				Columns: map[string]pipeline.Column{},
 			},
 			{
 				Name:        "some-python-task",
@@ -104,6 +106,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 					"conn2": "second-connection",
 				},
 				DependsOn: []string{"task1", "task2", "task3", "task4", "task5", "task3"},
+				Columns:   map[string]pipeline.Column{},
 			},
 			{
 				Name:        "some-sql-task",
@@ -128,6 +131,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 					"conn2": "second-connection",
 				},
 				DependsOn: []string{"task1", "task2", "task3", "task4", "task5", "task3"},
+				Columns:   map[string]pipeline.Column{},
 			},
 		},
 	}
@@ -145,16 +149,6 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			},
 			args: args{
 				pathToPipeline: "testdata/some/path/that/doesnt/exist",
-			},
-			wantErr: true,
-		},
-		{
-			name: "missing path for the tasks should error",
-			fields: fields{
-				tasksDirectoryName: "some-missing-directory-name",
-			},
-			args: args{
-				pathToPipeline: "testdata/pipeline/first-pipeline",
 			},
 			wantErr: true,
 		},
@@ -191,9 +185,9 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			t.Parallel()
 
 			builderConfig := pipeline.BuilderConfig{
-				PipelineFileName:   "pipeline.yml",
-				TasksDirectoryName: tt.fields.tasksDirectoryName,
-				TasksFileSuffixes:  []string{"task.yml", "task.yaml"},
+				PipelineFileName:    "pipeline.yml",
+				TasksDirectoryNames: []string{tt.fields.tasksDirectoryName},
+				TasksFileSuffixes:   []string{"task.yml", "task.yaml"},
 			}
 
 			p := pipeline.NewBuilder(builderConfig, tt.fields.yamlTaskCreator, tt.fields.commentTaskCreator, afero.NewOsFs())
@@ -226,7 +220,7 @@ func TestTask_RelativePathToPipelineRoot(t *testing.T) {
 	tests := []struct {
 		name     string
 		pipeline *pipeline.Pipeline
-		task     *pipeline.Task
+		task     *pipeline.Asset
 		want     string
 	}{
 		{
@@ -236,7 +230,7 @@ func TestTask_RelativePathToPipelineRoot(t *testing.T) {
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
 			},
-			task: &pipeline.Task{
+			task: &pipeline.Asset{
 				Name: "test-task",
 				DefinitionFile: pipeline.TaskDefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/tasks/task-folder/task1.sql",
@@ -251,7 +245,7 @@ func TestTask_RelativePathToPipelineRoot(t *testing.T) {
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
 			},
-			task: &pipeline.Task{
+			task: &pipeline.Asset{
 				Name: "test-task",
 				DefinitionFile: pipeline.TaskDefinitionFile{
 					Path: "/users/user1/pipelines/task-folder/task1.sql",
@@ -284,7 +278,7 @@ func TestPipeline_HasTaskType(t *testing.T) {
 				DefinitionFile: pipeline.DefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
-				TasksByType: map[string][]*pipeline.Task{
+				TasksByType: map[pipeline.AssetType][]*pipeline.Asset{
 					"type1": {},
 					"type2": {},
 					"type3": {},
@@ -299,7 +293,7 @@ func TestPipeline_HasTaskType(t *testing.T) {
 				DefinitionFile: pipeline.DefinitionFile{
 					Path: "/users/user1/pipelines/pipeline1/pipeline.yml",
 				},
-				TasksByType: map[string][]*pipeline.Task{
+				TasksByType: map[pipeline.AssetType][]*pipeline.Asset{
 					"type1": {},
 					"type2": {},
 					"type3": {},
@@ -313,7 +307,7 @@ func TestPipeline_HasTaskType(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.want, tt.pipeline.HasTaskType(tt.taskType))
+			assert.Equal(t, tt.want, tt.pipeline.HasTaskType(pipeline.AssetType(tt.taskType)))
 		})
 	}
 }

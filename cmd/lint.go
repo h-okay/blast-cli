@@ -5,7 +5,6 @@ import (
 
 	"github.com/datablast-analytics/blast/pkg/lint"
 	"github.com/datablast-analytics/blast/pkg/path"
-	"github.com/datablast-analytics/blast/pkg/pipeline"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 )
@@ -24,12 +23,6 @@ func Lint(isDebug *bool) *cli.Command {
 				return cli.Exit("", 1)
 			}
 
-			builderConfig := pipeline.BuilderConfig{
-				PipelineFileName:   pipelineDefinitionFile,
-				TasksDirectoryName: defaultTasksPath,
-				TasksFileSuffixes:  defaultTaskFileSuffixes,
-			}
-			builder := pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition(fs), pipeline.CreateTaskFromFileComments(fs), fs)
 			linter := lint.NewLinter(path.GetPipelinePaths, builder, rules, logger)
 
 			rootPath := c.Args().Get(0)

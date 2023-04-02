@@ -31,7 +31,7 @@ func Test_createTaskFromFile(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *pipeline.Task
+		want    *pipeline.Asset
 		wantErr bool
 	}{
 		{
@@ -53,7 +53,7 @@ func Test_createTaskFromFile(t *testing.T) {
 			args: args{
 				filePath: "testdata/comments/test.sql",
 			},
-			want: &pipeline.Task{
+			want: &pipeline.Asset{
 				Name:        "some-sql-task",
 				Description: "some description goes here",
 				Type:        "bq.sql",
@@ -79,6 +79,7 @@ func Test_createTaskFromFile(t *testing.T) {
 					IncrementalKey: "dt",
 					ClusterBy:      []string{"event_name"},
 				},
+				Columns: map[string]pipeline.Column{},
 			},
 		},
 		{
@@ -86,7 +87,7 @@ func Test_createTaskFromFile(t *testing.T) {
 			args: args{
 				filePath: "testdata/comments/embeddedyaml.sql",
 			},
-			want: &pipeline.Task{
+			want: &pipeline.Asset{
 				Name:        "some-sql-task",
 				Description: "some description goes here",
 				Type:        "bq.sql",
@@ -112,6 +113,7 @@ func Test_createTaskFromFile(t *testing.T) {
 					IncrementalKey: "dt",
 					ClusterBy:      []string{"event_name"},
 				},
+				Columns: map[string]pipeline.Column{},
 			},
 		},
 		{
@@ -119,7 +121,7 @@ func Test_createTaskFromFile(t *testing.T) {
 			args: args{
 				filePath: absPath("testdata/comments/test.py"), // giving an absolute path here tests the case of double-absolute paths
 			},
-			want: &pipeline.Task{
+			want: &pipeline.Asset{
 				Name:        "some-python-task",
 				Description: "some description goes here",
 				Type:        "bq.sql",
@@ -139,6 +141,7 @@ func Test_createTaskFromFile(t *testing.T) {
 				},
 				DependsOn: []string{"task1", "task2", "task3", "task4", "task5", "task3"},
 				Schedule:  pipeline.TaskSchedule{Days: []string{"SUNDAY", "MONDAY", "TUESDAY"}},
+				Columns:   map[string]pipeline.Column{},
 			},
 		},
 	}

@@ -16,7 +16,7 @@ var noIssues = make([]*Issue, 0)
 func TestEnsureTaskNameIsNotEmpty(t *testing.T) {
 	t.Parallel()
 
-	taskWithEmptyName := pipeline.Task{
+	taskWithEmptyName := pipeline.Asset{
 		Name: "",
 	}
 
@@ -34,7 +34,7 @@ func TestEnsureTaskNameIsNotEmpty(t *testing.T) {
 			args: args{
 				pipeline: &pipeline.Pipeline{
 					Name: "test",
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name: "task1",
 						},
@@ -52,7 +52,7 @@ func TestEnsureTaskNameIsNotEmpty(t *testing.T) {
 			args: args{
 				pipeline: &pipeline.Pipeline{
 					Name: "test",
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name: "task1",
 						},
@@ -72,7 +72,7 @@ func TestEnsureTaskNameIsNotEmpty(t *testing.T) {
 					Description: taskNameMustExist,
 				},
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Name: "task name with spaces",
 					},
 					Description: taskNameMustBeAlphanumeric,
@@ -115,7 +115,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			name: "comment task is skipped",
 			args: args{
 				pipeline: pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.CommentTask,
@@ -130,7 +130,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			name: "task with no executable is skipped",
 			args: args{
 				pipeline: pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.YamlTask,
@@ -145,7 +145,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			name: "task with no executable is reported for python files",
 			args: args{
 				pipeline: pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Type: executor.TaskTypePython,
 							DefinitionFile: pipeline.TaskDefinitionFile{
@@ -157,7 +157,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Type: executor.TaskTypePython,
 						DefinitionFile: pipeline.TaskDefinitionFile{
 							Type: pipeline.YamlTask,
@@ -171,7 +171,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			name: "task with no executable is skipped",
 			args: args{
 				pipeline: pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.YamlTask,
@@ -186,7 +186,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						DefinitionFile: pipeline.TaskDefinitionFile{
 							Type: pipeline.YamlTask,
 						},
@@ -207,7 +207,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 					require.NoError(t, err, "failed to create the in-memory directory")
 				},
 				pipeline: pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.YamlTask,
@@ -222,7 +222,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						DefinitionFile: pipeline.TaskDefinitionFile{
 							Type: pipeline.YamlTask,
 						},
@@ -247,7 +247,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 					require.NoError(t, file.Close())
 				},
 				pipeline: pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.YamlTask,
@@ -262,7 +262,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						DefinitionFile: pipeline.TaskDefinitionFile{
 							Type: pipeline.YamlTask,
 						},
@@ -274,7 +274,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 					Description: executableFileIsEmpty,
 				},
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						DefinitionFile: pipeline.TaskDefinitionFile{
 							Type: pipeline.YamlTask,
 						},
@@ -302,7 +302,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 					require.NoError(t, err)
 				},
 				pipeline: pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.YamlTask,
@@ -317,7 +317,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						DefinitionFile: pipeline.TaskDefinitionFile{
 							Type: pipeline.YamlTask,
 						},
@@ -355,7 +355,7 @@ func TestEnsureExecutableFileIsValid(t *testing.T) {
 					require.NoError(t, err)
 				},
 				pipeline: pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							DefinitionFile: pipeline.TaskDefinitionFile{
 								Type: pipeline.YamlTask,
@@ -427,7 +427,7 @@ func TestEnsureDependencyExists(t *testing.T) {
 			name: "pipeline with no dependency has no issues",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name: "task1",
 						},
@@ -446,7 +446,7 @@ func TestEnsureDependencyExists(t *testing.T) {
 			name: "dependency on a non-existing task is caught",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name:      "task1",
 							DependsOn: []string{},
@@ -464,14 +464,14 @@ func TestEnsureDependencyExists(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Name:      "task2",
 						DependsOn: []string{"task1", "task3", "task5"},
 					},
 					Description: "Dependency 'task5' does not exist",
 				},
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Name:      "task3",
 						DependsOn: []string{"task1", "task4"},
 					},
@@ -592,7 +592,7 @@ func TestEnsureOnlyAcceptedTaskTypesAreThere(t *testing.T) {
 			name: "task with empty type is flagged",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Type: "",
 						},
@@ -601,7 +601,7 @@ func TestEnsureOnlyAcceptedTaskTypesAreThere(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task:        &pipeline.Task{},
+					Task:        &pipeline.Asset{},
 					Description: taskTypeMustExist,
 				},
 			},
@@ -610,7 +610,7 @@ func TestEnsureOnlyAcceptedTaskTypesAreThere(t *testing.T) {
 			name: "task invalid type is flagged",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Type: "some.random.type",
 						},
@@ -619,7 +619,7 @@ func TestEnsureOnlyAcceptedTaskTypesAreThere(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Type: "some.random.type",
 					},
 					Description: "Invalid task type 'some.random.type'",
@@ -630,7 +630,7 @@ func TestEnsureOnlyAcceptedTaskTypesAreThere(t *testing.T) {
 			name: "task with valid type is not flagged",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Type: "bq.sql",
 						},
@@ -672,7 +672,7 @@ func TestEnsureTaskNameIsUnique(t *testing.T) {
 			name: "empty name is skipped",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name: "",
 						},
@@ -686,7 +686,7 @@ func TestEnsureTaskNameIsUnique(t *testing.T) {
 			name: "duplicates are reported",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name: "name1",
 							DefinitionFile: pipeline.TaskDefinitionFile{
@@ -710,13 +710,13 @@ func TestEnsureTaskNameIsUnique(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Name: "name1",
 						DefinitionFile: pipeline.TaskDefinitionFile{
 							Path: "path1",
 						},
 					},
-					Description: "Task name 'name1' is not unique, please make sure all the task names are unique",
+					Description: "Asset name 'name1' is not unique, please make sure all the task names are unique",
 					Context:     []string{"path1", "path3"},
 				},
 			},
@@ -755,7 +755,7 @@ func TestEnsurePipelineNameIsValid(t *testing.T) {
 			name: "empty pipeline name is reported",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name: "",
 						},
@@ -828,7 +828,7 @@ func TestEnsurePipelineHasNoCycles(t *testing.T) {
 			name: "cycles are detected",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name: "task0",
 						},
@@ -862,7 +862,7 @@ func TestEnsurePipelineHasNoCycles(t *testing.T) {
 				{
 					Description: pipelineContainsCycle,
 					Context: []string{
-						"Task `task6` depends on itself",
+						"Asset `task6` depends on itself",
 					},
 				},
 				{
@@ -910,7 +910,7 @@ func TestEnsureTaskScheduleIsValid(t *testing.T) {
 			name: "no days in task schedule, should return no issues",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name: "task1",
 						},
@@ -927,7 +927,7 @@ func TestEnsureTaskScheduleIsValid(t *testing.T) {
 			name: "two invalid days in task schedule, all caught",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name:     "task1",
 							Schedule: pipeline.TaskSchedule{Days: []string{"monday", "wrong1", "wrong2"}},
@@ -941,7 +941,7 @@ func TestEnsureTaskScheduleIsValid(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Name:     "task1",
 						Schedule: pipeline.TaskSchedule{Days: []string{"monday", "wrong1", "wrong2"}},
 					},
@@ -953,7 +953,7 @@ func TestEnsureTaskScheduleIsValid(t *testing.T) {
 				},
 
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Name:     "task2",
 						Schedule: pipeline.TaskSchedule{Days: []string{"sunday", "wrong3", "friday"}},
 					},
@@ -968,7 +968,7 @@ func TestEnsureTaskScheduleIsValid(t *testing.T) {
 			name: "no issues",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name:     "task1",
 							Schedule: pipeline.TaskSchedule{Days: []string{"monday", "tuesday", "wednesday"}},
@@ -1015,7 +1015,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 			name: "no athena.sql task type",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name: "task1",
 						},
@@ -1031,7 +1031,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 			name: "all fields and values are correct, no issues",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name: "task1",
 							Type: "athena.sql",
@@ -1049,7 +1049,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 			name: "database value is empty, caught",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name: "task1",
 							Type: "athena.sql",
@@ -1063,7 +1063,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Name: "task1",
 						Type: "athena.sql",
 						Parameters: map[string]string{
@@ -1079,7 +1079,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 			name: "s3 file path value is wrong, caught",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name: "task1",
 							Type: "athena.sql",
@@ -1093,7 +1093,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Name: "task1",
 						Type: "athena.sql",
 						Parameters: map[string]string{
@@ -1110,7 +1110,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 			name: "database and s3_file_path fields are wrong, caught",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name: "task1",
 							Type: "athena.sql",
@@ -1124,7 +1124,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Name: "task1",
 						Type: "athena.sql",
 						Parameters: map[string]string{
@@ -1135,7 +1135,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 					Description: athenaSQLMissingDatabaseParameter,
 				},
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Name: "task1",
 						Type: "athena.sql",
 						Parameters: map[string]string{
@@ -1151,7 +1151,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 			name: "database field is wrong, caught",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name: "task1",
 							Type: "athena.sql",
@@ -1165,7 +1165,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Name: "task1",
 						Type: "athena.sql",
 						Parameters: map[string]string{
@@ -1181,7 +1181,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 			name: "s3_file_path field is wrong, caught",
 			args: args{
 				p: &pipeline.Pipeline{
-					Tasks: []*pipeline.Task{
+					Tasks: []*pipeline.Asset{
 						{
 							Name: "task1",
 							Type: "athena.sql",
@@ -1195,7 +1195,7 @@ func TestEnsureAthenaSQLTypeTasksHasDatabaseAndS3FilePath(t *testing.T) {
 			},
 			want: []*Issue{
 				{
-					Task: &pipeline.Task{
+					Task: &pipeline.Asset{
 						Name: "task1",
 						Type: "athena.sql",
 						Parameters: map[string]string{

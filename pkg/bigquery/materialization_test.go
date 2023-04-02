@@ -11,20 +11,20 @@ func TestMaterializer_Render(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name    string
-		task    *pipeline.Task
+		task    *pipeline.Asset
 		query   string
 		want    string
 		wantErr bool
 	}{
 		{
 			name:  "no materialization, return raw query",
-			task:  &pipeline.Task{},
+			task:  &pipeline.Asset{},
 			query: "SELECT 1",
 			want:  "SELECT 1",
 		},
 		{
 			name: "materialize to a view",
-			task: &pipeline.Task{
+			task: &pipeline.Asset{
 				Name: "my.asset",
 				Materialization: pipeline.Materialization{
 					Type: pipeline.MaterializationTypeView,
@@ -35,7 +35,7 @@ func TestMaterializer_Render(t *testing.T) {
 		},
 		{
 			name: "materialize to a table, no partition or cluster, default to create+replace",
-			task: &pipeline.Task{
+			task: &pipeline.Asset{
 				Name: "my.asset",
 				Materialization: pipeline.Materialization{
 					Type: pipeline.MaterializationTypeTable,
@@ -46,7 +46,7 @@ func TestMaterializer_Render(t *testing.T) {
 		},
 		{
 			name: "materialize to a table with partition, no cluster",
-			task: &pipeline.Task{
+			task: &pipeline.Asset{
 				Name: "my.asset",
 				Materialization: pipeline.Materialization{
 					Type:        pipeline.MaterializationTypeTable,
@@ -59,7 +59,7 @@ func TestMaterializer_Render(t *testing.T) {
 		},
 		{
 			name: "materialize to a table with partition and cluster, single field to cluster",
-			task: &pipeline.Task{
+			task: &pipeline.Asset{
 				Name: "my.asset",
 				Materialization: pipeline.Materialization{
 					Type:        pipeline.MaterializationTypeTable,
@@ -73,7 +73,7 @@ func TestMaterializer_Render(t *testing.T) {
 		},
 		{
 			name: "materialize to a table with partition and cluster, multiple fields to cluster",
-			task: &pipeline.Task{
+			task: &pipeline.Asset{
 				Name: "my.asset",
 				Materialization: pipeline.Materialization{
 					Type:        pipeline.MaterializationTypeTable,
@@ -87,7 +87,7 @@ func TestMaterializer_Render(t *testing.T) {
 		},
 		{
 			name: "materialize to a table with append",
-			task: &pipeline.Task{
+			task: &pipeline.Asset{
 				Name: "my.asset",
 				Materialization: pipeline.Materialization{
 					Type:     pipeline.MaterializationTypeTable,
@@ -99,7 +99,7 @@ func TestMaterializer_Render(t *testing.T) {
 		},
 		{
 			name: "incremental strategies require the incremental_key to be set",
-			task: &pipeline.Task{
+			task: &pipeline.Asset{
 				Name: "my.asset",
 				Materialization: pipeline.Materialization{
 					Type:     pipeline.MaterializationTypeTable,
@@ -111,7 +111,7 @@ func TestMaterializer_Render(t *testing.T) {
 		},
 		{
 			name: "incremental strategies require the incremental_key to be set",
-			task: &pipeline.Task{
+			task: &pipeline.Asset{
 				Name: "my.asset",
 				Materialization: pipeline.Materialization{
 					Type:     pipeline.MaterializationTypeTable,
@@ -123,7 +123,7 @@ func TestMaterializer_Render(t *testing.T) {
 		},
 		{
 			name: "delete+insert builds a proper transaction",
-			task: &pipeline.Task{
+			task: &pipeline.Asset{
 				Name: "my.asset",
 				Materialization: pipeline.Materialization{
 					Type:           pipeline.MaterializationTypeTable,

@@ -31,6 +31,8 @@ type contextKey int
 
 const (
 	KeyPrinter contextKey = iota
+
+	timeFormat = "2006-01-02 15:04:05"
 )
 
 type Concurrent struct {
@@ -40,7 +42,7 @@ type Concurrent struct {
 
 func NewConcurrent(
 	logger *zap.SugaredLogger,
-	taskTypeMap map[string]Operator,
+	taskTypeMap map[pipeline.AssetType]Config,
 	workerCount int,
 ) *Concurrent {
 	executor := &Sequential{
@@ -66,7 +68,7 @@ func NewConcurrent(
 	}
 }
 
-func (c Concurrent) Start(input chan *scheduler.TaskInstance, result chan<- *scheduler.TaskExecutionResult) {
+func (c Concurrent) Start(input chan scheduler.TaskInstance, result chan<- *scheduler.TaskExecutionResult) {
 	for i := 0; i < c.workerCount; i++ {
 		go c.workers[i].run(input, result)
 	}
@@ -80,25 +82,28 @@ type worker struct {
 	printLock *sync.Mutex
 }
 
-func (w worker) run(taskChannel <-chan *scheduler.TaskInstance, results chan<- *scheduler.TaskExecutionResult) {
+func (w worker) run(taskChannel <-chan scheduler.TaskInstance, results chan<- *scheduler.TaskExecutionResult) {
 	for task := range taskChannel {
-		w.printer.Printf("[%s] [%s] Running: %s\n", time.Now().Format(time.RFC3339), w.id, task.Task.Name)
+		w.printLock.Lock()
+		w.printer.Printf("[%s] Starting: %s\n", time.Now().Format(timeFormat), task.GetHumanID())
+		w.printLock.Unlock()
+
 		start := time.Now()
 
 		printer := &workerWriter{
 			w:           os.Stdout,
-			task:        task.Task,
+			task:        task.GetAsset(),
 			sprintfFunc: w.printer.SprintfFunc(),
 			worker:      w.id,
 		}
 
 		ctx := context.WithValue(context.Background(), KeyPrinter, printer)
-		err := w.executor.RunSingleTask(ctx, task.Pipeline, task.Task)
+		err := w.executor.RunSingleTask(ctx, task)
 
 		duration := time.Since(start)
 		durationString := fmt.Sprintf("(%s)", duration.Truncate(time.Millisecond).String())
 		w.printLock.Lock()
-		w.printer.Printf("[%s] [%s] Completed: %s %s\n", time.Now().Format(time.RFC3339), w.id, task.Task.Name, faint(durationString))
+		w.printer.Printf("[%s] Finished: %s %s\n", time.Now().Format(timeFormat), task.GetHumanID(), faint(durationString))
 		w.printLock.Unlock()
 
 		results <- &scheduler.TaskExecutionResult{
@@ -110,13 +115,13 @@ func (w worker) run(taskChannel <-chan *scheduler.TaskInstance, results chan<- *
 
 type workerWriter struct {
 	w           io.Writer
-	task        *pipeline.Task
+	task        *pipeline.Asset
 	sprintfFunc func(format string, a ...interface{}) string
 	worker      string
 }
 
 func (w *workerWriter) Write(p []byte) (int, error) {
-	formatted := w.sprintfFunc("[%s] [%s] [%s] %s", time.Now().Format(time.RFC3339), w.worker, w.task.Name, string(p))
+	formatted := w.sprintfFunc("[%s] [%s] %s", time.Now().Format(timeFormat), w.task.Name, string(p))
 
 	n, err := w.w.Write([]byte(formatted))
 	if err != nil {
