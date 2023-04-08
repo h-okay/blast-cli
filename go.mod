@@ -1,6 +1,6 @@
 module github.com/datablast-analytics/blast
 
-go 1.19
+go 1.20
 
 require (
 	cloud.google.com/go/bigquery v1.46.0
@@ -8,6 +8,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.5.0
 	github.com/fatih/color v1.14.1
 	github.com/go-playground/validator/v10 v10.11.2
+	github.com/google/uuid v1.3.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/noirbizarre/gonja v0.0.0-20200629003239-4d051fd0be61
@@ -67,7 +68,6 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v23.1.21+incompatible // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
 	github.com/goph/emperror v0.17.2 // indirect
