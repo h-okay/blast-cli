@@ -19,6 +19,20 @@ func ReadYaml(fs afero.Fs, path string, out interface{}) error {
 	return ConvertYamlToObject(buf, out)
 }
 
+func WriteYaml(fs afero.Fs, path string, content interface{}) error {
+	buf, err := yaml.Marshal(content)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal object to yaml")
+	}
+
+	err = afero.WriteFile(fs, path, buf, 0o644)
+	if err != nil {
+		return errors.Wrapf(err, "failed to write file %s", path)
+	}
+
+	return nil
+}
+
 func ConvertYamlToObject(buf []byte, out interface{}) error {
 	err := yaml.Unmarshal(buf, out)
 	if err != nil {
