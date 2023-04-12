@@ -1,100 +1,37 @@
 package config
 
 import (
-	"fmt"
+	"errors"
+	fs2 "io/fs"
 
 	path2 "github.com/datablast-analytics/blast/pkg/path"
 	"github.com/spf13/afero"
-	"gopkg.in/yaml.v3"
 )
 
 type Manager struct{}
 
 type BigQueryConnection struct {
-	ServiceAccountJSON string
-	ServiceAccountFile string
-	ProjectID          string
+	Name               string `yaml:"name"`
+	ServiceAccountJSON string `yaml:"service_account_json"`
+	ServiceAccountFile string `yaml:"service_account_file"`
+	ProjectID          string `yaml:"project_id"`
 }
 
 type SnowflakeConnection struct {
-	Account   string
-	Username  string
-	Password  string
-	Region    string
-	Role      string
-	Database  string
-	Schema    string
-	Warehouse string
+	Name      string `yaml:"name"`
+	Account   string `yaml:"account"`
+	Username  string `yaml:"username"`
+	Password  string `yaml:"password"`
+	Region    string `yaml:"region"`
+	Role      string `yaml:"role"`
+	Database  string `yaml:"database"`
+	Schema    string `yaml:"schema"`
+	Warehouse string `yaml:"warehouse"`
 }
 
 type Connections struct {
-	BigQuery  map[string]BigQueryConnection
-	Snowflake map[string]SnowflakeConnection
-}
-
-func getStringValue(values map[string]interface{}, key string) string {
-	if values == nil {
-		return ""
-	}
-
-	val, ok := values[key]
-	if !ok {
-		return ""
-	}
-
-	strVal, ok := val.(string)
-	if !ok {
-		return ""
-	}
-
-	return strVal
-}
-
-func (c *Connections) UnmarshalYAML(value *yaml.Node) error {
-	var raw map[string]map[string]interface{}
-	err := value.Decode(&raw)
-	if err != nil {
-		return err
-	}
-
-	connections := Connections{
-		BigQuery:  map[string]BigQueryConnection{},
-		Snowflake: map[string]SnowflakeConnection{},
-	}
-
-	for connName, rawVal := range raw {
-		typeName, ok := rawVal["type"].(string)
-		if !ok {
-			return fmt.Errorf("connection type not specified")
-		}
-
-		switch typeName {
-		case "bigquery":
-			conn := BigQueryConnection{
-				ServiceAccountJSON: getStringValue(rawVal, "service_account_json"),
-				ServiceAccountFile: getStringValue(rawVal, "service_account_file"),
-				ProjectID:          getStringValue(rawVal, "project_id"),
-			}
-			connections.BigQuery[connName] = conn
-		case "snowflake":
-			conn := SnowflakeConnection{
-				Account:   getStringValue(rawVal, "account"),
-				Username:  getStringValue(rawVal, "username"),
-				Password:  getStringValue(rawVal, "password"),
-				Region:    getStringValue(rawVal, "region"),
-				Role:      getStringValue(rawVal, "role"),
-				Database:  getStringValue(rawVal, "database"),
-				Schema:    getStringValue(rawVal, "schema"),
-				Warehouse: getStringValue(rawVal, "warehouse"),
-			}
-			connections.Snowflake[connName] = conn
-		default:
-			return fmt.Errorf("unknown connection type: %s", typeName)
-		}
-	}
-
-	*c = connections
-	return err
+	BigQuery  []BigQueryConnection
+	Snowflake []SnowflakeConnection
 }
 
 type Environment struct {
@@ -102,7 +39,14 @@ type Environment struct {
 }
 
 type Config struct {
+	fs   afero.Fs
+	path string
+
 	Environments map[string]Environment `yaml:"environments"`
+}
+
+func (c *Config) Persist() error {
+	return path2.WriteYaml(c.fs, c.path, c)
 }
 
 func LoadFromFile(fs afero.Fs, path string) (*Config, error) {
@@ -113,5 +57,37 @@ func LoadFromFile(fs afero.Fs, path string) (*Config, error) {
 		return nil, err
 	}
 
+	config.fs = fs
+	config.path = path
+
 	return &config, nil
+}
+
+func LoadOrCreate(fs afero.Fs, path string) (*Config, error) {
+	config, err := LoadFromFile(fs, path)
+	if err != nil && !errors.Is(err, fs2.ErrNotExist) {
+		return nil, err
+	}
+
+	if err == nil {
+		return config, nil
+	}
+
+	config = &Config{
+		fs:   fs,
+		path: path,
+
+		Environments: map[string]Environment{
+			"default": {
+				Connections: Connections{},
+			},
+		},
+	}
+
+	err = config.Persist()
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
 }

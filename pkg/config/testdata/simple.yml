@@ -1,25 +1,26 @@
 environments:
   dev:
     connections:
-      conn1:
-        type: bigquery
-        service_account_json: "{\"key1\": \"value1\"}"
-        service_account_file: "/path/to/service_account.json"
-        project_id: "my-project"
+      bigquery:
+        - name: conn1
+          service_account_json: "{\"key1\": \"value1\"}"
+          service_account_file: "/path/to/service_account.json"
+          project_id: "my-project"
 
-      conn2:
-        type: snowflake
-        username: "user"
-        password: "pass"
-        account: "account"
-        database: "db"
-        warehouse: "wh"
-        schema: "schema"
-        role: "role"
-        region: "region"
+      snowflake:
+        - name: conn2
+          username: "user"
+          password: "pass"
+          account: "account"
+          database: "db"
+          warehouse: "wh"
+          schema: "schema"
+          role: "role"
+          region: "region"
+
   prod:
     connections:
-      conn1:
-        type: bigquery
-        service_account_file: "/path/to/service_account.json"
-        project_id: "my-project"
+      bigquery:
+        - name: conn1
+          service_account_file: "/path/to/service_account.json"
+          project_id: "my-project"
