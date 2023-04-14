@@ -143,9 +143,20 @@ func TestLoadOrCreate(t *testing.T) {
 		{
 			name: "return the config if it exists",
 			setup: func(t *testing.T, args args) {
-				conf := existingConfig
-				conf.fs = args.fs
-				err := conf.Persist()
+				err := existingConfig.PersistToFs(args.fs)
+				assert.NoError(t, err)
+
+				err = afero.WriteFile(args.fs, "/some/path/to/.gitignore", []byte("file1"), 0o644)
+				assert.NoError(t, err)
+			},
+			want:    existingConfig,
+			wantErr: assert.NoError,
+		},
+
+		{
+			name: "return the config if it exists, add to the gitignore",
+			setup: func(t *testing.T, args args) {
+				err := existingConfig.PersistToFs(args.fs)
 				assert.NoError(t, err)
 			},
 			want:    existingConfig,
@@ -169,15 +180,20 @@ func TestLoadOrCreate(t *testing.T) {
 			tt.wantErr(t, err)
 
 			if tt.want != nil {
-				tt.want.path = configPath
-				tt.want.fs = a.fs
+				assert.EqualExportedValues(t, *tt.want, *got)
+			} else {
+				assert.Equal(t, tt.want, got)
 			}
-
-			assert.Equal(t, tt.want, got)
 
 			exists, err := afero.Exists(a.fs, configPath)
 			assert.NoError(t, err)
 			assert.True(t, exists)
+
+			if tt.want != nil {
+				content, err := afero.ReadFile(a.fs, "/some/path/to/.gitignore")
+				assert.NoError(t, err)
+				assert.Contains(t, string(content), "config.yml", "config file content: %s", content)
+			}
 		})
 	}
 }

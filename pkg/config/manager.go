@@ -1,8 +1,13 @@
 package config
 
 import (
-	"errors"
+	"bufio"
+	errors "errors"
+	"fmt"
 	fs2 "io/fs"
+	"os"
+	"path"
+	"strings"
 
 	path2 "github.com/datablast-analytics/blast/pkg/path"
 	"github.com/spf13/afero"
@@ -49,6 +54,10 @@ func (c *Config) Persist() error {
 	return path2.WriteYaml(c.fs, c.path, c)
 }
 
+func (c *Config) PersistToFs(fs afero.Fs) error {
+	return path2.WriteYaml(fs, c.path, c)
+}
+
 func LoadFromFile(fs afero.Fs, path string) (*Config, error) {
 	var config Config
 
@@ -70,7 +79,7 @@ func LoadOrCreate(fs afero.Fs, path string) (*Config, error) {
 	}
 
 	if err == nil {
-		return config, nil
+		return config, ensureConfigIsInGitignore(fs, path)
 	}
 
 	config = &Config{
@@ -86,8 +95,47 @@ func LoadOrCreate(fs afero.Fs, path string) (*Config, error) {
 
 	err = config.Persist()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to persist config: %w", err)
 	}
 
-	return config, nil
+	return config, ensureConfigIsInGitignore(fs, path)
+}
+
+func ensureConfigIsInGitignore(fs afero.Fs, filePath string) (err error) {
+	// Check if .gitignore file exists in the root of the repository
+	gitignorePath := path.Join(path.Dir(filePath), ".gitignore")
+	exists, err := afero.Exists(fs, gitignorePath)
+	if err != nil {
+		return err
+	}
+
+	fileNameToIgnore := path.Base(filePath)
+	if !exists {
+		// Create a new .gitignore file if it doesn't exist
+		if err = afero.WriteFile(fs, gitignorePath, []byte(fileNameToIgnore), 0o644); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	file, err := fs.OpenFile(gitignorePath, os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	defer func(open afero.File) {
+		tempErr := open.Close()
+		if tempErr != nil {
+			err = errors.Join(err, fmt.Errorf("failed to close file: %w", tempErr))
+		}
+	}(file)
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if strings.TrimSpace(scanner.Text()) == fileNameToIgnore {
+			return nil
+		}
+	}
+
+	_, err = file.Write([]byte("\n" + fileNameToIgnore))
+	return err
 }
