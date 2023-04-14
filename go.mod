@@ -16,7 +16,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/snowflakedb/gosnowflake v1.6.19
 	github.com/spf13/afero v1.9.5
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3-0.20230314120135-c5fc9d6b6b21
 	github.com/urfave/cli/v2 v2.25.1
 	github.com/yourbasic/graph v0.0.0-20210606180040-8ecfec1c2869
 	go.uber.org/zap v1.24.0
