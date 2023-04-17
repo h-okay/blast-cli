@@ -27,7 +27,7 @@ func WriteYaml(fs afero.Fs, path string, content interface{}) error {
 
 	err = afero.WriteFile(fs, path, buf, 0o644)
 	if err != nil {
-		return errors.Wrapf(err, "failed to write file %s", path)
+		return errors.Wrapf(err, "failed to write YAML file to %s", path)
 	}
 
 	return nil
