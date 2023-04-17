@@ -11,6 +11,7 @@ import (
 
 	path2 "github.com/datablast-analytics/blast/pkg/path"
 	"github.com/spf13/afero"
+	"golang.org/x/oauth2/google"
 )
 
 type Manager struct{}
@@ -20,6 +21,15 @@ type BigQueryConnection struct {
 	ServiceAccountJSON string `yaml:"service_account_json"`
 	ServiceAccountFile string `yaml:"service_account_file"`
 	ProjectID          string `yaml:"project_id"`
+	rawCredentials     *google.Credentials
+}
+
+func (c *BigQueryConnection) SetCredentials(cred *google.Credentials) {
+	c.rawCredentials = cred
+}
+
+func (c *BigQueryConnection) GetCredentials() *google.Credentials {
+	return c.rawCredentials
 }
 
 type SnowflakeConnection struct {
@@ -118,7 +128,7 @@ func ensureConfigIsInGitignore(fs afero.Fs, filePath string) (err error) {
 		return nil
 	}
 
-	file, err := fs.OpenFile(gitignorePath, os.O_APPEND|os.O_WRONLY, 0o644)
+	file, err := fs.OpenFile(gitignorePath, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0o644)
 	if err != nil {
 		return err
 	}
