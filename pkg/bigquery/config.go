@@ -1,10 +1,15 @@
 package bigquery
 
-import "github.com/kelseyhightower/envconfig"
+import (
+	"github.com/kelseyhightower/envconfig"
+	"golang.org/x/oauth2/google"
+)
 
 type Config struct {
 	ProjectID           string `envconfig:"BIGQUERY_PROJECT"`
 	CredentialsFilePath string `envconfig:"BIGQUERY_CREDENTIALS_FILE"`
+	CredentialsJSON     string
+	Credentials         *google.Credentials
 	Location            string `envconfig:"BIGQUERY_LOCATION"`
 }
 

@@ -23,11 +23,25 @@ type DB struct {
 }
 
 func NewDB(c *Config) (*DB, error) {
+	options := []option.ClientOption{
+		option.WithScopes(scopes...),
+	}
+
+	switch {
+	case c.CredentialsJSON != "":
+		options = append(options, option.WithCredentialsJSON([]byte(c.CredentialsJSON)))
+	case c.CredentialsFilePath != "":
+		options = append(options, option.WithCredentialsFile(c.CredentialsFilePath))
+	case c.Credentials != nil:
+		options = append(options, option.WithCredentials(c.Credentials))
+	default:
+		return nil, errors.New("no credentials provided")
+	}
+
 	client, err := bigquery.NewClient(
 		context.Background(),
 		c.ProjectID,
-		option.WithCredentialsFile(c.CredentialsFilePath),
-		option.WithScopes(scopes...),
+		options...,
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create bigquery client")
