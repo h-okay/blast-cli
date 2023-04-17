@@ -10,6 +10,32 @@ import (
 func TestLoadFromFile(t *testing.T) {
 	t.Parallel()
 
+	devEnv := Environment{
+		Connections: Connections{
+			BigQuery: []BigQueryConnection{
+				{
+					Name:               "conn1",
+					ServiceAccountJSON: "{\"key1\": \"value1\"}",
+					ServiceAccountFile: "/path/to/service_account.json",
+					ProjectID:          "my-project",
+				},
+			},
+			Snowflake: []SnowflakeConnection{
+				{
+					Name:      "conn2",
+					Username:  "user",
+					Password:  "pass",
+					Account:   "account",
+					Region:    "region",
+					Role:      "role",
+					Database:  "db",
+					Schema:    "schema",
+					Warehouse: "wh",
+				},
+			},
+		},
+	}
+
 	type args struct {
 		path string
 	}
@@ -32,32 +58,10 @@ func TestLoadFromFile(t *testing.T) {
 				path: "testdata/simple.yml",
 			},
 			want: &Config{
+				DefaultEnvironmentName: "dev",
+				DefaultEnvironment:     &devEnv,
 				Environments: map[string]Environment{
-					"dev": {
-						Connections: Connections{
-							BigQuery: []BigQueryConnection{
-								{
-									Name:               "conn1",
-									ServiceAccountJSON: "{\"key1\": \"value1\"}",
-									ServiceAccountFile: "/path/to/service_account.json",
-									ProjectID:          "my-project",
-								},
-							},
-							Snowflake: []SnowflakeConnection{
-								{
-									Name:      "conn2",
-									Username:  "user",
-									Password:  "pass",
-									Account:   "account",
-									Region:    "region",
-									Role:      "role",
-									Database:  "db",
-									Schema:    "schema",
-									Warehouse: "wh",
-								},
-							},
-						},
-					},
+					"dev": devEnv,
 					"prod": {
 						Connections: Connections{
 							BigQuery: []BigQueryConnection{
@@ -96,21 +100,23 @@ func TestLoadOrCreate(t *testing.T) {
 	t.Parallel()
 
 	configPath := "/some/path/to/config.yml"
-
-	existingConfig := &Config{
-		path: configPath,
-		Environments: map[string]Environment{
-			"dev": {
-				Connections: Connections{
-					BigQuery: []BigQueryConnection{
-						{
-							Name:               "conn1",
-							ServiceAccountFile: "/path/to/service_account.json",
-						},
-					},
-					Snowflake: []SnowflakeConnection{},
+	defaultEnv := &Environment{
+		Connections: Connections{
+			BigQuery: []BigQueryConnection{
+				{
+					Name:               "conn1",
+					ServiceAccountFile: "/path/to/service_account.json",
 				},
 			},
+			Snowflake: []SnowflakeConnection{},
+		},
+	}
+	existingConfig := &Config{
+		path:                   configPath,
+		DefaultEnvironmentName: "dev",
+		DefaultEnvironment:     defaultEnv,
+		Environments: map[string]Environment{
+			"dev": *defaultEnv,
 		},
 	}
 
@@ -126,6 +132,7 @@ func TestLoadOrCreate(t *testing.T) {
 		{
 			name: "missing path should create",
 			want: &Config{
+				DefaultEnvironmentName: "default",
 				Environments: map[string]Environment{
 					"default": {},
 				},

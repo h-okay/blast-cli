@@ -7,7 +7,6 @@ import (
 )
 
 const (
-	defaultPipelinePath    = "."
 	pipelineDefinitionFile = "pipeline.yml"
 )
 

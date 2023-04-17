@@ -1,11 +1,14 @@
 package cmd
 
 import (
+	path2 "path"
 	"strings"
 
+	"github.com/datablast-analytics/blast/pkg/config"
 	"github.com/datablast-analytics/blast/pkg/lint"
 	"github.com/datablast-analytics/blast/pkg/path"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
 )
 
@@ -17,6 +20,17 @@ func Lint(isDebug *bool) *cli.Command {
 		Action: func(c *cli.Context) error {
 			logger := makeLogger(*isDebug)
 
+			rootPath := c.Args().Get(0)
+			if rootPath == "" {
+				rootPath = "."
+			}
+
+			_, err := config.LoadOrCreate(afero.NewOsFs(), path2.Join(rootPath, ".blast.yml"))
+			if err != nil {
+				errorPrinter.Printf("Failed to create the config file: %v\n", err)
+				return cli.Exit("", 1)
+			}
+
 			rules, err := lint.GetRules(logger, fs)
 			if err != nil {
 				errorPrinter.Printf("An error occurred while linting the pipelines: %v\n", err)
@@ -24,11 +38,6 @@ func Lint(isDebug *bool) *cli.Command {
 			}
 
 			linter := lint.NewLinter(path.GetPipelinePaths, builder, rules, logger)
-
-			rootPath := c.Args().Get(0)
-			if rootPath == "" {
-				rootPath = defaultPipelinePath
-			}
 
 			result, err := linter.Lint(rootPath, pipelineDefinitionFile)
 

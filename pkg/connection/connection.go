@@ -7,6 +7,8 @@ import (
 	"github.com/datablast-analytics/blast/pkg/config"
 )
 
+type DBClient interface{}
+
 type Manager struct {
 	BigQuery map[string]*bigquery.DB
 }

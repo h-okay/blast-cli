@@ -57,7 +57,9 @@ type Config struct {
 	fs   afero.Fs
 	path string
 
-	Environments map[string]Environment `yaml:"environments"`
+	DefaultEnvironmentName string `yaml:"default_environment"`
+	DefaultEnvironment     *Environment
+	Environments           map[string]Environment `yaml:"environments"`
 }
 
 func (c *Config) Persist() error {
@@ -79,6 +81,12 @@ func LoadFromFile(fs afero.Fs, path string) (*Config, error) {
 	config.fs = fs
 	config.path = path
 
+	e, ok := config.Environments[config.DefaultEnvironmentName]
+	if !ok {
+		return nil, errors.New("default environment not found")
+	}
+
+	config.DefaultEnvironment = &e
 	return &config, nil
 }
 
@@ -96,6 +104,7 @@ func LoadOrCreate(fs afero.Fs, path string) (*Config, error) {
 		fs:   fs,
 		path: path,
 
+		DefaultEnvironmentName: "default",
 		Environments: map[string]Environment{
 			"default": {
 				Connections: Connections{},

@@ -61,16 +61,21 @@ func GetRules(logger *zap.SugaredLogger, fs afero.Fs) ([]Rule, error) {
 			Validator:  EnsureStartDateIsValid,
 		},
 	}
+	//
+	//connectionManager := &connection.Manager{}
+	//for _, connection := range conf.E {
+	//
+	//}
 
-	rules, err := appendSnowflakeValidatorIfExists(logger, fs, rules)
-	if err != nil {
-		return nil, err
-	}
-
-	rules, err = appendBigqueryValidatorIfExists(logger, fs, rules)
-	if err != nil {
-		return nil, err
-	}
+	//rules, err := appendSnowflakeValidatorIfExists(logger, fs, rules)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//rules, err = appendBigqueryValidatorIfExists(logger, fs, rules)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	logger.Debugf("successfully loaded %d rules", len(rules))
 
