@@ -46,7 +46,7 @@ func Lint(isDebug *bool) *cli.Command {
 				return cli.Exit("", 1)
 			}
 
-			if len(cm.DefaultEnvironment.Connections.GoogleCloudPlatform) > 0 {
+			if len(cm.SelectedEnvironment.Connections.GoogleCloudPlatform) > 0 {
 				rules = append(rules, &lint.QueryValidatorRule{
 					Identifier:  "bigquery-validator",
 					TaskType:    executor.TaskTypeBigqueryQuery,

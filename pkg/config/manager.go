@@ -58,16 +58,26 @@ type Config struct {
 	path string
 
 	DefaultEnvironmentName string                 `yaml:"default_environment"`
-	DefaultEnvironment     *Environment           `yaml:"-"`
+	SelectedEnvironment    *Environment           `yaml:"-"`
 	Environments           map[string]Environment `yaml:"environments"`
 }
 
 func (c *Config) Persist() error {
-	return path2.WriteYaml(c.fs, c.path, c)
+	return c.PersistToFs(c.fs)
 }
 
 func (c *Config) PersistToFs(fs afero.Fs) error {
 	return path2.WriteYaml(fs, c.path, c)
+}
+
+func (c *Config) SelectEnvironment(name string) error {
+	e, ok := c.Environments[name]
+	if !ok {
+		return fmt.Errorf("environment %s not found", name)
+	}
+
+	c.SelectedEnvironment = &e
+	return nil
 }
 
 func LoadFromFile(fs afero.Fs, path string) (*Config, error) {
@@ -83,7 +93,7 @@ func LoadFromFile(fs afero.Fs, path string) (*Config, error) {
 
 	e := config.Environments[config.DefaultEnvironmentName]
 
-	config.DefaultEnvironment = &e
+	config.SelectedEnvironment = &e
 	return &config, nil
 }
 
@@ -105,7 +115,7 @@ func LoadOrCreate(fs afero.Fs, path string) (*Config, error) {
 		path: path,
 
 		DefaultEnvironmentName: "default",
-		DefaultEnvironment:     &defaultEnv,
+		SelectedEnvironment:    &defaultEnv,
 		Environments: map[string]Environment{
 			"default": defaultEnv,
 		},

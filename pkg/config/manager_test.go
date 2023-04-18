@@ -59,7 +59,7 @@ func TestLoadFromFile(t *testing.T) {
 			},
 			want: &Config{
 				DefaultEnvironmentName: "dev",
-				DefaultEnvironment:     &devEnv,
+				SelectedEnvironment:    &devEnv,
 				Environments: map[string]Environment{
 					"dev": devEnv,
 					"prod": {
@@ -114,7 +114,7 @@ func TestLoadOrCreate(t *testing.T) {
 	existingConfig := &Config{
 		path:                   configPath,
 		DefaultEnvironmentName: "dev",
-		DefaultEnvironment:     defaultEnv,
+		SelectedEnvironment:    defaultEnv,
 		Environments: map[string]Environment{
 			"dev": *defaultEnv,
 		},
@@ -133,7 +133,7 @@ func TestLoadOrCreate(t *testing.T) {
 			name: "missing path should create",
 			want: &Config{
 				DefaultEnvironmentName: "default",
-				DefaultEnvironment:     &Environment{},
+				SelectedEnvironment:    &Environment{},
 				Environments: map[string]Environment{
 					"default": {},
 				},
@@ -204,4 +204,48 @@ func TestLoadOrCreate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConfig_SelectEnvironment(t *testing.T) {
+	t.Parallel()
+
+	defaultEnv := &Environment{
+		Connections: Connections{
+			GoogleCloudPlatform: []GoogleCloudPlatformConnection{
+				{
+					Name:               "conn1",
+					ServiceAccountFile: "/path/to/service_account.json",
+				},
+			},
+		},
+	}
+
+	prodEnv := &Environment{
+		Connections: Connections{
+			GoogleCloudPlatform: []GoogleCloudPlatformConnection{
+				{
+					Name:               "conn1",
+					ServiceAccountFile: "/path/to/prod_service_account.json",
+				},
+			},
+		},
+	}
+
+	conf := Config{
+		DefaultEnvironmentName: "default",
+		SelectedEnvironment:    defaultEnv,
+		Environments:           map[string]Environment{"default": *defaultEnv, "prod": *prodEnv},
+	}
+
+	err := conf.SelectEnvironment("prod")
+	assert.NoError(t, err)
+	assert.Equal(t, prodEnv, conf.SelectedEnvironment)
+
+	err = conf.SelectEnvironment("non-existing")
+	assert.Error(t, err)
+	assert.Equal(t, prodEnv, conf.SelectedEnvironment)
+
+	err = conf.SelectEnvironment("default")
+	assert.NoError(t, err)
+	assert.Equal(t, defaultEnv, conf.SelectedEnvironment)
 }

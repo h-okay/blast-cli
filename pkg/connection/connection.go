@@ -50,7 +50,7 @@ func (m *Manager) AddBqConnectionFromConfig(connection *config.GoogleCloudPlatfo
 
 func NewManagerFromConfig(cm *config.Config) (*Manager, error) {
 	connectionManager := &Manager{}
-	for _, conn := range cm.DefaultEnvironment.Connections.GoogleCloudPlatform {
+	for _, conn := range cm.SelectedEnvironment.Connections.GoogleCloudPlatform {
 		conn := conn
 		err := connectionManager.AddBqConnectionFromConfig(&conn)
 		if err != nil {
