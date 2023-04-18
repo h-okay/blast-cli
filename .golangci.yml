@@ -26,6 +26,7 @@ linters:
     - forbidigo
     - musttag
     - interfacebloat
+    - cyclop
   presets:
     - bugs
     - comment
@@ -40,9 +41,6 @@ linters:
     - test
     - unused
 linters-settings:
-  cyclop:
-    max-complexity: 25
-    skip-tests: true
   revive:
     rules:
       - name: unexported-return

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	path2 "path"
 	"strings"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/datablast-analytics/blast/pkg/lint"
 	"github.com/datablast-analytics/blast/pkg/path"
 	"github.com/datablast-analytics/blast/pkg/query"
-	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
@@ -50,27 +50,9 @@ func Lint(isDebug *bool) *cli.Command {
 				return cli.Exit("", 1)
 			}
 
-			env := c.String("environment")
-			if env != "" {
-				err = cm.SelectEnvironment(env)
-				if err != nil {
-					errorPrinter.Printf("Failed to use the environment '%s': %v\n", env, err)
-					return cli.Exit("", 1)
-				}
-
-				// if env name is similar to "prod" ask for confirmation
-				if !c.Bool("force") && strings.Contains(strings.ToLower(env), "prod") {
-					prompt := promptui.Prompt{
-						Label:     "You are using a production environment. Are you sure you want to continue?",
-						IsConfirm: true,
-					}
-
-					_, err := prompt.Run()
-					if err != nil {
-						fmt.Printf("The operation is cancelled.\n")
-						return cli.Exit("", 1)
-					}
-				}
+			err = switchEnvironment(c, cm, os.Stdin)
+			if err != nil {
+				return err
 			}
 
 			connectionManager, err := connection.NewManagerFromConfig(cm)

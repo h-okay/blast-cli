@@ -51,6 +51,16 @@ func Run(isDebug *bool) *cli.Command {
 				DefaultText: fmt.Sprintf("today, e.g. %s", time.Now().Format("2006-01-02")),
 				Value:       time.Now().Format("2006-01-02"),
 			},
+			&cli.StringFlag{
+				Name:    "environment",
+				Aliases: []string{"e"},
+				Usage:   "the environment to use",
+			},
+			&cli.BoolFlag{
+				Name:    "force",
+				Aliases: []string{"f"},
+				Usage:   "force the validation even if the environment is a production environment",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			logger := makeLogger(*isDebug)
@@ -119,6 +129,11 @@ func Run(isDebug *bool) *cli.Command {
 			if err != nil {
 				errorPrinter.Printf("Failed to load the config file: %v\n", err)
 				return cli.Exit("", 1)
+			}
+
+			err = switchEnvironment(c, cm, os.Stdin)
+			if err != nil {
+				return err
 			}
 
 			connectionManager, err := connection.NewManagerFromConfig(cm)
