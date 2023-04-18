@@ -53,7 +53,7 @@ func Run(isDebug *bool) *cli.Command {
 			},
 			&cli.StringFlag{
 				Name:    "environment",
-				Aliases: []string{"e"},
+				Aliases: []string{"e", "env"},
 				Usage:   "the environment to use",
 			},
 			&cli.BoolFlag{

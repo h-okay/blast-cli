@@ -25,7 +25,7 @@ func Lint(isDebug *bool) *cli.Command {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "environment",
-				Aliases: []string{"e"},
+				Aliases: []string{"e", "env"},
 				Usage:   "the environment to use",
 			},
 			&cli.BoolFlag{
