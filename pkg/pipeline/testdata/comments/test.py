@@ -7,8 +7,7 @@
 # @blast.parameters.param1: first-parameter
 # @blast.parameters.param2: second-parameter
 # @blast.parameters.param3: third-parameter
-# @blast.connections.conn1: first-connection
-# @blast.connections.conn2: second-connection
+# @blast.connection: conn1
 # @blast.schedule.days: SUNDAY, MONDAY
 # @blast.schedule.days: TUESDAY
 

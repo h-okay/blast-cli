@@ -6,8 +6,7 @@
 -- @blast.depends: task5, task3
 -- @blast.parameters.param1: first-parameter
 -- @blast.parameters.param2: second-parameter
--- @blast.connections.conn1: first-connection
--- @blast.connections.conn2: second-connection
+-- @blast.connection: conn2
 
 select *
 from foo;

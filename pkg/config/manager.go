@@ -16,7 +16,7 @@ import (
 
 type Manager struct{}
 
-type BigQueryConnection struct {
+type GoogleCloudPlatformConnection struct {
 	Name               string `yaml:"name"`
 	ServiceAccountJSON string `yaml:"service_account_json"`
 	ServiceAccountFile string `yaml:"service_account_file"`
@@ -24,11 +24,11 @@ type BigQueryConnection struct {
 	rawCredentials     *google.Credentials
 }
 
-func (c *BigQueryConnection) SetCredentials(cred *google.Credentials) {
+func (c *GoogleCloudPlatformConnection) SetCredentials(cred *google.Credentials) {
 	c.rawCredentials = cred
 }
 
-func (c *BigQueryConnection) GetCredentials() *google.Credentials {
+func (c *GoogleCloudPlatformConnection) GetCredentials() *google.Credentials {
 	return c.rawCredentials
 }
 
@@ -45,8 +45,8 @@ type SnowflakeConnection struct {
 }
 
 type Connections struct {
-	BigQuery  []BigQueryConnection
-	Snowflake []SnowflakeConnection
+	GoogleCloudPlatform []GoogleCloudPlatformConnection `yaml:"google_cloud_platform"`
+	Snowflake           []SnowflakeConnection
 }
 
 type Environment struct {
@@ -57,8 +57,8 @@ type Config struct {
 	fs   afero.Fs
 	path string
 
-	DefaultEnvironmentName string `yaml:"default_environment"`
-	DefaultEnvironment     *Environment
+	DefaultEnvironmentName string                 `yaml:"default_environment"`
+	DefaultEnvironment     *Environment           `yaml:"-"`
 	Environments           map[string]Environment `yaml:"environments"`
 }
 
@@ -81,10 +81,7 @@ func LoadFromFile(fs afero.Fs, path string) (*Config, error) {
 	config.fs = fs
 	config.path = path
 
-	e, ok := config.Environments[config.DefaultEnvironmentName]
-	if !ok {
-		return nil, errors.New("default environment not found")
-	}
+	e := config.Environments[config.DefaultEnvironmentName]
 
 	config.DefaultEnvironment = &e
 	return &config, nil
@@ -100,15 +97,17 @@ func LoadOrCreate(fs afero.Fs, path string) (*Config, error) {
 		return config, ensureConfigIsInGitignore(fs, path)
 	}
 
+	defaultEnv := Environment{
+		Connections: Connections{},
+	}
 	config = &Config{
 		fs:   fs,
 		path: path,
 
 		DefaultEnvironmentName: "default",
+		DefaultEnvironment:     &defaultEnv,
 		Environments: map[string]Environment{
-			"default": {
-				Connections: Connections{},
-			},
+			"default": defaultEnv,
 		},
 	}
 

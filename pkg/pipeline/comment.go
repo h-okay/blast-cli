@@ -141,11 +141,10 @@ func singleLineCommentsToTask(scanner *bufio.Scanner, commentMarker, filePath st
 
 func commentRowsToTask(commentRows []string) *Asset {
 	task := Asset{
-		Parameters:  make(map[string]string),
-		Connections: make(map[string]string),
-		DependsOn:   []string{},
-		Schedule:    TaskSchedule{},
-		Columns:     map[string]Column{},
+		Parameters: make(map[string]string),
+		DependsOn:  []string{},
+		Schedule:   TaskSchedule{},
+		Columns:    map[string]Column{},
 	}
 	for _, row := range commentRows {
 		key, value, found := strings.Cut(row, ":")
@@ -169,6 +168,10 @@ func commentRowsToTask(commentRows []string) *Asset {
 			task.Type = AssetType(value)
 
 			continue
+		case "connection":
+			task.Connection = value
+
+			continue
 		case "depends":
 			values := strings.Split(value, ",")
 			for _, v := range values {
@@ -186,15 +189,6 @@ func commentRowsToTask(commentRows []string) *Asset {
 
 			task.Parameters[parameters[1]] = value
 			continue
-		}
-
-		if strings.HasPrefix(key, "connections.") {
-			connections := strings.Split(key, ".")
-			if len(connections) != 2 {
-				continue
-			}
-
-			task.Connections[connections[1]] = value
 		}
 
 		if strings.HasPrefix(key, "schedule.") {

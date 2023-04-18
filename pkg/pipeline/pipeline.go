@@ -99,6 +99,11 @@ type Column struct {
 
 type AssetType string
 
+var assetTypeConnectionMapping = map[AssetType]string{
+	AssetType("bq.sql"): "google_cloud_platform",
+	AssetType("sf.sql"): "snowflake",
+}
+
 type Asset struct {
 	Name            string
 	Description     string
@@ -106,12 +111,13 @@ type Asset struct {
 	ExecutableFile  ExecutableFile
 	DefinitionFile  TaskDefinitionFile
 	Parameters      map[string]string
-	Connections     map[string]string
+	Connection      string
 	DependsOn       []string
-	Pipeline        *Pipeline
 	Schedule        TaskSchedule
 	Materialization Materialization
 	Columns         map[string]Column
+
+	Pipeline *Pipeline
 }
 
 type Pipeline struct {
@@ -127,6 +133,14 @@ type Pipeline struct {
 
 	TasksByType map[AssetType][]*Asset
 	tasksByName map[string]*Asset
+}
+
+func (p *Pipeline) GetConnectionNameForAsset(asset *Asset) string {
+	if asset.Connection != "" {
+		return asset.Connection
+	}
+
+	return p.DefaultConnections[assetTypeConnectionMapping[asset.Type]]
 }
 
 func (p *Pipeline) RelativeTaskPath(t *Asset) string {

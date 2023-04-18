@@ -5,8 +5,11 @@ import (
 	"strings"
 
 	"github.com/datablast-analytics/blast/pkg/config"
+	"github.com/datablast-analytics/blast/pkg/connection"
+	"github.com/datablast-analytics/blast/pkg/executor"
 	"github.com/datablast-analytics/blast/pkg/lint"
 	"github.com/datablast-analytics/blast/pkg/path"
+	"github.com/datablast-analytics/blast/pkg/query"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
@@ -25,16 +28,41 @@ func Lint(isDebug *bool) *cli.Command {
 				rootPath = "."
 			}
 
-			_, err := config.LoadOrCreate(afero.NewOsFs(), path2.Join(rootPath, ".blast.yml"))
+			cm, err := config.LoadOrCreate(afero.NewOsFs(), path2.Join(rootPath, ".blast.yml"))
 			if err != nil {
-				errorPrinter.Printf("Failed to create the config file: %v\n", err)
+				errorPrinter.Printf("Failed to load the config file: %v\n", err)
 				return cli.Exit("", 1)
+			}
+
+			connectionManager := &connection.Manager{}
+			for _, conn := range cm.DefaultEnvironment.Connections.GoogleCloudPlatform {
+				conn := conn
+				err = connectionManager.AddBqConnectionFromConfig(&conn)
+				if err != nil {
+					errorPrinter.Printf("Failed to add connection '%s': %v\n", conn.Name, err)
+					return cli.Exit("", 1)
+				}
+				logger.Debugf("Registered connection '%s'", conn.Name)
 			}
 
 			rules, err := lint.GetRules(logger, fs)
 			if err != nil {
-				errorPrinter.Printf("An error occurred while linting the pipelines: %v\n", err)
+				errorPrinter.Printf("An error occurred while building the validation rules: %v\n", err)
 				return cli.Exit("", 1)
+			}
+
+			if len(cm.DefaultEnvironment.Connections.GoogleCloudPlatform) > 0 {
+				rules = append(rules, &lint.QueryValidatorRule{
+					Identifier:  "bigquery-validator",
+					TaskType:    executor.TaskTypeBigqueryQuery,
+					Connections: connectionManager,
+					Extractor: &query.WholeFileExtractor{
+						Fs:       fs,
+						Renderer: query.DefaultJinjaRenderer,
+					},
+					WorkerCount: 32,
+					Logger:      logger,
+				})
 			}
 
 			linter := lint.NewLinter(path.GetPipelinePaths, builder, rules, logger)

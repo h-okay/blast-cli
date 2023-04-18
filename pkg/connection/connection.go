@@ -7,10 +7,12 @@ import (
 	"github.com/datablast-analytics/blast/pkg/config"
 )
 
-type DBClient interface{}
-
 type Manager struct {
 	BigQuery map[string]*bigquery.DB
+}
+
+func (m *Manager) GetConnection(name string) (interface{}, error) {
+	return m.GetBqConnection(name)
 }
 
 func (m *Manager) GetBqConnection(name string) (*bigquery.DB, error) {
@@ -26,7 +28,7 @@ func (m *Manager) GetBqConnection(name string) (*bigquery.DB, error) {
 	return db, nil
 }
 
-func (m *Manager) AddBqConnectionFromConfig(connection *config.BigQueryConnection) error {
+func (m *Manager) AddBqConnectionFromConfig(connection *config.GoogleCloudPlatformConnection) error {
 	if m.BigQuery == nil {
 		m.BigQuery = make(map[string]*bigquery.DB)
 	}

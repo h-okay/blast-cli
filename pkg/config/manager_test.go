@@ -12,7 +12,7 @@ func TestLoadFromFile(t *testing.T) {
 
 	devEnv := Environment{
 		Connections: Connections{
-			BigQuery: []BigQueryConnection{
+			GoogleCloudPlatform: []GoogleCloudPlatformConnection{
 				{
 					Name:               "conn1",
 					ServiceAccountJSON: "{\"key1\": \"value1\"}",
@@ -64,7 +64,7 @@ func TestLoadFromFile(t *testing.T) {
 					"dev": devEnv,
 					"prod": {
 						Connections: Connections{
-							BigQuery: []BigQueryConnection{
+							GoogleCloudPlatform: []GoogleCloudPlatformConnection{
 								{
 									Name:               "conn1",
 									ServiceAccountFile: "/path/to/service_account.json",
@@ -102,7 +102,7 @@ func TestLoadOrCreate(t *testing.T) {
 	configPath := "/some/path/to/config.yml"
 	defaultEnv := &Environment{
 		Connections: Connections{
-			BigQuery: []BigQueryConnection{
+			GoogleCloudPlatform: []GoogleCloudPlatformConnection{
 				{
 					Name:               "conn1",
 					ServiceAccountFile: "/path/to/service_account.json",
@@ -133,6 +133,7 @@ func TestLoadOrCreate(t *testing.T) {
 			name: "missing path should create",
 			want: &Config{
 				DefaultEnvironmentName: "default",
+				DefaultEnvironment:     &Environment{},
 				Environments: map[string]Environment{
 					"default": {},
 				},

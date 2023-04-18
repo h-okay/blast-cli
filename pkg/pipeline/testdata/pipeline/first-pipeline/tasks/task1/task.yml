@@ -7,6 +7,4 @@ depends:
 parameters:
   param1: value1
   param2: value2
-connections:
-  conn1: first connection
-  conn2: second connection
+connection: conn1

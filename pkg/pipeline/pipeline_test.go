@@ -60,12 +60,9 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 					"param1": "value1",
 					"param2": "value2",
 				},
-				Connections: map[string]string{
-					"conn1": "first connection",
-					"conn2": "second connection",
-				},
-				DependsOn: []string{"gcs-to-bq"},
-				Columns:   map[string]pipeline.Column{},
+				Connection: "conn1",
+				DependsOn:  []string{"gcs-to-bq"},
+				Columns:    map[string]pipeline.Column{},
 			},
 			{
 				Name: "second-task",
@@ -101,12 +98,9 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 					"param2": "second-parameter",
 					"param3": "third-parameter",
 				},
-				Connections: map[string]string{
-					"conn1": "first-connection",
-					"conn2": "second-connection",
-				},
-				DependsOn: []string{"task1", "task2", "task3", "task4", "task5", "task3"},
-				Columns:   map[string]pipeline.Column{},
+				Connection: "first-connection",
+				DependsOn:  []string{"task1", "task2", "task3", "task4", "task5", "task3"},
+				Columns:    map[string]pipeline.Column{},
 			},
 			{
 				Name:        "some-sql-task",
@@ -126,12 +120,9 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 					"param1": "first-parameter",
 					"param2": "second-parameter",
 				},
-				Connections: map[string]string{
-					"conn1": "first-connection",
-					"conn2": "second-connection",
-				},
-				DependsOn: []string{"task1", "task2", "task3", "task4", "task5", "task3"},
-				Columns:   map[string]pipeline.Column{},
+				Connection: "conn2",
+				DependsOn:  []string{"task1", "task2", "task3", "task4", "task5", "task3"},
+				Columns:    map[string]pipeline.Column{},
 			},
 		},
 	}

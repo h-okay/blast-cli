@@ -61,11 +61,8 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 					"param1": "value1",
 					"param2": "value2",
 				},
-				Connections: map[string]string{
-					"conn1": "first connection",
-					"conn2": "second connection",
-				},
-				DependsOn: []string{"gcs-to-bq"},
+				Connection: "conn1",
+				DependsOn:  []string{"gcs-to-bq"},
 				Materialization: pipeline.Materialization{
 					Type:           pipeline.MaterializationTypeTable,
 					Strategy:       pipeline.MaterializationStrategyCreateReplace,
@@ -136,12 +133,9 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 					"param1": "value1",
 					"param2": "value2",
 				},
-				Connections: map[string]string{
-					"conn1": "first connection",
-					"conn2": "second connection",
-				},
-				DependsOn: []string{"gcs-to-bq"},
-				Columns:   map[string]pipeline.Column{},
+				Connection: "conn1",
+				DependsOn:  []string{"gcs-to-bq"},
+				Columns:    map[string]pipeline.Column{},
 			},
 		},
 		{
@@ -162,13 +156,10 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 					"param1": "value1",
 					"param2": "value2",
 				},
-				Connections: map[string]string{
-					"conn1": "first connection",
-					"conn2": "second connection",
-				},
-				DependsOn: []string{"gcs-to-bq"},
-				Schedule:  pipeline.TaskSchedule{Days: []string{"sunday", "monday", "tuesday"}},
-				Columns:   map[string]pipeline.Column{},
+				Connection: "conn1",
+				DependsOn:  []string{"gcs-to-bq"},
+				Schedule:   pipeline.TaskSchedule{Days: []string{"sunday", "monday", "tuesday"}},
+				Columns:    map[string]pipeline.Column{},
 			},
 		},
 		{
@@ -184,12 +175,9 @@ func TestCreateTaskFromYamlDefinition(t *testing.T) {
 					"param1": "value1",
 					"param2": "value2",
 				},
-				Connections: map[string]string{
-					"conn1": "first connection",
-					"conn2": "second connection",
-				},
-				DependsOn: []string{"gcs-to-bq"},
-				Columns:   map[string]pipeline.Column{},
+				Connection: "conn1",
+				DependsOn:  []string{"gcs-to-bq"},
+				Columns:    map[string]pipeline.Column{},
 			},
 		},
 		{

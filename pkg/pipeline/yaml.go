@@ -110,6 +110,7 @@ type taskDefinition struct {
 	Depends         depends           `yaml:"depends"`
 	Parameters      map[string]string `yaml:"parameters"`
 	Connections     map[string]string `yaml:"connections"`
+	Connection      string            `yaml:"connection"`
 	Schedule        taskSchedule      `yaml:"schedule"`
 	Materialization materialization   `yaml:"materialization"`
 	Columns         map[string]column `yaml:"columns"`
@@ -198,7 +199,7 @@ func ConvertYamlToTask(content []byte) (*Asset, error) {
 		Description:     definition.Description,
 		Type:            AssetType(definition.Type),
 		Parameters:      definition.Parameters,
-		Connections:     definition.Connections,
+		Connection:      definition.Connection,
 		DependsOn:       definition.Depends,
 		ExecutableFile:  ExecutableFile{},
 		Schedule:        TaskSchedule{Days: definition.Schedule.Days},

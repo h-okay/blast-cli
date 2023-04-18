@@ -60,7 +60,7 @@ func TestManager_AddBqConnectionFromConfig(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, res)
 
-	connection := &config.BigQueryConnection{
+	connection := &config.GoogleCloudPlatformConnection{
 		Name:      "test",
 		ProjectID: "test",
 	}

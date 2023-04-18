@@ -2,7 +2,7 @@ default_environment: dev
 environments:
   dev:
     connections:
-      bigquery:
+      google_cloud_platform:
         - name: conn1
           service_account_json: "{\"key1\": \"value1\"}"
           service_account_file: "/path/to/service_account.json"
@@ -21,7 +21,7 @@ environments:
 
   prod:
     connections:
-      bigquery:
+      google_cloud_platform:
         - name: conn1
           service_account_file: "/path/to/service_account.json"
           project_id: "my-project"
