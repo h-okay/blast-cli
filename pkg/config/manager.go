@@ -57,9 +57,10 @@ type Config struct {
 	fs   afero.Fs
 	path string
 
-	DefaultEnvironmentName string                 `yaml:"default_environment"`
-	SelectedEnvironment    *Environment           `yaml:"-"`
-	Environments           map[string]Environment `yaml:"environments"`
+	DefaultEnvironmentName  string                 `yaml:"default_environment"`
+	SelectedEnvironmentName string                 `yaml:"-"`
+	SelectedEnvironment     *Environment           `yaml:"-"`
+	Environments            map[string]Environment `yaml:"environments"`
 }
 
 func (c *Config) Persist() error {
@@ -73,10 +74,11 @@ func (c *Config) PersistToFs(fs afero.Fs) error {
 func (c *Config) SelectEnvironment(name string) error {
 	e, ok := c.Environments[name]
 	if !ok {
-		return fmt.Errorf("environment %s not found", name)
+		return fmt.Errorf("environment '%s' not found in the configuration file", name)
 	}
 
 	c.SelectedEnvironment = &e
+	c.SelectedEnvironmentName = name
 	return nil
 }
 
@@ -94,6 +96,7 @@ func LoadFromFile(fs afero.Fs, path string) (*Config, error) {
 	e := config.Environments[config.DefaultEnvironmentName]
 
 	config.SelectedEnvironment = &e
+	config.SelectedEnvironmentName = config.DefaultEnvironmentName
 	return &config, nil
 }
 
@@ -114,8 +117,9 @@ func LoadOrCreate(fs afero.Fs, path string) (*Config, error) {
 		fs:   fs,
 		path: path,
 
-		DefaultEnvironmentName: "default",
-		SelectedEnvironment:    &defaultEnv,
+		DefaultEnvironmentName:  "default",
+		SelectedEnvironment:     &defaultEnv,
+		SelectedEnvironmentName: "default",
 		Environments: map[string]Environment{
 			"default": defaultEnv,
 		},

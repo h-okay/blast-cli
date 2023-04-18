@@ -58,8 +58,9 @@ func TestLoadFromFile(t *testing.T) {
 				path: "testdata/simple.yml",
 			},
 			want: &Config{
-				DefaultEnvironmentName: "dev",
-				SelectedEnvironment:    &devEnv,
+				DefaultEnvironmentName:  "dev",
+				SelectedEnvironment:     &devEnv,
+				SelectedEnvironmentName: "dev",
 				Environments: map[string]Environment{
 					"dev": devEnv,
 					"prod": {
@@ -112,9 +113,10 @@ func TestLoadOrCreate(t *testing.T) {
 		},
 	}
 	existingConfig := &Config{
-		path:                   configPath,
-		DefaultEnvironmentName: "dev",
-		SelectedEnvironment:    defaultEnv,
+		path:                    configPath,
+		DefaultEnvironmentName:  "dev",
+		SelectedEnvironmentName: "dev",
+		SelectedEnvironment:     defaultEnv,
 		Environments: map[string]Environment{
 			"dev": *defaultEnv,
 		},
@@ -132,8 +134,9 @@ func TestLoadOrCreate(t *testing.T) {
 		{
 			name: "missing path should create",
 			want: &Config{
-				DefaultEnvironmentName: "default",
-				SelectedEnvironment:    &Environment{},
+				DefaultEnvironmentName:  "default",
+				SelectedEnvironment:     &Environment{},
+				SelectedEnvironmentName: "default",
 				Environments: map[string]Environment{
 					"default": {},
 				},
@@ -240,12 +243,15 @@ func TestConfig_SelectEnvironment(t *testing.T) {
 	err := conf.SelectEnvironment("prod")
 	assert.NoError(t, err)
 	assert.Equal(t, prodEnv, conf.SelectedEnvironment)
+	assert.Equal(t, "prod", conf.SelectedEnvironmentName)
 
 	err = conf.SelectEnvironment("non-existing")
 	assert.Error(t, err)
 	assert.Equal(t, prodEnv, conf.SelectedEnvironment)
+	assert.Equal(t, "prod", conf.SelectedEnvironmentName)
 
 	err = conf.SelectEnvironment("default")
 	assert.NoError(t, err)
 	assert.Equal(t, defaultEnv, conf.SelectedEnvironment)
+	assert.Equal(t, "default", conf.SelectedEnvironmentName)
 }

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	path2 "path"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/datablast-analytics/blast/pkg/lint"
 	"github.com/datablast-analytics/blast/pkg/path"
 	"github.com/datablast-analytics/blast/pkg/query"
+	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
@@ -20,7 +22,21 @@ func Lint(isDebug *bool) *cli.Command {
 		Name:      "validate",
 		Usage:     "validate the blast pipeline configuration for all the pipelines in a given directory",
 		ArgsUsage: "[path to pipelines]",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "environment",
+				Aliases: []string{"e"},
+				Usage:   "the environment to use",
+			},
+			&cli.BoolFlag{
+				Name:    "force",
+				Aliases: []string{"f"},
+				Usage:   "force the validation even if the environment is a production environment",
+			},
+		},
 		Action: func(c *cli.Context) error {
+			fmt.Println()
+
 			logger := makeLogger(*isDebug)
 
 			rootPath := c.Args().Get(0)
@@ -32,6 +48,29 @@ func Lint(isDebug *bool) *cli.Command {
 			if err != nil {
 				errorPrinter.Printf("Failed to load the config file: %v\n", err)
 				return cli.Exit("", 1)
+			}
+
+			env := c.String("environment")
+			if env != "" {
+				err = cm.SelectEnvironment(env)
+				if err != nil {
+					errorPrinter.Printf("Failed to use the environment '%s': %v\n", env, err)
+					return cli.Exit("", 1)
+				}
+
+				// if env name is similar to "prod" ask for confirmation
+				if !c.Bool("force") && strings.Contains(strings.ToLower(env), "prod") {
+					prompt := promptui.Prompt{
+						Label:     "You are using a production environment. Are you sure you want to continue?",
+						IsConfirm: true,
+					}
+
+					_, err := prompt.Run()
+					if err != nil {
+						fmt.Printf("The operation is cancelled.\n")
+						return cli.Exit("", 1)
+					}
+				}
 			}
 
 			connectionManager, err := connection.NewManagerFromConfig(cm)
@@ -62,6 +101,7 @@ func Lint(isDebug *bool) *cli.Command {
 
 			linter := lint.NewLinter(path.GetPipelinePaths, builder, rules, logger)
 
+			infoPrinter.Printf("Validating pipelines in '%s' for '%s' environment...\n", rootPath, cm.SelectedEnvironmentName)
 			result, err := linter.Lint(rootPath, pipelineDefinitionFile)
 
 			printer := lint.Printer{RootCheckPath: rootPath}
