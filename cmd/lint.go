@@ -1,11 +1,19 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+	path2 "path"
 	"strings"
 
+	"github.com/datablast-analytics/blast/pkg/config"
+	"github.com/datablast-analytics/blast/pkg/connection"
+	"github.com/datablast-analytics/blast/pkg/executor"
 	"github.com/datablast-analytics/blast/pkg/lint"
 	"github.com/datablast-analytics/blast/pkg/path"
+	"github.com/datablast-analytics/blast/pkg/query"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
 )
 
@@ -14,22 +22,68 @@ func Lint(isDebug *bool) *cli.Command {
 		Name:      "validate",
 		Usage:     "validate the blast pipeline configuration for all the pipelines in a given directory",
 		ArgsUsage: "[path to pipelines]",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "environment",
+				Aliases: []string{"e", "env"},
+				Usage:   "the environment to use",
+			},
+			&cli.BoolFlag{
+				Name:    "force",
+				Aliases: []string{"f"},
+				Usage:   "force the validation even if the environment is a production environment",
+			},
+		},
 		Action: func(c *cli.Context) error {
+			fmt.Println()
+
 			logger := makeLogger(*isDebug)
+
+			rootPath := c.Args().Get(0)
+			if rootPath == "" {
+				rootPath = "."
+			}
+
+			cm, err := config.LoadOrCreate(afero.NewOsFs(), path2.Join(rootPath, ".blast.yml"))
+			if err != nil {
+				errorPrinter.Printf("Failed to load the config file: %v\n", err)
+				return cli.Exit("", 1)
+			}
+
+			err = switchEnvironment(c, cm, os.Stdin)
+			if err != nil {
+				return err
+			}
+
+			connectionManager, err := connection.NewManagerFromConfig(cm)
+			if err != nil {
+				errorPrinter.Printf("Failed to register connections: %v\n", err)
+				return cli.Exit("", 1)
+			}
 
 			rules, err := lint.GetRules(logger, fs)
 			if err != nil {
-				errorPrinter.Printf("An error occurred while linting the pipelines: %v\n", err)
+				errorPrinter.Printf("An error occurred while building the validation rules: %v\n", err)
 				return cli.Exit("", 1)
+			}
+
+			if len(cm.SelectedEnvironment.Connections.GoogleCloudPlatform) > 0 {
+				rules = append(rules, &lint.QueryValidatorRule{
+					Identifier:  "bigquery-validator",
+					TaskType:    executor.TaskTypeBigqueryQuery,
+					Connections: connectionManager,
+					Extractor: &query.WholeFileExtractor{
+						Fs:       fs,
+						Renderer: query.DefaultJinjaRenderer,
+					},
+					WorkerCount: 32,
+					Logger:      logger,
+				})
 			}
 
 			linter := lint.NewLinter(path.GetPipelinePaths, builder, rules, logger)
 
-			rootPath := c.Args().Get(0)
-			if rootPath == "" {
-				rootPath = defaultPipelinePath
-			}
-
+			infoPrinter.Printf("Validating pipelines in '%s' for '%s' environment...\n", rootPath, cm.SelectedEnvironmentName)
 			result, err := linter.Lint(rootPath, pipelineDefinitionFile)
 
 			printer := lint.Printer{RootCheckPath: rootPath}

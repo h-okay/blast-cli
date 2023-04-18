@@ -21,6 +21,15 @@ func (m *mockValidator) IsValid(ctx context.Context, query *query.Query) (bool, 
 	return res.Bool(0), res.Error(1)
 }
 
+type mockConnectionManager struct {
+	mock.Mock
+}
+
+func (m *mockConnectionManager) GetConnection(conn string) (interface{}, error) {
+	res := m.Called(conn)
+	return res.Get(0), res.Error(1)
+}
+
 type mockExtractor struct {
 	mock.Mock
 }
@@ -34,15 +43,20 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 	t.Parallel()
 
 	noIssues := make([]*Issue, 0)
-	taskType := pipeline.AssetType("someTaskType")
+	taskType := pipeline.AssetType("bq.sql")
+
+	type fields struct {
+		validator         *mockValidator
+		extractor         *mockExtractor
+		connectionManager *mockConnectionManager
+	}
 
 	tests := []struct {
-		name           string
-		p              *pipeline.Pipeline
-		setupValidator func(m *mockValidator)
-		setupExtractor func(m *mockExtractor)
-		want           []*Issue
-		wantErr        bool
+		name    string
+		p       *pipeline.Pipeline
+		setup   func(f *fields)
+		want    []*Issue
+		wantErr bool
 	}{
 		{
 			name: "no tasks to execute",
@@ -82,8 +96,8 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 					},
 				},
 			},
-			setupExtractor: func(m *mockExtractor) {
-				m.On("ExtractQueriesFromFile", "path/to/file-with-no-queries.sql").
+			setup: func(f *fields) {
+				f.extractor.On("ExtractQueriesFromFile", "path/to/file-with-no-queries.sql").
 					Return([]*query.Query{}, errors.New("something failed"))
 			},
 			want: []*Issue{
@@ -113,8 +127,8 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 					},
 				},
 			},
-			setupExtractor: func(m *mockExtractor) {
-				m.On("ExtractQueriesFromFile", "path/to/file-with-no-queries.sql").
+			setup: func(f *fields) {
+				f.extractor.On("ExtractQueriesFromFile", "path/to/file-with-no-queries.sql").
 					Return([]*query.Query{}, nil)
 			},
 			want: []*Issue{
@@ -149,9 +163,12 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 						},
 					},
 				},
+				DefaultConnections: map[string]string{
+					"google_cloud_platform": "gcp-conn",
+				},
 			},
-			setupExtractor: func(m *mockExtractor) {
-				m.On("ExtractQueriesFromFile", "path/to/file1.sql").
+			setup: func(f *fields) {
+				f.extractor.On("ExtractQueriesFromFile", "path/to/file1.sql").
 					Return(
 						[]*query.Query{
 							{Query: "query11"},
@@ -160,7 +177,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 						},
 						nil,
 					)
-				m.On("ExtractQueriesFromFile", "path/to/file2.sql").
+				f.extractor.On("ExtractQueriesFromFile", "path/to/file2.sql").
 					Return(
 						[]*query.Query{
 							{Query: "query21"},
@@ -169,14 +186,15 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 						},
 						nil,
 					)
-			},
-			setupValidator: func(m *mockValidator) {
-				m.On("IsValid", mock.Anything, &query.Query{Query: "query11"}).Return(true, nil)
-				m.On("IsValid", mock.Anything, &query.Query{Query: "query12"}).Return(false, errors.New("invalid query query12"))
-				m.On("IsValid", mock.Anything, &query.Query{Query: "query13"}).Return(true, nil)
-				m.On("IsValid", mock.Anything, &query.Query{Query: "query21"}).Return(true, nil)
-				m.On("IsValid", mock.Anything, &query.Query{Query: "query22"}).Return(true, nil)
-				m.On("IsValid", mock.Anything, &query.Query{Query: "query23"}).Return(false, nil)
+
+				f.connectionManager.On("GetConnection", "gcp-conn").Return(f.validator, nil)
+
+				f.validator.On("IsValid", mock.Anything, &query.Query{Query: "query11"}).Return(true, nil)
+				f.validator.On("IsValid", mock.Anything, &query.Query{Query: "query12"}).Return(false, errors.New("invalid query query12"))
+				f.validator.On("IsValid", mock.Anything, &query.Query{Query: "query13"}).Return(true, nil)
+				f.validator.On("IsValid", mock.Anything, &query.Query{Query: "query21"}).Return(true, nil)
+				f.validator.On("IsValid", mock.Anything, &query.Query{Query: "query22"}).Return(true, nil)
+				f.validator.On("IsValid", mock.Anything, &query.Query{Query: "query23"}).Return(false, nil)
 			},
 			want: []*Issue{
 				{
@@ -215,19 +233,20 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 
 			validator := new(mockValidator)
 			extractor := new(mockExtractor)
+			conn := new(mockConnectionManager)
 
-			if tt.setupValidator != nil {
-				tt.setupValidator(validator)
-			}
-
-			if tt.setupExtractor != nil {
-				tt.setupExtractor(extractor)
+			if tt.setup != nil {
+				tt.setup(&fields{
+					validator:         validator,
+					extractor:         extractor,
+					connectionManager: conn,
+				})
 			}
 
 			q := &QueryValidatorRule{
 				TaskType:    taskType,
-				Validator:   validator,
 				Extractor:   extractor,
+				Connections: conn,
 				Logger:      zap.NewNop().Sugar(),
 				WorkerCount: 1,
 			}
@@ -242,6 +261,7 @@ func TestQueryValidatorRule_Validate(t *testing.T) {
 			assert.ElementsMatch(t, tt.want, got)
 			validator.AssertExpectations(t)
 			extractor.AssertExpectations(t)
+			conn.AssertExpectations(t)
 		})
 	}
 }

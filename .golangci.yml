@@ -26,6 +26,7 @@ linters:
     - forbidigo
     - musttag
     - interfacebloat
+    - cyclop
   presets:
     - bugs
     - comment
@@ -40,12 +41,18 @@ linters:
     - test
     - unused
 linters-settings:
-  cyclop:
-    max-complexity: 25
-    skip-tests: true
   revive:
     rules:
       - name: unexported-return
         disabled: true
   maintidx:
     under: 10
+
+  ireturn:
+    allow:
+      - anon
+      - error
+      - empty
+      - stdlib
+      - (or|er)$
+      - bigquery.DB

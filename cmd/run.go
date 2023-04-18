@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"os"
+	path2 "path"
 	"strings"
 	"time"
 
 	"github.com/datablast-analytics/blast/pkg/bigquery"
+	"github.com/datablast-analytics/blast/pkg/config"
+	"github.com/datablast-analytics/blast/pkg/connection"
 	"github.com/datablast-analytics/blast/pkg/date"
 	"github.com/datablast-analytics/blast/pkg/executor"
 	"github.com/datablast-analytics/blast/pkg/jinja"
@@ -17,6 +20,7 @@ import (
 	"github.com/datablast-analytics/blast/pkg/python"
 	"github.com/datablast-analytics/blast/pkg/query"
 	"github.com/datablast-analytics/blast/pkg/scheduler"
+	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
 )
 
@@ -46,6 +50,16 @@ func Run(isDebug *bool) *cli.Command {
 				Usage:       "the end date of the range the pipeline will run for in YYYY-MM-DD or YYYY-MM-DD HH:MM:SS format",
 				DefaultText: fmt.Sprintf("today, e.g. %s", time.Now().Format("2006-01-02")),
 				Value:       time.Now().Format("2006-01-02"),
+			},
+			&cli.StringFlag{
+				Name:    "environment",
+				Aliases: []string{"e", "env"},
+				Usage:   "the environment to use",
+			},
+			&cli.BoolFlag{
+				Name:    "force",
+				Aliases: []string{"f"},
+				Usage:   "force the validation even if the environment is a production environment",
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -111,6 +125,23 @@ func Run(isDebug *bool) *cli.Command {
 				infoPrinter.Println("Ignoring the '--downstream' flag since you are running the whole pipeline")
 			}
 
+			cm, err := config.LoadOrCreate(afero.NewOsFs(), path2.Join(pipelinePath, ".blast.yml"))
+			if err != nil {
+				errorPrinter.Printf("Failed to load the config file: %v\n", err)
+				return cli.Exit("", 1)
+			}
+
+			err = switchEnvironment(c, cm, os.Stdin)
+			if err != nil {
+				return err
+			}
+
+			connectionManager, err := connection.NewManagerFromConfig(cm)
+			if err != nil {
+				errorPrinter.Printf("Failed to register connections: %v\n", err)
+				return cli.Exit("", 1)
+			}
+
 			foundPipeline, err := builder.CreatePipelineFromPath(pipelinePath)
 			if err != nil {
 				errorPrinter.Println("failed to build pipeline, are you sure you have referred the right path?")
@@ -144,7 +175,7 @@ func Run(isDebug *bool) *cli.Command {
 				s.MarkTask(task, scheduler.Pending, runDownstreamTasks)
 			}
 
-			mainExecutors, err := setupExecutors(s, startDate, endDate)
+			mainExecutors, err := setupExecutors(s, connectionManager, startDate, endDate)
 			if err != nil {
 				errorPrinter.Printf(err.Error())
 				return cli.Exit("", 1)
@@ -186,7 +217,7 @@ func Run(isDebug *bool) *cli.Command {
 	}
 }
 
-func setupExecutors(s *scheduler.Scheduler, startDate, endDate time.Time) (map[pipeline.AssetType]executor.Config, error) {
+func setupExecutors(s *scheduler.Scheduler, conn *connection.Manager, startDate, endDate time.Time) (map[pipeline.AssetType]executor.Config, error) {
 	mainExecutors := executor.DefaultExecutorsV2
 	if s.WillRunTaskOfType(executor.TaskTypePython) {
 		mainExecutors[executor.TaskTypePython][scheduler.TaskInstanceTypeMain] = python.NewLocalOperator(map[string]string{})
@@ -198,12 +229,9 @@ func setupExecutors(s *scheduler.Scheduler, startDate, endDate time.Time) (map[p
 			Renderer: jinja.NewRendererWithStartEndDates(&startDate, &endDate),
 		}
 
-		bqOperator, err := bigquery.NewBasicOperatorFromGlobals(wholeFileExtractor, bigquery.Materializer{})
-		if err != nil {
-			return nil, err
-		}
+		bqOperator := bigquery.NewBasicOperator(conn, wholeFileExtractor, bigquery.Materializer{})
 
-		bqTestRunner, err := bigquery.NewColumnCheckOperatorFromGlobals()
+		bqTestRunner, err := bigquery.NewColumnCheckOperator(conn)
 		if err != nil {
 			return nil, err
 		}

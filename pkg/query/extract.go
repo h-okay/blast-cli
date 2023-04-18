@@ -113,7 +113,7 @@ func splitQueries(fileContent string) []*Query {
 }
 
 // WholeFileExtractor is a regular file extractor that returns the whole file content as the query string. It is useful
-// for cases where the whole file content can be treated as a single query, such as validating BigQuery queries via dry-run.
+// for cases where the whole file content can be treated as a single query, such as validating GoogleCloudPlatform queries via dry-run.
 type WholeFileExtractor struct {
 	Fs       afero.Fs
 	Renderer renderer

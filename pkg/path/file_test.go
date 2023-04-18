@@ -233,3 +233,46 @@ func TestDirExists(t *testing.T) {
 		})
 	}
 }
+
+func TestWriteYaml(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		path    string
+		content interface{}
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "write yaml file",
+			args: args{
+				path: "path/to/file.yml",
+				content: map[string]interface{}{
+					"key": "value",
+					"key2": map[string]interface{}{
+						"key3": "value3",
+					},
+				},
+			},
+			want:    "key: value\nkey2:\n    key3: value3\n",
+			wantErr: assert.NoError,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			fs := afero.NewMemMapFs()
+			tt.wantErr(t, WriteYaml(fs, tt.args.path, tt.args.content))
+
+			file, err := afero.ReadFile(fs, tt.args.path)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, string(file))
+		})
+	}
+}

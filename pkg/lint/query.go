@@ -15,6 +15,10 @@ type queryValidator interface {
 	IsValid(ctx context.Context, query *query.Query) (bool, error)
 }
 
+type connectionManager interface {
+	GetConnection(conn string) (interface{}, error)
+}
+
 type queryExtractor interface {
 	ExtractQueriesFromFile(filepath string) ([]*query.Query, error)
 }
@@ -22,7 +26,7 @@ type queryExtractor interface {
 type QueryValidatorRule struct {
 	Identifier  string
 	TaskType    pipeline.AssetType
-	Validator   queryValidator
+	Connections connectionManager
 	Extractor   queryExtractor
 	WorkerCount int
 	Logger      *zap.SugaredLogger
@@ -32,7 +36,7 @@ func (q QueryValidatorRule) Name() string {
 	return q.Identifier
 }
 
-func (q QueryValidatorRule) validateTask(task *pipeline.Asset, done chan<- []*Issue) {
+func (q QueryValidatorRule) validateTask(p *pipeline.Pipeline, task *pipeline.Asset, done chan<- []*Issue) {
 	issues := make([]*Issue, 0)
 
 	queries, err := q.Extractor.ExtractQueriesFromFile(task.ExecutableFile.Path)
@@ -69,7 +73,19 @@ func (q QueryValidatorRule) validateTask(task *pipeline.Asset, done chan<- []*Is
 			q.Logger.Debugw("Checking if a query is valid", "path", task.ExecutableFile.Path)
 			start := time.Now()
 
-			valid, err := q.Validator.IsValid(context.Background(), foundQuery)
+			validator, err := q.Connections.GetConnection(p.GetConnectionNameForAsset(task))
+			if err != nil {
+				mu.Lock()
+				issues = append(issues, &Issue{
+					Task:        task,
+					Description: fmt.Sprintf("Cannot get connection for task '%s': %+v", task.Name, err),
+				})
+				mu.Unlock()
+
+				return
+			}
+			valll := validator.(queryValidator)
+			valid, err := valll.IsValid(context.Background(), foundQuery)
 			if err != nil {
 				mu.Lock()
 				issues = append(issues, &Issue{
@@ -124,7 +140,7 @@ func (q *QueryValidatorRule) Validate(p *pipeline.Pipeline) ([]*Issue, error) {
 	for i := 0; i < q.WorkerCount; i++ {
 		go func(taskChannel <-chan *pipeline.Asset, results chan<- []*Issue) {
 			for task := range taskChannel {
-				q.validateTask(task, results)
+				q.validateTask(p, task, results)
 			}
 		}(taskChannel, results)
 	}

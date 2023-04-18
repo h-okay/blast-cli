@@ -7,14 +7,13 @@ import (
 )
 
 const (
-	defaultPipelinePath    = "."
 	pipelineDefinitionFile = "pipeline.yml"
 )
 
 var (
 	fs = afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 0)
 
-	infoPrinter    = color.New(color.FgYellow)
+	infoPrinter    = color.New(color.FgWhite, color.Bold)
 	errorPrinter   = color.New(color.FgRed, color.Bold)
 	successPrinter = color.New(color.FgGreen, color.Bold)
 

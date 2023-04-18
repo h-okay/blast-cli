@@ -126,7 +126,7 @@ func TestDB_IsValid(t *testing.T) {
 			assert.NoError(t, err)
 			client.Location = "US"
 
-			d := DB{client: client}
+			d := Client{client: client}
 
 			got, err := d.IsValid(context.Background(), &query.Query{Query: tt.query})
 			if tt.err == nil {
@@ -239,7 +239,7 @@ func TestDB_RunQueryWithoutResult(t *testing.T) {
 			assert.NoError(t, err)
 			client.Location = "US"
 
-			d := DB{client: client}
+			d := Client{client: client}
 
 			err = d.RunQueryWithoutResult(context.Background(), &query.Query{Query: tt.query})
 			if tt.err == nil {
@@ -437,7 +437,7 @@ func TestDB_Select(t *testing.T) {
 			assert.NoError(t, err)
 			client.Location = "US"
 
-			d := DB{client: client}
+			d := Client{client: client}
 
 			got, err := d.Select(context.Background(), &query.Query{Query: tt.query})
 			if tt.err == nil {

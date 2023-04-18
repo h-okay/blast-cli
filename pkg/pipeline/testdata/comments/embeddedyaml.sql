@@ -13,9 +13,7 @@ parameters:
     param1: first-parameter
     param2: second-parameter
     s3_file_path: s3://bucket/path
-connections:
-    conn1: first-connection
-    conn2: second-connection
+connection: conn1
 materialization:
     type: table
     partition_by: dt
