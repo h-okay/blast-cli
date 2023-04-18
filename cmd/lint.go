@@ -34,15 +34,10 @@ func Lint(isDebug *bool) *cli.Command {
 				return cli.Exit("", 1)
 			}
 
-			connectionManager := &connection.Manager{}
-			for _, conn := range cm.DefaultEnvironment.Connections.GoogleCloudPlatform {
-				conn := conn
-				err = connectionManager.AddBqConnectionFromConfig(&conn)
-				if err != nil {
-					errorPrinter.Printf("Failed to add connection '%s': %v\n", conn.Name, err)
-					return cli.Exit("", 1)
-				}
-				logger.Debugf("Registered connection '%s'", conn.Name)
+			connectionManager, err := connection.NewManagerFromConfig(cm)
+			if err != nil {
+				errorPrinter.Printf("Failed to register connections: %v\n", err)
+				return cli.Exit("", 1)
 			}
 
 			rules, err := lint.GetRules(logger, fs)

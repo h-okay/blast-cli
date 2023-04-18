@@ -18,11 +18,24 @@ var scopes = []string{
 	"https://www.googleapis.com/auth/drive",
 }
 
-type DB struct {
+type Querier interface {
+	RunQueryWithoutResult(ctx context.Context, query *query.Query) error
+}
+
+type Selector interface {
+	Select(ctx context.Context, query *query.Query) ([][]interface{}, error)
+}
+
+type DB interface {
+	Querier
+	Selector
+}
+
+type Client struct {
 	client *bigquery.Client
 }
 
-func NewDB(c *Config) (*DB, error) {
+func NewDB(c *Config) (*Client, error) {
 	options := []option.ClientOption{
 		option.WithScopes(scopes...),
 	}
@@ -51,12 +64,12 @@ func NewDB(c *Config) (*DB, error) {
 		client.Location = c.Location
 	}
 
-	return &DB{
+	return &Client{
 		client: client,
 	}, nil
 }
 
-func (d DB) IsValid(ctx context.Context, query *query.Query) (bool, error) {
+func (d *Client) IsValid(ctx context.Context, query *query.Query) (bool, error) {
 	q := d.client.Query(query.ToDryRunQuery())
 	q.DryRun = true
 
@@ -73,7 +86,7 @@ func (d DB) IsValid(ctx context.Context, query *query.Query) (bool, error) {
 	return true, nil
 }
 
-func (d DB) RunQueryWithoutResult(ctx context.Context, query *query.Query) error {
+func (d *Client) RunQueryWithoutResult(ctx context.Context, query *query.Query) error {
 	q := d.client.Query(query.String())
 	_, err := q.Read(ctx)
 	if err != nil {
@@ -83,7 +96,7 @@ func (d DB) RunQueryWithoutResult(ctx context.Context, query *query.Query) error
 	return nil
 }
 
-func (d DB) Select(ctx context.Context, query *query.Query) ([][]interface{}, error) {
+func (d *Client) Select(ctx context.Context, query *query.Query) ([][]interface{}, error) {
 	q := d.client.Query(query.String())
 	rows, err := q.Read(ctx)
 	if err != nil {

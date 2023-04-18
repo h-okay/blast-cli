@@ -8,14 +8,14 @@ import (
 )
 
 type Manager struct {
-	BigQuery map[string]*bigquery.DB
+	BigQuery map[string]*bigquery.Client
 }
 
 func (m *Manager) GetConnection(name string) (interface{}, error) {
 	return m.GetBqConnection(name)
 }
 
-func (m *Manager) GetBqConnection(name string) (*bigquery.DB, error) {
+func (m *Manager) GetBqConnection(name string) (bigquery.DB, error) {
 	if m.BigQuery == nil {
 		return nil, errors.New("no bigquery connections found")
 	}
@@ -30,7 +30,7 @@ func (m *Manager) GetBqConnection(name string) (*bigquery.DB, error) {
 
 func (m *Manager) AddBqConnectionFromConfig(connection *config.GoogleCloudPlatformConnection) error {
 	if m.BigQuery == nil {
-		m.BigQuery = make(map[string]*bigquery.DB)
+		m.BigQuery = make(map[string]*bigquery.Client)
 	}
 
 	db, err := bigquery.NewDB(&bigquery.Config{
@@ -46,4 +46,17 @@ func (m *Manager) AddBqConnectionFromConfig(connection *config.GoogleCloudPlatfo
 	m.BigQuery[connection.Name] = db
 
 	return nil
+}
+
+func NewManagerFromConfig(cm *config.Config) (*Manager, error) {
+	connectionManager := &Manager{}
+	for _, conn := range cm.DefaultEnvironment.Connections.GoogleCloudPlatform {
+		conn := conn
+		err := connectionManager.AddBqConnectionFromConfig(&conn)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return connectionManager, nil
 }

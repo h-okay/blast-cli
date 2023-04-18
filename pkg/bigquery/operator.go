@@ -9,10 +9,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type querier interface {
-	RunQueryWithoutResult(ctx context.Context, q *query.Query) error
-}
-
 type materializer interface {
 	Render(task *pipeline.Asset, query string) (string, error)
 }
@@ -21,29 +17,19 @@ type queryExtractor interface {
 	ExtractQueriesFromFile(filepath string) ([]*query.Query, error)
 }
 
+type connectionFetcher interface {
+	GetBqConnection(name string) (DB, error)
+}
+
 type BasicOperator struct {
-	client       querier
+	connection   connectionFetcher
 	extractor    queryExtractor
 	materializer materializer
 }
 
-func NewBasicOperatorFromGlobals(extractor queryExtractor, materializer materializer) (*BasicOperator, error) {
-	config, err := LoadConfigFromEnv()
-	if err != nil || !config.IsValid() {
-		return nil, errors.New("failed to setup bigquery connection, please set the BIGQUERY_CREDENTIALS_FILE and BIGQUERY_PROJECT environment variables.")
-	}
-
-	bq, err := NewDB(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to bigquery")
-	}
-
-	return NewBasicOperator(bq, extractor, materializer), nil
-}
-
-func NewBasicOperator(client *DB, extractor queryExtractor, materializer materializer) *BasicOperator {
+func NewBasicOperator(conn connectionFetcher, extractor queryExtractor, materializer materializer) *BasicOperator {
 	return &BasicOperator{
-		client:       client,
+		connection:   conn,
 		extractor:    extractor,
 		materializer: materializer,
 	}
@@ -74,7 +60,13 @@ func (o BasicOperator) RunTask(ctx context.Context, p *pipeline.Pipeline, t *pip
 	}
 
 	q.Query = materialized
-	return o.client.RunQueryWithoutResult(ctx, q)
+
+	conn, err := o.connection.GetBqConnection(p.GetConnectionNameForAsset(t))
+	if err != nil {
+		return err
+	}
+
+	return conn.RunQueryWithoutResult(ctx, q)
 }
 
 type testRunner interface {
@@ -85,23 +77,13 @@ type ColumnCheckOperator struct {
 	testRunners map[string]testRunner
 }
 
-func NewColumnCheckOperatorFromGlobals() (*ColumnCheckOperator, error) {
-	config, err := LoadConfigFromEnv()
-	if err != nil || !config.IsValid() {
-		return nil, errors.New("failed to setup bigquery connection, please set the BIGQUERY_CREDENTIALS_FILE and BIGQUERY_PROJECT environment variables.")
-	}
-
-	bq, err := NewDB(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to bigquery")
-	}
-
+func NewColumnCheckOperator(manager connectionFetcher) (*ColumnCheckOperator, error) {
 	return &ColumnCheckOperator{
 		testRunners: map[string]testRunner{
-			"not_null":        &NotNullCheck{q: bq},
-			"unique":          &UniqueCheck{q: bq},
-			"positive":        &PositiveCheck{q: bq},
-			"accepted_values": &AcceptedValuesCheck{q: bq},
+			"not_null":        &NotNullCheck{conn: manager},
+			"unique":          &UniqueCheck{conn: manager},
+			"positive":        &PositiveCheck{conn: manager},
+			"accepted_values": &AcceptedValuesCheck{conn: manager},
 		},
 	}, nil
 }

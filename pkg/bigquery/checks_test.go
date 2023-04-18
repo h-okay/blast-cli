@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/datablast-analytics/blast/pkg/executor"
 	"github.com/datablast-analytics/blast/pkg/pipeline"
 	"github.com/datablast-analytics/blast/pkg/query"
 	"github.com/datablast-analytics/blast/pkg/scheduler"
@@ -25,13 +26,34 @@ func (m *mockQuerierWithResult) Select(ctx context.Context, q *query.Query) ([][
 	return get.([][]interface{}), args.Error(1)
 }
 
+func (m *mockQuerierWithResult) RunQueryWithoutResult(ctx context.Context, query *query.Query) error {
+	args := m.Called(ctx, query)
+	return args.Error(0)
+}
+
+type mockConnectionFetcher struct {
+	mock.Mock
+}
+
+func (m *mockConnectionFetcher) GetBqConnection(name string) (DB, error) {
+	args := m.Called(name)
+	get := args.Get(0)
+	if get == nil {
+		return nil, args.Error(1)
+	}
+
+	return get.(DB), args.Error(1)
+}
+
 func TestNotNullCheck_Check(t *testing.T) {
 	t.Parallel()
 
 	runTestsFoCountZeroCheck(
 		t,
 		func(q *mockQuerierWithResult) testRunner {
-			return &NotNullCheck{q: q}
+			conn := new(mockConnectionFetcher)
+			conn.On("GetBqConnection", "test").Return(q, nil)
+			return &NotNullCheck{conn: conn}
 		},
 		"SELECT count(*) FROM `dataset.test_asset` WHERE `test_column` IS NULL",
 		"column `test_column` has 5 null values",
@@ -47,7 +69,9 @@ func TestPositiveCheck_Check(t *testing.T) {
 	runTestsFoCountZeroCheck(
 		t,
 		func(q *mockQuerierWithResult) testRunner {
-			return &PositiveCheck{q: q}
+			conn := new(mockConnectionFetcher)
+			conn.On("GetBqConnection", "test").Return(q, nil)
+			return &PositiveCheck{conn: conn}
 		},
 		"SELECT count(*) FROM `dataset.test_asset` WHERE `test_column` <= 0",
 		"column `test_column` has 5 non-positive values",
@@ -63,7 +87,9 @@ func TestUniqueCheck_Check(t *testing.T) {
 	runTestsFoCountZeroCheck(
 		t,
 		func(q *mockQuerierWithResult) testRunner {
-			return &UniqueCheck{q: q}
+			conn := new(mockConnectionFetcher)
+			conn.On("GetBqConnection", "test").Return(q, nil)
+			return &UniqueCheck{conn: conn}
 		},
 		"SELECT COUNT(`test_column`) - COUNT(DISTINCT `test_column`) FROM `dataset.test_asset`",
 		"column `test_column` has 5 non-unique values",
@@ -79,7 +105,9 @@ func TestAcceptedValuesCheck_Check(t *testing.T) {
 	runTestsFoCountZeroCheck(
 		t,
 		func(q *mockQuerierWithResult) testRunner {
-			return &AcceptedValuesCheck{q: q}
+			conn := new(mockConnectionFetcher)
+			conn.On("GetBqConnection", "test").Return(q, nil)
+			return &AcceptedValuesCheck{conn: conn}
 		},
 		"SELECT COUNT(*) FROM `dataset.test_asset` WHERE CAST(`test_column` as STRING) NOT IN (\"test\",\"test2\")",
 		"column `test_column` has 5 rows that are not in the accepted values",
@@ -94,7 +122,9 @@ func TestAcceptedValuesCheck_Check(t *testing.T) {
 	runTestsFoCountZeroCheck(
 		t,
 		func(q *mockQuerierWithResult) testRunner {
-			return &AcceptedValuesCheck{q: q}
+			conn := new(mockConnectionFetcher)
+			conn.On("GetBqConnection", "test").Return(q, nil)
+			return &AcceptedValuesCheck{conn: conn}
 		},
 		"SELECT COUNT(*) FROM `dataset.test_asset` WHERE CAST(`test_column` as STRING) NOT IN (\"1\",\"2\")",
 		"column `test_column` has 5 rows that are not in the accepted values",
@@ -168,6 +198,13 @@ func runTestsFoCountZeroCheck(t *testing.T, instanceBuilder func(q *mockQuerierW
 				AssetInstance: &scheduler.AssetInstance{
 					Asset: &pipeline.Asset{
 						Name: "dataset.test_asset",
+						Type: executor.TaskTypeBigqueryQuery,
+					},
+					Pipeline: &pipeline.Pipeline{
+						Name: "test",
+						DefaultConnections: map[string]string{
+							"google_cloud_platform": "test",
+						},
 					},
 				},
 				Column: &pipeline.Column{

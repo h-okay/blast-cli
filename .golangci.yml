@@ -49,3 +49,12 @@ linters-settings:
         disabled: true
   maintidx:
     under: 10
+
+  ireturn:
+    allow:
+      - anon
+      - error
+      - empty
+      - stdlib
+      - (or|er)$
+      - bigquery.DB

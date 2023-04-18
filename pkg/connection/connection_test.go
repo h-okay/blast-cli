@@ -13,10 +13,10 @@ import (
 func TestManager_GetBqConnection(t *testing.T) {
 	t.Parallel()
 
-	existingDB := new(bigquery.DB)
+	existingDB := new(bigquery.Client)
 	m := Manager{
-		BigQuery: map[string]*bigquery.DB{
-			"another":  new(bigquery.DB),
+		BigQuery: map[string]*bigquery.Client{
+			"another":  new(bigquery.Client),
 			"existing": existingDB,
 		},
 	}
@@ -24,7 +24,7 @@ func TestManager_GetBqConnection(t *testing.T) {
 	tests := []struct {
 		name           string
 		connectionName string
-		want           *bigquery.DB
+		want           bigquery.DB
 		wantErr        assert.ErrorAssertionFunc
 	}{
 		{
