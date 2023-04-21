@@ -46,26 +46,26 @@ default_connections:
 create a new folder called `assets` and create your first asset there `assets/blast-test.sql`:
 
 ```sql
--- @blast.name: dataset.blast-test
+-- @blast.name: dataset.blast_test
 -- @blast.type: bq.sql
 -- @blast.materialization.type: table
 
 SELECT 1 as result
 ```
 
-Blast will take this result, and will create a `dataset.blast-test` table on BigQuery. You can also use `view`
+Blast will take this result, and will create a `dataset.blast_test` table on BigQuery. You can also use `view`
 materialization type instead of `table` to create a view instead.
 
 > **Snowflake assets**
 > If you'd like to run the asset on Snowflake, simply replace the `bq.sql` with `sf.sql`, and define `snowflake` as a
 > connection instead of `google_cloud_platform`.
 
-Then let's create a Python asset `assets/blast-test.py`:
+Then let's create a Python asset `assets/hello.py`:
 
 ```python
 # @blast.name: hello
 # @blast.type: python
-# @blast.depends: dataset.blast-test
+# @blast.depends: dataset.blast_test
 
 print("Hello, world!")
 ```
