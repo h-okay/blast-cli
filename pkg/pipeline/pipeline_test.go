@@ -25,6 +25,97 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 	type args struct {
 		pathToPipeline string
 	}
+
+	asset1 := &pipeline.Asset{
+		Name:        "task1",
+		Description: "This is a hello world task",
+		Type:        "bash",
+		ExecutableFile: pipeline.ExecutableFile{
+			Name:    "hello.sh",
+			Path:    absPath("testdata/pipeline/first-pipeline/tasks/task1/hello.sh"),
+			Content: mustRead(t, "testdata/pipeline/first-pipeline/tasks/task1/hello.sh"),
+		},
+		DefinitionFile: pipeline.TaskDefinitionFile{
+			Name: "task.yml",
+			Path: absPath("testdata/pipeline/first-pipeline/tasks/task1/task.yml"),
+			Type: pipeline.YamlTask,
+		},
+		Parameters: map[string]string{
+			"param1": "value1",
+			"param2": "value2",
+		},
+		Connection: "conn1",
+		DependsOn:  []string{"gcs-to-bq"},
+		Columns:    map[string]pipeline.Column{},
+	}
+
+	asset2 := &pipeline.Asset{
+		Name: "second-task",
+		Type: "bq.transfer",
+		Parameters: map[string]string{
+			"transfer_config_id": "some-uuid",
+			"project_id":         "a-new-project-id",
+			"location":           "europe-west1",
+		},
+		DefinitionFile: pipeline.TaskDefinitionFile{
+			Name: "task.yaml",
+			Path: absPath("testdata/pipeline/first-pipeline/tasks/task2/task.yaml"),
+			Type: pipeline.YamlTask,
+		},
+		Columns: map[string]pipeline.Column{},
+	}
+
+	asset3 := &pipeline.Asset{
+		Name:        "some-python-task",
+		Description: "some description goes here",
+		Type:        "python",
+		ExecutableFile: pipeline.ExecutableFile{
+			Name:    "test.py",
+			Path:    absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
+			Content: mustRead(t, "testdata/pipeline/first-pipeline/tasks/test.py"),
+		},
+		DefinitionFile: pipeline.TaskDefinitionFile{
+			Name: "test.py",
+			Path: absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
+			Type: pipeline.CommentTask,
+		},
+		Parameters: map[string]string{
+			"param1": "first-parameter",
+			"param2": "second-parameter",
+			"param3": "third-parameter",
+		},
+		Connection: "first-connection",
+		DependsOn:  []string{"task1", "task2", "task3", "task4", "task5", "task3"},
+		Columns:    map[string]pipeline.Column{},
+	}
+	asset3.AddUpstream(asset1)
+	asset1.AddDownstream(asset3)
+
+	asset4 := &pipeline.Asset{
+		Name:        "some-sql-task",
+		Description: "some description goes here",
+		Type:        "bq.sql",
+		ExecutableFile: pipeline.ExecutableFile{
+			Name:    "test.sql",
+			Path:    absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
+			Content: mustRead(t, "testdata/pipeline/first-pipeline/tasks/test.sql"),
+		},
+		DefinitionFile: pipeline.TaskDefinitionFile{
+			Name: "test.sql",
+			Path: absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
+			Type: pipeline.CommentTask,
+		},
+		Parameters: map[string]string{
+			"param1": "first-parameter",
+			"param2": "second-parameter",
+		},
+		Connection: "conn2",
+		DependsOn:  []string{"task1", "task2", "task3", "task4", "task5", "task3"},
+		Columns:    map[string]pipeline.Column{},
+	}
+	asset4.AddUpstream(asset1)
+	asset1.AddDownstream(asset4)
+
 	expectedPipeline := &pipeline.Pipeline{
 		Name:     "first-pipeline",
 		LegacyID: "first-pipeline",
@@ -41,91 +132,9 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			"slack":           "slack-connection",
 			"gcpConnectionId": "gcp-connection-id-here",
 		},
-		Tasks: []*pipeline.Asset{
-			{
-				Name:        "hello-world",
-				Description: "This is a hello world task",
-				Type:        "bash",
-				ExecutableFile: pipeline.ExecutableFile{
-					Name:    "hello.sh",
-					Path:    absPath("testdata/pipeline/first-pipeline/tasks/task1/hello.sh"),
-					Content: mustRead(t, "testdata/pipeline/first-pipeline/tasks/task1/hello.sh"),
-				},
-				DefinitionFile: pipeline.TaskDefinitionFile{
-					Name: "task.yml",
-					Path: absPath("testdata/pipeline/first-pipeline/tasks/task1/task.yml"),
-					Type: pipeline.YamlTask,
-				},
-				Parameters: map[string]string{
-					"param1": "value1",
-					"param2": "value2",
-				},
-				Connection: "conn1",
-				DependsOn:  []string{"gcs-to-bq"},
-				Columns:    map[string]pipeline.Column{},
-			},
-			{
-				Name: "second-task",
-				Type: "bq.transfer",
-				Parameters: map[string]string{
-					"transfer_config_id": "some-uuid",
-					"project_id":         "a-new-project-id",
-					"location":           "europe-west1",
-				},
-				DefinitionFile: pipeline.TaskDefinitionFile{
-					Name: "task.yaml",
-					Path: absPath("testdata/pipeline/first-pipeline/tasks/task2/task.yaml"),
-					Type: pipeline.YamlTask,
-				},
-				Columns: map[string]pipeline.Column{},
-			},
-			{
-				Name:        "some-python-task",
-				Description: "some description goes here",
-				Type:        "python",
-				ExecutableFile: pipeline.ExecutableFile{
-					Name:    "test.py",
-					Path:    absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
-					Content: mustRead(t, "testdata/pipeline/first-pipeline/tasks/test.py"),
-				},
-				DefinitionFile: pipeline.TaskDefinitionFile{
-					Name: "test.py",
-					Path: absPath("testdata/pipeline/first-pipeline/tasks/test.py"),
-					Type: pipeline.CommentTask,
-				},
-				Parameters: map[string]string{
-					"param1": "first-parameter",
-					"param2": "second-parameter",
-					"param3": "third-parameter",
-				},
-				Connection: "first-connection",
-				DependsOn:  []string{"task1", "task2", "task3", "task4", "task5", "task3"},
-				Columns:    map[string]pipeline.Column{},
-			},
-			{
-				Name:        "some-sql-task",
-				Description: "some description goes here",
-				Type:        "bq.sql",
-				ExecutableFile: pipeline.ExecutableFile{
-					Name:    "test.sql",
-					Path:    absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
-					Content: mustRead(t, "testdata/pipeline/first-pipeline/tasks/test.sql"),
-				},
-				DefinitionFile: pipeline.TaskDefinitionFile{
-					Name: "test.sql",
-					Path: absPath("testdata/pipeline/first-pipeline/tasks/test.sql"),
-					Type: pipeline.CommentTask,
-				},
-				Parameters: map[string]string{
-					"param1": "first-parameter",
-					"param2": "second-parameter",
-				},
-				Connection: "conn2",
-				DependsOn:  []string{"task1", "task2", "task3", "task4", "task5", "task3"},
-				Columns:    map[string]pipeline.Column{},
-			},
-		},
+		Tasks: []*pipeline.Asset{asset1, asset2, asset3, asset4},
 	}
+	fs := afero.NewOsFs()
 	tests := []struct {
 		name    string
 		fields  fields
@@ -147,8 +156,8 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			name: "should create pipeline from path",
 			fields: fields{
 				tasksDirectoryName: "tasks",
-				commentTaskCreator: pipeline.CreateTaskFromFileComments(afero.NewOsFs()),
-				yamlTaskCreator:    pipeline.CreateTaskFromYamlDefinition(afero.NewOsFs()),
+				commentTaskCreator: pipeline.CreateTaskFromFileComments(fs),
+				yamlTaskCreator:    pipeline.CreateTaskFromYamlDefinition(fs),
 			},
 			args: args{
 				pathToPipeline: "testdata/pipeline/first-pipeline",
@@ -160,8 +169,8 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			name: "should create pipeline from path even if pipeline.yml is given as a path",
 			fields: fields{
 				tasksDirectoryName: "tasks",
-				commentTaskCreator: pipeline.CreateTaskFromFileComments(afero.NewOsFs()),
-				yamlTaskCreator:    pipeline.CreateTaskFromYamlDefinition(afero.NewOsFs()),
+				commentTaskCreator: pipeline.CreateTaskFromFileComments(fs),
+				yamlTaskCreator:    pipeline.CreateTaskFromYamlDefinition(fs),
 			},
 			args: args{
 				pathToPipeline: "testdata/pipeline/first-pipeline/pipeline.yml",
@@ -181,7 +190,7 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 				TasksFileSuffixes:   []string{"task.yml", "task.yaml"},
 			}
 
-			p := pipeline.NewBuilder(builderConfig, tt.fields.yamlTaskCreator, tt.fields.commentTaskCreator, afero.NewOsFs())
+			p := pipeline.NewBuilder(builderConfig, tt.fields.yamlTaskCreator, tt.fields.commentTaskCreator, fs)
 
 			got, err := p.CreatePipelineFromPath(tt.args.pathToPipeline)
 			if tt.wantErr {
@@ -200,7 +209,23 @@ func Test_pipelineBuilder_CreatePipelineFromPath(t *testing.T) {
 			assert.Equal(t, tt.want.DefinitionFile, got.DefinitionFile)
 			assert.Equal(t, tt.want.DefaultConnections, got.DefaultConnections)
 			assert.Equal(t, tt.want.DefaultParameters, got.DefaultParameters)
-			assert.Equal(t, tt.want.Tasks, got.Tasks)
+
+			for i, asset := range tt.want.Tasks {
+				gotAsset := got.Tasks[i]
+				assert.EqualExportedValues(t, *asset, *gotAsset)
+
+				gotAssetUpstreams := gotAsset.GetUpstream()
+				assert.Equal(t, len(asset.GetUpstream()), len(gotAssetUpstreams))
+				for upstreamIdx, u := range asset.GetUpstream() {
+					assert.EqualExportedValues(t, *u, *gotAssetUpstreams[upstreamIdx])
+				}
+
+				gotAssetDownstreams := gotAsset.GetDownstream()
+				assert.Equal(t, len(asset.GetDownstream()), len(gotAssetDownstreams))
+				for idx, d := range asset.GetDownstream() {
+					assert.EqualExportedValues(t, *d, *gotAssetDownstreams[idx])
+				}
+			}
 		})
 	}
 }
@@ -249,7 +274,7 @@ func TestTask_RelativePathToPipelineRoot(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.want, tt.pipeline.RelativeTaskPath(tt.task))
+			assert.Equal(t, tt.want, tt.pipeline.RelativeAssetPath(tt.task))
 		})
 	}
 }
@@ -298,7 +323,34 @@ func TestPipeline_HasTaskType(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.want, tt.pipeline.HasTaskType(pipeline.AssetType(tt.taskType)))
+			assert.Equal(t, tt.want, tt.pipeline.HasAssetType(pipeline.AssetType(tt.taskType)))
 		})
 	}
+}
+
+func TestAsset_AddUpstream(t *testing.T) {
+	t.Parallel()
+
+	asset1 := &pipeline.Asset{Name: "asset1"}
+	asset2 := &pipeline.Asset{Name: "asset2"}
+	asset3 := &pipeline.Asset{Name: "asset3"}
+
+	connect := func(upstream *pipeline.Asset, downstream *pipeline.Asset) {
+		t.Helper()
+		upstream.AddDownstream(downstream)
+		downstream.AddUpstream(upstream)
+	}
+
+	connect(asset1, asset2)
+	connect(asset2, asset3)
+	connect(asset1, asset3)
+
+	assert.ElementsMatch(t, []*pipeline.Asset{asset2, asset1}, asset3.GetUpstream())
+	assert.ElementsMatch(t, []*pipeline.Asset{}, asset3.GetDownstream())
+
+	assert.ElementsMatch(t, []*pipeline.Asset{asset1}, asset2.GetUpstream())
+	assert.ElementsMatch(t, []*pipeline.Asset{asset3}, asset2.GetDownstream())
+
+	assert.ElementsMatch(t, []*pipeline.Asset{}, asset1.GetUpstream())
+	assert.ElementsMatch(t, []*pipeline.Asset{asset2, asset3}, asset1.GetDownstream())
 }

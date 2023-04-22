@@ -118,6 +118,25 @@ type Asset struct {
 	Columns         map[string]Column
 
 	Pipeline *Pipeline
+
+	upstream   []*Asset
+	downstream []*Asset
+}
+
+func (a *Asset) AddUpstream(asset *Asset) {
+	a.upstream = append(a.upstream, asset)
+}
+
+func (a *Asset) GetUpstream() []*Asset {
+	return a.upstream
+}
+
+func (a *Asset) AddDownstream(asset *Asset) {
+	a.downstream = append(a.downstream, asset)
+}
+
+func (a *Asset) GetDownstream() []*Asset {
+	return a.downstream
 }
 
 type Pipeline struct {
@@ -143,7 +162,7 @@ func (p *Pipeline) GetConnectionNameForAsset(asset *Asset) string {
 	return p.DefaultConnections[assetTypeConnectionMapping[asset.Type]]
 }
 
-func (p *Pipeline) RelativeTaskPath(t *Asset) string {
+func (p *Pipeline) RelativeAssetPath(t *Asset) string {
 	absolutePipelineRoot := filepath.Dir(p.DefinitionFile.Path)
 
 	pipelineDirectory, err := filepath.Rel(absolutePipelineRoot, t.DefinitionFile.Path)
@@ -154,9 +173,22 @@ func (p *Pipeline) RelativeTaskPath(t *Asset) string {
 	return pipelineDirectory
 }
 
-func (p Pipeline) HasTaskType(taskType AssetType) bool {
+func (p Pipeline) HasAssetType(taskType AssetType) bool {
 	_, ok := p.TasksByType[taskType]
 	return ok
+}
+
+type Lineage struct {
+	Asset      *Asset
+	Upstream   []*Asset
+	Downstream []*Asset
+}
+
+func (p *Pipeline) AssetLineage(asset *Asset) *Lineage {
+	return &Lineage{
+		Asset: asset,
+		// Upstream: p.getUpstream(asset),
+	}
 }
 
 type TaskCreator func(path string) (*Asset, error)
@@ -235,6 +267,8 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		if task == nil {
 			continue
 		}
+		task.upstream = make([]*Asset, 0)
+		task.downstream = make([]*Asset, 0)
 
 		pipeline.Tasks = append(pipeline.Tasks, task)
 
@@ -244,6 +278,18 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 
 		pipeline.TasksByType[task.Type] = append(pipeline.TasksByType[task.Type], task)
 		pipeline.tasksByName[task.Name] = task
+	}
+
+	for _, asset := range pipeline.Tasks {
+		for _, upstream := range asset.DependsOn {
+			u, ok := pipeline.tasksByName[upstream]
+			if !ok {
+				continue
+			}
+
+			asset.AddUpstream(u)
+			u.AddDownstream(asset)
+		}
 	}
 
 	return &pipeline, nil
