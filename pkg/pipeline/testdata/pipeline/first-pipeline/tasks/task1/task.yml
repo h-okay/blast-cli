@@ -1,4 +1,4 @@
-name: hello-world
+name: task1
 description: This is a hello world task
 type: bash
 run: hello.sh

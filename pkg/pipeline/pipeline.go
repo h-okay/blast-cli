@@ -118,6 +118,61 @@ type Asset struct {
 	Columns         map[string]Column
 
 	Pipeline *Pipeline
+
+	upstream   []*Asset
+	downstream []*Asset
+}
+
+func (a *Asset) AddUpstream(asset *Asset) {
+	a.upstream = append(a.upstream, asset)
+}
+
+func (a *Asset) GetUpstream() []*Asset {
+	return a.upstream
+}
+
+func (a *Asset) GetFullUpstream() []*Asset {
+	upstream := make([]*Asset, 0)
+
+	for _, asset := range a.upstream {
+		upstream = append(upstream, asset)
+		upstream = append(upstream, asset.GetFullUpstream()...)
+	}
+
+	return uniqueAssets(upstream)
+}
+
+func (a *Asset) AddDownstream(asset *Asset) {
+	a.downstream = append(a.downstream, asset)
+}
+
+func (a *Asset) GetDownstream() []*Asset {
+	return a.downstream
+}
+
+func (a *Asset) GetFullDownstream() []*Asset {
+	downstream := make([]*Asset, 0)
+
+	for _, asset := range a.downstream {
+		downstream = append(downstream, asset)
+		downstream = append(downstream, asset.GetFullDownstream()...)
+	}
+
+	return uniqueAssets(downstream)
+}
+
+func uniqueAssets(assets []*Asset) []*Asset {
+	seenValues := make(map[string]bool, len(assets))
+	unique := make([]*Asset, 0, len(assets))
+	for _, value := range assets {
+		if seenValues[value.Name] {
+			continue
+		}
+
+		seenValues[value.Name] = true
+		unique = append(unique, value)
+	}
+	return unique
 }
 
 type Pipeline struct {
@@ -143,7 +198,7 @@ func (p *Pipeline) GetConnectionNameForAsset(asset *Asset) string {
 	return p.DefaultConnections[assetTypeConnectionMapping[asset.Type]]
 }
 
-func (p *Pipeline) RelativeTaskPath(t *Asset) string {
+func (p *Pipeline) RelativeAssetPath(t *Asset) string {
 	absolutePipelineRoot := filepath.Dir(p.DefinitionFile.Path)
 
 	pipelineDirectory, err := filepath.Rel(absolutePipelineRoot, t.DefinitionFile.Path)
@@ -154,9 +209,24 @@ func (p *Pipeline) RelativeTaskPath(t *Asset) string {
 	return pipelineDirectory
 }
 
-func (p Pipeline) HasTaskType(taskType AssetType) bool {
+func (p Pipeline) HasAssetType(taskType AssetType) bool {
 	_, ok := p.TasksByType[taskType]
 	return ok
+}
+
+func (p *Pipeline) GetAssetByPath(assetPath string) *Asset {
+	assetPath, err := filepath.Abs(assetPath)
+	if err != nil {
+		return nil
+	}
+
+	for _, asset := range p.Tasks {
+		if asset.DefinitionFile.Path == assetPath {
+			return asset
+		}
+	}
+
+	return nil
 }
 
 type TaskCreator func(path string) (*Asset, error)
@@ -235,6 +305,8 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 		if task == nil {
 			continue
 		}
+		task.upstream = make([]*Asset, 0)
+		task.downstream = make([]*Asset, 0)
 
 		pipeline.Tasks = append(pipeline.Tasks, task)
 
@@ -244,6 +316,18 @@ func (b *builder) CreatePipelineFromPath(pathToPipeline string) (*Pipeline, erro
 
 		pipeline.TasksByType[task.Type] = append(pipeline.TasksByType[task.Type], task)
 		pipeline.tasksByName[task.Name] = task
+	}
+
+	for _, asset := range pipeline.Tasks {
+		for _, upstream := range asset.DependsOn {
+			u, ok := pipeline.tasksByName[upstream]
+			if !ok {
+				continue
+			}
+
+			asset.AddUpstream(u)
+			u.AddDownstream(asset)
+		}
 	}
 
 	return &pipeline, nil
