@@ -13,7 +13,8 @@ const (
 var (
 	fs = afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 0)
 
-	infoPrinter    = color.New(color.FgWhite, color.Bold)
+	faint          = color.New(color.Faint).SprintFunc()
+	infoPrinter    = color.New(color.Bold)
 	errorPrinter   = color.New(color.FgRed, color.Bold)
 	successPrinter = color.New(color.FgGreen, color.Bold)
 

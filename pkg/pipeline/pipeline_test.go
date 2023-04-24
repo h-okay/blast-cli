@@ -334,6 +334,7 @@ func TestAsset_AddUpstream(t *testing.T) {
 	asset1 := &pipeline.Asset{Name: "asset1"}
 	asset2 := &pipeline.Asset{Name: "asset2"}
 	asset3 := &pipeline.Asset{Name: "asset3"}
+	asset4 := &pipeline.Asset{Name: "asset4"}
 
 	connect := func(upstream *pipeline.Asset, downstream *pipeline.Asset) {
 		t.Helper()
@@ -344,13 +345,56 @@ func TestAsset_AddUpstream(t *testing.T) {
 	connect(asset1, asset2)
 	connect(asset2, asset3)
 	connect(asset1, asset3)
+	connect(asset3, asset4)
 
 	assert.ElementsMatch(t, []*pipeline.Asset{asset2, asset1}, asset3.GetUpstream())
-	assert.ElementsMatch(t, []*pipeline.Asset{}, asset3.GetDownstream())
+	assert.ElementsMatch(t, []*pipeline.Asset{asset4}, asset3.GetDownstream())
 
 	assert.ElementsMatch(t, []*pipeline.Asset{asset1}, asset2.GetUpstream())
 	assert.ElementsMatch(t, []*pipeline.Asset{asset3}, asset2.GetDownstream())
 
 	assert.ElementsMatch(t, []*pipeline.Asset{}, asset1.GetUpstream())
 	assert.ElementsMatch(t, []*pipeline.Asset{asset2, asset3}, asset1.GetDownstream())
+	assert.ElementsMatch(t, []*pipeline.Asset{asset2, asset3, asset4}, asset1.GetFullDownstream())
+
+	assert.ElementsMatch(t, []*pipeline.Asset{asset3}, asset4.GetUpstream())
+	assert.ElementsMatch(t, []*pipeline.Asset{asset1, asset2, asset3}, asset4.GetFullUpstream())
+	assert.ElementsMatch(t, []*pipeline.Asset{}, asset4.GetDownstream())
+	assert.ElementsMatch(t, []*pipeline.Asset{}, asset4.GetFullDownstream())
+}
+
+func TestPipeline_GetAssetByPath(t *testing.T) {
+	t.Parallel()
+
+	fs := afero.NewCacheOnReadFs(afero.NewOsFs(), afero.NewMemMapFs(), 0)
+	config := pipeline.BuilderConfig{
+		PipelineFileName:    "pipeline.yml",
+		TasksDirectoryNames: []string{"tasks", "assets"},
+		TasksFileSuffixes:   []string{"task.yml", "task.yaml"},
+	}
+	builder := pipeline.NewBuilder(config, pipeline.CreateTaskFromYamlDefinition(fs), pipeline.CreateTaskFromFileComments(fs), fs)
+	p, err := builder.CreatePipelineFromPath("./testdata/pipeline/first-pipeline")
+	assert.NoError(t, err)
+
+	absPath := func(path string) string {
+		absolutePath, err := filepath.Abs(path)
+		assert.NoError(t, err)
+		return absolutePath
+	}
+
+	asset := p.GetAssetByPath("testdata/pipeline/first-pipeline/tasks/task1/task.yml")
+	assert.NotNil(t, asset)
+	assert.Equal(t, "task1", asset.Name)
+
+	asset = p.GetAssetByPath("./testdata/pipeline/first-pipeline/tasks/task1/task.yml")
+	assert.NotNil(t, asset)
+	assert.Equal(t, "task1", asset.Name)
+
+	asset = p.GetAssetByPath(absPath("./testdata/pipeline/first-pipeline/tasks/task1/task.yml"))
+	assert.NotNil(t, asset)
+	assert.Equal(t, "task1", asset.Name)
+
+	asset = p.GetAssetByPath(absPath("../pipeline/testdata/../testdata/pipeline/first-pipeline/tasks/task1/task.yml"))
+	assert.NotNil(t, asset)
+	assert.Equal(t, "task1", asset.Name)
 }

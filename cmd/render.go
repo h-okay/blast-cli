@@ -18,7 +18,7 @@ func Render() *cli.Command {
 	return &cli.Command{
 		Name:      "render",
 		Usage:     "render a single Blast SQL asset",
-		ArgsUsage: "[path to the asset file]",
+		ArgsUsage: "[path to the asset definition]",
 		Action: func(c *cli.Context) error {
 			r := RenderCommand{
 				extractor: &query.WholeFileExtractor{

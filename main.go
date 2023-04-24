@@ -29,6 +29,7 @@ func main() {
 			cmd.Lint(&isDebug),
 			cmd.Run(&isDebug),
 			cmd.Render(),
+			cmd.Lineage(),
 		},
 	}
 

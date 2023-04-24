@@ -131,12 +131,48 @@ func (a *Asset) GetUpstream() []*Asset {
 	return a.upstream
 }
 
+func (a *Asset) GetFullUpstream() []*Asset {
+	upstream := make([]*Asset, 0)
+
+	for _, asset := range a.upstream {
+		upstream = append(upstream, asset)
+		upstream = append(upstream, asset.GetFullUpstream()...)
+	}
+
+	return uniqueAssets(upstream)
+}
+
 func (a *Asset) AddDownstream(asset *Asset) {
 	a.downstream = append(a.downstream, asset)
 }
 
 func (a *Asset) GetDownstream() []*Asset {
 	return a.downstream
+}
+
+func (a *Asset) GetFullDownstream() []*Asset {
+	downstream := make([]*Asset, 0)
+
+	for _, asset := range a.downstream {
+		downstream = append(downstream, asset)
+		downstream = append(downstream, asset.GetFullDownstream()...)
+	}
+
+	return uniqueAssets(downstream)
+}
+
+func uniqueAssets(assets []*Asset) []*Asset {
+	seenValues := make(map[string]bool, len(assets))
+	unique := make([]*Asset, 0, len(assets))
+	for _, value := range assets {
+		if seenValues[value.Name] {
+			continue
+		}
+
+		seenValues[value.Name] = true
+		unique = append(unique, value)
+	}
+	return unique
 }
 
 type Pipeline struct {
@@ -178,17 +214,19 @@ func (p Pipeline) HasAssetType(taskType AssetType) bool {
 	return ok
 }
 
-type Lineage struct {
-	Asset      *Asset
-	Upstream   []*Asset
-	Downstream []*Asset
-}
-
-func (p *Pipeline) AssetLineage(asset *Asset) *Lineage {
-	return &Lineage{
-		Asset: asset,
-		// Upstream: p.getUpstream(asset),
+func (p *Pipeline) GetAssetByPath(assetPath string) *Asset {
+	assetPath, err := filepath.Abs(assetPath)
+	if err != nil {
+		return nil
 	}
+
+	for _, asset := range p.Tasks {
+		if asset.DefinitionFile.Path == assetPath {
+			return asset
+		}
+	}
+
+	return nil
 }
 
 type TaskCreator func(path string) (*Asset, error)
