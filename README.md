@@ -31,6 +31,16 @@ also run Python assets within the same pipeline.
 
 ![Blast CLI](./resources/blast.svg)
 
+## Join our community
+
+We are excited to have you as part of our growing community! Connect with fellow users, share your experiences, and contribute to the development of Blast CLI. Here's how you can get involved:
+
+- Join our [Blast Slack workspace](https://slack.getblast.io) to connect with other users, ask questions, and share your experiences on all things data.
+- GitHub: Contribute to the Blast CLI repository, report issues, or suggest new features by creating a pull request or opening an issue.
+
+We look forward to having you in our community! 
+
+
 ## Installation
 
 You need to have Golang installed in the first place, then you can run the following command:
