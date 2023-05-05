@@ -99,9 +99,9 @@ type Column struct {
 
 type AssetType string
 
-var assetTypeConnectionMapping = map[AssetType]string{
-	AssetType("bq.sql"): "google_cloud_platform",
-	AssetType("sf.sql"): "snowflake",
+var assetTypeConnectionMapping = map[AssetType][]string{
+	AssetType("bq.sql"): {"google_cloud_platform", "gcp"},
+	AssetType("sf.sql"): {"snowflake", "sf"},
 }
 
 type Asset struct {
@@ -195,7 +195,18 @@ func (p *Pipeline) GetConnectionNameForAsset(asset *Asset) string {
 		return asset.Connection
 	}
 
-	return p.DefaultConnections[assetTypeConnectionMapping[asset.Type]]
+	mappings := assetTypeConnectionMapping[asset.Type]
+	if mappings == nil {
+		return ""
+	}
+
+	for _, mapping := range mappings {
+		if p.DefaultConnections[mapping] != "" {
+			return p.DefaultConnections[mapping]
+		}
+	}
+
+	return ""
 }
 
 func (p *Pipeline) RelativeAssetPath(t *Asset) string {

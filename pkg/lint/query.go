@@ -73,7 +73,10 @@ func (q QueryValidatorRule) validateTask(p *pipeline.Pipeline, task *pipeline.As
 			q.Logger.Debugw("Checking if a query is valid", "path", task.ExecutableFile.Path)
 			start := time.Now()
 
-			validator, err := q.Connections.GetConnection(p.GetConnectionNameForAsset(task))
+			assetConnectionName := p.GetConnectionNameForAsset(task)
+			q.Logger.Debugw("The connection will be used for asset", "asset", task.Name, "connection", assetConnectionName)
+
+			validator, err := q.Connections.GetConnection(assetConnectionName)
 			if err != nil {
 				mu.Lock()
 				issues = append(issues, &Issue{
@@ -84,7 +87,17 @@ func (q QueryValidatorRule) validateTask(p *pipeline.Pipeline, task *pipeline.As
 
 				return
 			}
-			valll := validator.(queryValidator)
+			valll, ok := validator.(queryValidator)
+			if !ok {
+				mu.Lock()
+				issues = append(issues, &Issue{
+					Task:        task,
+					Description: fmt.Sprintf("Query validator '%s' is not a valid instance", assetConnectionName),
+				})
+				mu.Unlock()
+
+				return
+			}
 			valid, err := valll.IsValid(context.Background(), foundQuery)
 			if err != nil {
 				mu.Lock()

@@ -398,3 +398,34 @@ func TestPipeline_GetAssetByPath(t *testing.T) {
 	assert.NotNil(t, asset)
 	assert.Equal(t, "task1", asset.Name)
 }
+
+func TestPipeline_GetConnectionNameForAsset(t *testing.T) {
+	t.Parallel()
+
+	asset1 := &pipeline.Asset{
+		Name: "asset1",
+		Type: pipeline.AssetType("bq.sql"),
+	}
+	asset2 := &pipeline.Asset{
+		Name: "asset2",
+		Type: pipeline.AssetType("sf.sql"),
+	}
+	asset3 := &pipeline.Asset{
+		Name:       "asset3",
+		Type:       pipeline.AssetType("sf.sql"),
+		Connection: "custom-connection",
+	}
+
+	pipeline1 := &pipeline.Pipeline{
+		Name: "pipeline1",
+		DefaultConnections: map[string]string{
+			"gcp":       "connection1",
+			"snowflake": "connection2",
+		},
+		Tasks: []*pipeline.Asset{asset1, asset2, asset3},
+	}
+
+	assert.Equal(t, "connection1", pipeline1.GetConnectionNameForAsset(asset1))
+	assert.Equal(t, "connection2", pipeline1.GetConnectionNameForAsset(asset2))
+	assert.Equal(t, "custom-connection", pipeline1.GetConnectionNameForAsset(asset3))
+}

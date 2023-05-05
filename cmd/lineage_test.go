@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/datablast-analytics/blast/pkg/pipeline"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -123,8 +125,9 @@ Total: 2
 			buf := bytes.NewBuffer(nil)
 			mp := &mockPrinter{buf: buf}
 
+			fs := afero.NewOsFs()
 			r := &LineageCommand{
-				builder:      builder,
+				builder:      pipeline.NewBuilder(builderConfig, pipeline.CreateTaskFromYamlDefinition(fs), pipeline.CreateTaskFromFileComments(fs), fs),
 				infoPrinter:  mp,
 				errorPrinter: mp,
 			}
