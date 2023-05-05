@@ -1,8 +1,19 @@
-# Blast
+<p align="center">
+  <img width="250" src="./img/logo.svg">
+</p>
+<p align="center"> 
+Transform, validate and run your data pipelines using SQL and Python.
+</p>
 
-[![Go](https://img.shields.io/badge/--00ADD8?logo=go&logoColor=ffffff)](https://golang.org/)
-[![Go Report Card](https://goreportcard.com/badge/github.com/datablast-analytics/blast)](https://goreportcard.com/report/github.com/datablast-analytics/blast)
-[![GitHub Release](https://img.shields.io/github/v/release/datablast-analytics/blast)](https://img.shields.io/github/v/release/datablast-analytics/blast)
+<p align="center">
+<a href="https://golang.org/"><img src="https://img.shields.io/badge/--00ADD8?logo=go&logoColor=ffffff"></a>
+<a href="https://goreportcard.com/report/github.com/datablast-analytics/blast"><img src="https://goreportcard.com/badge/github.com/datablast-analytics/blast"></a>
+<a href="https://img.shields.io/github/v/release/datablast-analytics/blast"><img src="https://img.shields.io/github/v/release/datablast-analytics/blast"></a>
+<a href="https://slack.getblast.io"><img src="https://img.shields.io/badge/community-%23blast-green?logo=slack&labelColor=gray&color=28A745"></a>
+<a href="https://github.com/datablast-analytics/blast/blob/master/LICENSE.md"><img src="https://img.shields.io/github/actions/workflow/status/datablast-analytics/blast/build-test.yml"></a>
+</p>
+
+---
 
 Blast is a command-line tool for validating and running data transformations on SQL, similar to dbt. On top, Blast can
 also run Python assets within the same pipeline.
