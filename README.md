@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="250" src="./img/logo.svg">
+  <img width="450" src="./img/logo.svg">
 </p>
 <p align="center"> 
 Transform, validate and run your data pipelines using SQL and Python.
